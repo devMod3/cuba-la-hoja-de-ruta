@@ -3,22 +3,26 @@ import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js
 import { SearchService } from '../search/SearchService.js';
 import { NavigationFeature } from '../features/navigation/NavigationFeature.js';
 import { ExploreFeature } from '../features/explore/ExploreFeature.js';
+import { ExploreQueryService } from '../features/explore/ExploreQueryService.js';
+
+const VERSION = '0.2.0';
 
 export function createZenBlog({ root = document } = {}) {
   const contentSource = new BloggerFeedSource();
   const metadataSource = new LocalMetadataSource();
   const searchService = new SearchService();
+  const exploreQueryService = new ExploreQueryService({ searchService });
 
   const navigation = new NavigationFeature({ root });
   const explore = new ExploreFeature({
     root,
     contentSource,
     metadataSource,
-    searchService
+    exploreQueryService
   });
 
   return {
-    version: '0.1.0',
+    version: VERSION,
     boot() {
       if (document.documentElement.dataset.zenBooted === 'true') return;
       document.documentElement.dataset.zenBooted = 'true';
@@ -27,15 +31,15 @@ export function createZenBlog({ root = document } = {}) {
       explore.boot();
 
       window.ZenBlog = {
-        version: '0.1.0',
+        version: VERSION,
         navigation,
         explore,
-        services: { searchService },
+        services: { searchService, exploreQueryService },
         sources: { contentSource, metadataSource }
       };
 
       document.dispatchEvent(new CustomEvent('zenblog:ready', {
-        detail: { version: '0.1.0' }
+        detail: { version: VERSION }
       }));
     },
     destroy() {
