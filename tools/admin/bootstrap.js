@@ -67,10 +67,14 @@ async function bootAdmin() {
   ensureMetadataMount();
   loadStylesheet(new URL('./admin.css', import.meta.url).href, 'zen-admin-css');
   loadStylesheet(new URL('./metadata-manager-v0.5.css', import.meta.url).href, 'zen-metadata-manager-css');
+  loadStylesheet(new URL('./metadata-adaptive-v0.6.css', import.meta.url).href, 'zen-metadata-adaptive-css');
   loadStylesheet(new URL('./search-lab.css', import.meta.url).href, 'zen-search-lab-css');
 
   await loadMetadataManager();
   if (!window.ZenMetadataManager?.open) throw new Error('ZenMetadataManager no se inicializó');
+
+  const { AdaptiveMetadataUI } = await import(new URL('./AdaptiveMetadataUI.js', import.meta.url).href);
+  const adaptiveUI = new AdaptiveMetadataUI({ metadataManager: window.ZenMetadataManager }).mount();
 
   const { SearchLab } = await import(new URL('./SearchLab.js', import.meta.url).href);
   const searchLab = new SearchLab({ metadataManager: window.ZenMetadataManager });
@@ -79,17 +83,20 @@ async function bootAdmin() {
   window.ZenMetadataManager.open();
 
   window.ZenBlogAdmin = Object.freeze({
-    version: '0.2.0',
+    version: '0.3.0',
     modules: Object.freeze(['metadata', 'search-lab']),
-    metadataVersion: '0.5',
+    metadataVersion: '0.6',
+    metadataCoreVersion: '0.5',
+    adaptiveUIVersion: '0.6.0',
     searchCoreVersion: '1.0.0-lab',
     openMetadata: () => searchLab.closeToMetadata(),
     openSearchLab: () => searchLab.open(),
+    adaptiveUI,
     searchLab
   });
 
   document.dispatchEvent(new CustomEvent('zenadmin:ready', {
-    detail: { version: '0.2.0', modules: ['metadata', 'search-lab'] }
+    detail: { version: '0.3.0', modules: ['metadata', 'search-lab'], metadataVersion: '0.6' }
   }));
 }
 
