@@ -1,3 +1,7 @@
+body.homepage-view #page_body {
+  display: none !important;
+}
+
 #zen-home[data-home-enhanced="true"] {
   height: calc(100dvh - 58px);
   min-height: calc(100dvh - 58px);
@@ -32,9 +36,10 @@
 .zen-kicker {
   margin: 0;
   color: var(--zen-accent);
-  font-size: .64rem;
-  font-weight: 800;
+  font-size: .66rem;
+  font-weight: 700;
   letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
 .zen-home-statement h1 {
@@ -69,8 +74,9 @@
   border: 0;
   background: transparent;
   color: var(--zen-accent);
-  font: 700 .76rem/1.2 var(--zen-ui-font);
+  font: 600 .76rem/1.2 var(--zen-ui-font);
   text-decoration: none;
+  cursor: pointer;
 }
 
 .zen-text-button:hover,
