@@ -1,0 +1,249 @@
+/**
+ * Zen Search Core v1 — browser distribution for ZenBlog Admin Search Lab.
+ * Generated from the user-provided modular package.
+ * LAB hardening: related pillars, token-safe full text, aliases/keywords, year ranges.
+ */
+
+
+// ---- src/contracts/CacheAdapter.js ----
+class CacheAdapter {
+  async get(_key) {
+    throw new Error("CacheAdapter.get() must be implemented");
+  }
+  async set(_key, _value) {
+    throw new Error("CacheAdapter.set() must be implemented");
+  }
+}
+
+
+// ---- src/contracts/ContentSource.js ----
+class ContentSource {
+  async listDocuments() {
+    throw new Error("ContentSource.listDocuments() must be implemented");
+  }
+}
+
+
+// ---- src/contracts/MetadataSource.js ----
+class MetadataSource {
+  async getAll() {
+    throw new Error("MetadataSource.getAll() must be implemented");
+  }
+}
+
+
+// ---- src/contracts/RankingStrategy.js ----
+class RankingStrategy {
+  rank(_hits, _query, _context) {
+    throw new Error("RankingStrategy.rank() must be implemented");
+  }
+}
+
+
+// ---- src/contracts/SearchIndex.js ----
+class SearchIndex {
+  build(_documents) {
+    throw new Error("SearchIndex.build() must be implemented");
+  }
+  get(_id) {
+    throw new Error("SearchIndex.get() must be implemented");
+  }
+  all() {
+    throw new Error("SearchIndex.all() must be implemented");
+  }
+}
+
+
+// ---- src/contracts/SearchStrategy.js ----
+class SearchStrategy {
+  search(_query, _context) {
+    throw new Error("SearchStrategy.search() must be implemented");
+  }
+}
+
+
+// ---- src/contracts/StorageAdapter.js ----
+class StorageAdapter {
+  async load(_key) {
+    throw new Error("StorageAdapter.load() must be implemented");
+  }
+  async save(_key, _value) {
+    throw new Error("StorageAdapter.save() must be implemented");
+  }
+}
+
+
+// ---- src/core/TextNormalizer.js ----
+class TextNormalizer {
+  constructor(locale = "es") {
+    this.locale = locale;
+  }
+
+  normalize(value) {
+    return String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase(this.locale)
+      .replace(/[“”"']/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  tokens(value) {
+    const normalized = this.normalize(value);
+    if (!normalized) return [];
+    return normalized
+      .split(/[^\p{L}\p{N}-]+/u)
+      .map(x => x.trim())
+      .filter(Boolean);
+  }
+}
+
+
+// ---- src/core/VocabularyResolver.js ----
+class VocabularyResolver {
+  constructor(vocabulary, normalizer) {
+    this.vocabulary = vocabulary;
+    this.normalizer = normalizer;
+    this.maps = new Map();
+    ["pillars", "types", "statuses", "norms", "concepts"].forEach(group => {
+      const map = new Map();
+      (vocabulary[group] || []).forEach(item => {
+        const keys = [item.id, item.label, ...(item.aliases || [])];
+        keys.forEach(key => map.set(normalizer.normalize(key), item.id));
+      });
+      this.maps.set(group, map);
+    });
+  }
+
+  resolve(group, value) {
+    return this.maps.get(group)?.get(this.normalizer.normalize(value)) ?? null;
+  }
+
+  item(group, id) {
+    return (this.vocabulary[group] || []).find(x => x.id === id) ?? null;
+  }
+
+  label(group, id) {
+    return this.item(group, id)?.label ?? id ?? "";
+  }
+
+  matches(group, id, query) {
+    const item = this.item(group, id);
+    if (!item) return null;
+    const q = this.normalizer.normalize(query);
+    const label = this.normalizer.normalize(item.label);
+    if (q === label || q === this.normalizer.normalize(item.id)) return {kind: "exact", item};
+    const alias = (item.aliases || []).find(a => this.normalizer.normalize(a) === q);
+    if (alias) return {kind: "alias", item, alias};
+    return null;
+  }
+}
+
+
+// ---- src/core/MetadataValidator.js ----
+class MetadataValidator {
+  constructor(vocabulary) {
+    this.vocabulary = vocabulary;
+    this.typeIds = new Set((vocabulary.types || []).map(x => x.id));
+    this.statusIds = new Set((vocabulary.statuses || []).map(x => x.id));
+    this.normIds = new Set((vocabulary.norms || []).map(x => x.id));
+    this.conceptIds = new Set((vocabulary.concepts || []).map(x => x.id));
+    this.pillarIds = new Set((vocabulary.pillars || []).map(x => x.id));
+  }
+
+  validate(metadata) {
+    const errors = [];
+    const c = metadata?.classification || {};
+    const t = metadata?.temporal || {};
+    const i = metadata?.indexing || {};
+    const e = metadata?.editorial || {};
+
+    if (!metadata || metadata.contractVersion !== "1.0.0") errors.push("contractVersion must be 1.0.0");
+    if (!metadata?.identity?.postId) errors.push("identity.postId is required");
+    if (!metadata?.identity?.canonicalUrl) errors.push("identity.canonicalUrl is required");
+    if (!metadata?.title) errors.push("title is required");
+
+    if (c.primaryPillar !== null && !this.pillarIds.has(c.primaryPillar)) {
+      errors.push(`Unknown primaryPillar: ${c.primaryPillar}`);
+    }
+    if (c.type !== null && !this.typeIds.has(c.type)) errors.push(`Unknown type: ${c.type}`);
+    (c.relatedPillars || []).forEach(id => {
+      if (!this.pillarIds.has(id)) errors.push(`Unknown relatedPillar: ${id}`);
+      if (id === c.primaryPillar) errors.push("primaryPillar cannot also be relatedPillar");
+    });
+
+    if (t.documentYear !== null && (t.documentYear < 1500 || t.documentYear > 2200)) {
+      errors.push("documentYear out of range");
+    }
+    if (e.status !== null && !this.statusIds.has(e.status)) errors.push(`Unknown status: ${e.status}`);
+    (i.concepts || []).forEach(id => {
+      if (!this.conceptIds.has(id)) errors.push(`Unknown concept: ${id}`);
+    });
+    (i.norms || []).forEach(n => {
+      if (!this.normIds.has(n.normId)) errors.push(`Unknown norm: ${n.normId}`);
+    });
+
+    return {ok: errors.length === 0, errors};
+  }
+
+  completeness(metadata) {
+    const missing = [];
+    if (!metadata?.identity?.postId) missing.push("postId");
+    if (!metadata?.identity?.canonicalUrl) missing.push("canonicalUrl");
+    if (!metadata?.title) missing.push("title");
+    if (!metadata?.classification?.primaryPillar) missing.push("primaryPillar");
+    if (!metadata?.classification?.type) missing.push("type");
+    return {complete: missing.length === 0, missing};
+  }
+}
+
+
+// ---- src/core/SearchQueryParser.js ----
+class SearchQueryParser {
+  constructor(normalizer, vocabularyResolver) {
+    this.normalizer = normalizer;
+    this.vocabulary = vocabularyResolver;
+  }
+
+  parse(raw) {
+    const text = String(raw ?? "").trim();
+    const phrases = [...text.matchAll(/"([^"]+)"/g)].map(m => this.normalizer.normalize(m[1]));
+    const withoutPhrases = text.replace(/"([^"]+)"/g, " ");
+
+    const filters = {
+      pillar: null,
+      type: null,
+      year: null,
+      norm: null,
+      article: null,
+      status: null
+    };
+
+    const negatives = [];
+    const free = [];
+
+    for (const token of withoutPhrases.split(/\s+/).filter(Boolean)) {
+      if (token.startsWith("-") && token.length > 1) {
+        negatives.push(this.normalizer.normalize(token.slice(1)));
+        continue;
+      }
+
+      const colon = token.indexOf(":");
+      if (colon > 0) {
+        const key = this.normalizer.normalize(token.slice(0, colon));
+        const value = token.slice(colon + 1);
+        if (key === "pilar") filters.pillar = this.vocabulary.resolve("pillars", value) || this.normalizer.normalize(value);
+        else if (key === "tipo") filters.type = this.vocabulary.resolve("types", value) || this.normalizer.normalize(value);
+        else if (key === "ano" || key === "año") filters.year = Number(value) || null;
+        else if (key === "norma") filters.norm = this.vocabulary.resolve("norms", value) || this.normalizer.normalize(value);
+        else if (key === "articulo" || key === "art") filters.article = this.normalizer.normalize(value);
+        else if (key === "estado") filters.status = this.vocabulary.resolve("statuses", value) || this.normalizer.normalize(value);
+        else free.push(token);
+        continue;
+      }
+      free.push(token);
+    }
+
+    let normalized = this.normalizer.normalize(free.join(" "));
+    let naturalArticle = 

@@ -1,0 +1,271 @@
+ null;
+    const articleMatch = normalized.match(/\bart(?:iculo)?\.?\s+([0-9]+[a-z-]*)\b/);
+    if (articleMatch) {
+      naturalArticle = articleMatch[1];
+      normalized = normalized.replace(articleMatch[0], "").replace(/\s+/g, " ").trim();
+      if (!filters.article) filters.article = naturalArticle;
+    }
+
+    return {
+      raw: text,
+      normalized,
+      phrases,
+      tokens: this.normalizer.tokens(normalized),
+      negatives,
+      filters,
+      sort: "relevance"
+    };
+  }
+}
+
+
+// ---- src/domain/SearchDocument.js ----
+class SearchDocument {
+  constructor({id, url, title, metadata, content = {headings: [], bodyText: ""}}) {
+    if (!id) throw new Error("SearchDocument.id is required");
+    if (!url) throw new Error("SearchDocument.url is required");
+    if (!title) throw new Error("SearchDocument.title is required");
+
+    this.version = "1.0.0";
+    this.id = String(id);
+    this.url = String(url);
+    this.title = String(title);
+    this.metadata = metadata;
+    this.content = {
+      headings: Array.isArray(content.headings) ? content.headings : [],
+      bodyText: String(content.bodyText ?? "")
+    };
+    Object.freeze(this);
+  }
+}
+
+
+// ---- src/domain/SearchResult.js ----
+class SearchResult {
+  constructor({document, score = 0, reasons = []}) {
+    this.document = document;
+    this.score = score;
+    this.reasons = reasons;
+  }
+}
+
+
+// ---- src/adapters/InMemorySearchIndex.js ----
+class InMemorySearchIndex extends SearchIndex {
+  constructor() {
+    super();
+    this.documents = new Map();
+  }
+
+  build(documents) {
+    this.documents = new Map(documents.map(d => [d.id, d]));
+    return this;
+  }
+
+  get(id) {
+    return this.documents.get(String(id)) ?? null;
+  }
+
+  all() {
+    return [...this.documents.values()];
+  }
+}
+
+
+// ---- src/adapters/LegacyV04MetadataAdapter.js ----
+class LegacyV04MetadataAdapter {
+  constructor({vocabularyResolver, normalizer}) {
+    this.vocabulary = vocabularyResolver;
+    this.normalizer = normalizer;
+  }
+
+  migrate(record) {
+    if (!record) throw new Error("Legacy record is required");
+
+    const conceptIds = (record.concepts || [])
+      .map(value => this.vocabulary.resolve("concepts", value))
+      .filter(Boolean);
+
+    const normId = record.norm
+      ? this.vocabulary.resolve("norms", record.norm)
+      : null;
+
+    return {
+      contractVersion: "1.0.0",
+      identity: {
+        postId: String(record.postId || record.url || ""),
+        canonicalUrl: String(record.url || "")
+      },
+      title: String(record.title || "(sin título)"),
+      classification: {
+        primaryPillar: record.pillar || null,
+        relatedPillars: [],
+        type: record.type || null
+      },
+      temporal: {
+        publishedAt: record.publishedAt || null,
+        updatedAt: record.updatedAt || null,
+        documentYear: Number.isFinite(record.documentYear) ? record.documentYear : null,
+        period: null
+      },
+      indexing: {
+        concepts: [...new Set(conceptIds)],
+        norms: normId ? [{normId, articles: record.article ? [String(record.article)] : []}] : [],
+        aliases: [],
+        keywords: []
+      },
+      editorial: {
+        status: record.status || null,
+        revision: record.revision || null
+      }
+    };
+  }
+}
+
+
+// ---- src/strategies/TitleSearchStrategy.js ----
+class TitleSearchStrategy extends SearchStrategy {
+  constructor({normalizer, weights}) {
+    super();
+    this.normalizer = normalizer;
+    this.weights = weights;
+  }
+
+  search(query, context) {
+    if (!query.normalized && !query.phrases.length) return [];
+    const hits = [];
+
+    for (const document of context.documents) {
+      const title = this.normalizer.normalize(document.title);
+      let score = 0;
+      const reasons = [];
+
+      if (query.normalized && title === query.normalized) {
+        score += this.weights.titleExact;
+        reasons.push({kind: "titleExact", field: "title", value: document.title});
+      } else if (query.normalized && title.startsWith(query.normalized)) {
+        score += this.weights.titlePrefix;
+        reasons.push({kind: "titlePrefix", field: "title", value: document.title});
+      }
+
+      for (const phrase of query.phrases) {
+        if (title.includes(phrase)) {
+          score += this.weights.titlePhrase;
+          reasons.push({kind: "titlePhrase", field: "title", value: phrase});
+        }
+      }
+
+      for (const token of query.tokens) {
+        if (title.split(/\s+/).includes(token)) {
+          score += this.weights.titleToken;
+          reasons.push({kind: "titleToken", field: "title", value: token});
+        }
+      }
+
+      if (score > 0) hits.push({documentId: document.id, score, reasons});
+    }
+    return hits;
+  }
+}
+
+
+// ---- src/strategies/ConceptSearchStrategy.js ----
+class ConceptSearchStrategy extends SearchStrategy {
+  constructor({normalizer, vocabularyResolver, weights}) {
+    super();
+    this.normalizer = normalizer;
+    this.vocabulary = vocabularyResolver;
+    this.weights = weights;
+  }
+
+  search(query, context) {
+    const terms = [...query.phrases, query.normalized, ...query.tokens].filter(Boolean);
+    if (!terms.length) return [];
+    const hits = [];
+
+    for (const document of context.documents) {
+      let score = 0;
+      const reasons = [];
+      for (const conceptId of document.metadata.indexing.concepts || []) {
+        for (const term of terms) {
+          const match = this.vocabulary.matches("concepts", conceptId, term);
+          if (!match) continue;
+          const weight = match.kind === "exact" ? this.weights.conceptExact : this.weights.conceptAlias;
+          score += weight;
+          reasons.push({
+            kind: match.kind === "exact" ? "conceptExact" : "conceptAlias",
+            field: "concept",
+            id: conceptId,
+            value: match.item.label
+          });
+          break;
+        }
+      }
+      if (score > 0) hits.push({documentId: document.id, score, reasons});
+    }
+    return hits;
+  }
+}
+
+
+// ---- src/strategies/NormSearchStrategy.js ----
+class NormSearchStrategy extends SearchStrategy {
+  constructor({vocabularyResolver, weights}) {
+    super();
+    this.vocabulary = vocabularyResolver;
+    this.weights = weights;
+  }
+
+  search(query, context) {
+    const terms = [...query.phrases, query.normalized, ...query.tokens].filter(Boolean);
+    const explicitNorm = query.filters.norm;
+    const article = query.filters.article;
+    const hits = [];
+
+    for (const document of context.documents) {
+      let score = 0;
+      const reasons = [];
+
+      for (const ref of document.metadata.indexing.norms || []) {
+        if (explicitNorm && ref.normId === explicitNorm) {
+          score += this.weights.normExact;
+          reasons.push({kind: "normExact", field: "norm", id: ref.normId, value: this.vocabulary.label("norms", ref.normId)});
+        }
+
+        for (const term of terms) {
+          const match = this.vocabulary.matches("norms", ref.normId, term);
+          if (!match) continue;
+          score += match.kind === "exact" ? this.weights.normExact : this.weights.normAlias;
+          reasons.push({
+            kind: match.kind === "exact" ? "normExact" : "normAlias",
+            field: "norm",
+            id: ref.normId,
+            value: match.item.label
+          });
+          break;
+        }
+
+        if (article && (ref.articles || []).map(String).includes(String(article))) {
+          score += this.weights.articleReference;
+          reasons.push({kind: "articleReference", field: "article", value: String(article), normId: ref.normId});
+        }
+      }
+
+      if (score > 0) hits.push({documentId: document.id, score, reasons});
+    }
+    return hits;
+  }
+}
+
+
+// ---- src/strategies/MetadataSearchStrategy.js ----
+class MetadataSearchStrategy extends SearchStrategy {
+  constructor({normalizer, vocabularyResolver, weights}) {
+    super();
+    this.normalizer = normalizer;
+    this.vocabulary = vocabularyResolver;
+    this.weights = weights;
+  }
+
+  search(query, context) {
+    const terms = [...query.phr

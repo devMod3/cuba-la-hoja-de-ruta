@@ -6,10 +6,6 @@ function isPlainPrimaryClick(event) {
     && !event.altKey;
 }
 
-function isHomepageDocument() {
-  return location.pathname === '/' || location.pathname === '/index.html';
-}
-
 export class NavigationFeature {
   constructor({ root = document } = {}) {
     this.root = root;
@@ -50,9 +46,14 @@ export class NavigationFeature {
     const route = link.dataset.zenRoute;
     if (!this.allowed.has(route)) return;
 
-    // On a Blogger article URL, Portada still needs a document navigation until
-    // the article reader itself is migrated into the SPA shell.
-    if (route === 'zen-home' && !isHomepageDocument()) return;
+    // Direct Blogger article documents must return to the homepage document.
+    // SPA-opened articles keep the original homepage body class, so they stay
+    // inside the current document and ArticleFeature restores the shell URL.
+    if (route === 'zen-home' && document.body.classList.contains('item-view')) {
+      event.preventDefault();
+      location.assign('/#zen-home');
+      return;
+    }
 
     event.preventDefault();
     const nextHash = `#${route}`;

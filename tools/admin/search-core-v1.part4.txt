@@ -1,0 +1,25 @@
+rchStrategy({normalizer, weights}),
+    new ConceptSearchStrategy({normalizer, vocabularyResolver, weights}),
+    new NormSearchStrategy({vocabularyResolver, weights}),
+    new MetadataSearchStrategy({normalizer, vocabularyResolver, weights}),
+    new FullTextSearchStrategy({normalizer, weights})
+  ];
+
+  const ranker = new DocumentaryRanker();
+
+  return {
+    service: new SearchService({index, queryParser, strategies, ranker, normalizer}),
+    normalizer,
+    vocabularyResolver,
+    queryParser,
+    index
+  };
+}
+
+
+export const ZEN_VOCABULARY_V1 = Object.freeze({"version":"1.0.0","normalization":{"locale":"es","accentInsensitive":true,"caseInsensitive":true,"collapseWhitespace":true},"pillars":[{"id":"soberania","label":"Soberanía","aliases":["soberania"]},{"id":"constitucion","label":"Constitución","aliases":["constitucion"]},{"id":"estado","label":"Estado","aliases":[]}],"types":[{"id":"concepto","label":"Concepto","aliases":["conceptos"]},{"id":"analisis","label":"Análisis","aliases":["analisis"]},{"id":"norma","label":"Norma","aliases":["normativa"]},{"id":"documento","label":"Documento","aliases":["documental"]},{"id":"cronologia","label":"Cronología","aliases":["cronologia","hecho"]},{"id":"historia","label":"Historia","aliases":["historico","histórica","historica"]},{"id":"dossier","label":"Dossier","aliases":["dosier"]}],"statuses":[{"id":"verificado","label":"Verificado","aliases":["validado"]},{"id":"revision","label":"En revisión","aliases":["en revision"]},{"id":"pendiente","label":"Pendiente","aliases":[]}],"norms":[{"id":"c40","label":"Constitución de 1940","aliases":["c40","constitución del 40","constitucion del 40","constitución cubana de 1940","constitucion cubana de 1940"]},{"id":"codigo-electoral-1943","label":"Código Electoral de 1943","aliases":["codigo electoral 1943","código electoral 1943","ley 17"]}],"concepts":[{"id":"pueblo","label":"Pueblo","aliases":[]},{"id":"soberania-popular","label":"Soberanía popular","aliases":["soberania popular"]},{"id":"poder-constituyente","label":"Poder constituyente","aliases":[]},{"id":"continuidad-juridica","label":"Continuidad jurídica","aliases":["continuidad juridica"]},{"id":"legitimidad","label":"Legitimidad","aliases":[]},{"id":"estado-de-derecho","label":"Estado de derecho","aliases":[]}],"queryAliases":[{"canonical":"articulo","aliases":["art","art.","artículo","articulo"]},{"canonical":"constitucion","aliases":["constitución"]},{"canonical":"soberania","aliases":["soberanía"]}]});
+
+export const DOCUMENTARY_RANKING_V1 = Object.freeze({"version":"1.0.0","weights":{"titleExact":1000,"titlePhrase":850,"titlePrefix":720,"titleToken":430,"conceptExact":900,"conceptAlias":820,"normExact":940,"normAlias":860,"articleReference":980,"metadataLabel":500,"headingPhrase":420,"bodyPhrase":320,"bodyToken":110,"relation":70},"tieBreakers":["score","publishedAt","title"]});
+
+
+export { CacheAdapter, ContentSource, MetadataSource, RankingStrategy, SearchIndex, SearchStrategy, StorageAdapter, TextNormalizer, VocabularyResolver, MetadataValidator, SearchQueryParser, SearchDocument, SearchResult, InMemorySearchIndex, LegacyV04MetadataAdapter, TitleSearchStrategy, ConceptSearchStrategy, NormSearchStrategy, MetadataSearchStrategy, FullTextSearchStrategy, DocumentaryRanker, SearchService, createZenSearchCore };
