@@ -1,8 +1,21 @@
+function isPlainPrimaryClick(event) {
+  return event.button === 0
+    && !event.metaKey
+    && !event.ctrlKey
+    && !event.shiftKey
+    && !event.altKey;
+}
+
+function isHomepageDocument() {
+  return location.pathname === '/' || location.pathname === '/index.html';
+}
+
 export class NavigationFeature {
   constructor({ root = document } = {}) {
     this.root = root;
     this.allowed = new Set(['zen-home', 'zen-explore', 'zen-about']);
     this.onHashChange = this.onHashChange.bind(this);
+    this.onDocumentClick = this.onDocumentClick.bind(this);
   }
 
   currentRoute() {
@@ -26,6 +39,27 @@ export class NavigationFeature {
     document.dispatchEvent(new CustomEvent('zenroute:changed', { detail: { route } }));
   }
 
+  onDocumentClick(event) {
+    if (!isPlainPrimaryClick(event)) return;
+
+    const link = event.target instanceof Element
+      ? event.target.closest('a[data-zen-route]')
+      : null;
+    if (!link) return;
+
+    const route = link.dataset.zenRoute;
+    if (!this.allowed.has(route)) return;
+
+    // On a Blogger article URL, Portada still needs a document navigation until
+    // the article reader itself is migrated into the SPA shell.
+    if (route === 'zen-home' && !isHomepageDocument()) return;
+
+    event.preventDefault();
+    const nextHash = `#${route}`;
+    if (location.hash === nextHash) this.apply(route);
+    else location.hash = nextHash;
+  }
+
   onHashChange() {
     const raw = location.hash.replace(/^#/, '');
     if (!this.allowed.has(raw)) return;
@@ -33,11 +67,13 @@ export class NavigationFeature {
   }
 
   boot() {
+    document.addEventListener('click', this.onDocumentClick);
     window.addEventListener('hashchange', this.onHashChange);
     this.apply();
   }
 
   destroy() {
+    document.removeEventListener('click', this.onDocumentClick);
     window.removeEventListener('hashchange', this.onHashChange);
   }
 }
