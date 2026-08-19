@@ -19,8 +19,32 @@ function excerpt(value, max = 320) {
   return `${text.slice(0, max).trimEnd()}…`;
 }
 
-function isHomepageLocation() {
-  return location.pathname === '/' || location.pathname === '/index.html';
+function isHomepageDocument() {
+  return document.body.classList.contains('homepage-view')
+    || location.pathname === '/'
+    || location.pathname === '/index.html';
+}
+
+function fallbackMarkup() {
+  return `
+    <div class="zen-home-workspace zen-home-workspace-single">
+      <div class="zen-home-panel-overview">
+        <section class="zen-home-statement" aria-labelledby="zen-home-intro-title">
+          <p class="zen-kicker">SOBERANÍA · CONSTITUCIÓN · ESTADO</p>
+          <h1 id="zen-home-intro-title">Seguir el origen, los límites y el ejercicio del poder.</h1>
+          <p>Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.</p>
+          <div class="zen-home-quick-actions">
+            <a class="zen-text-button" data-zen-route="zen-explore" href="#zen-explore">Explorar el sistema →</a>
+          </div>
+        </section>
+        <section aria-label="Lectura destacada" class="zen-home-feature-slot">
+          <article class="zen-feature" data-zen-home-feature>
+            <div class="zen-feature-eyebrow"><span class="zen-kicker">DESTACADO</span></div>
+            <p class="zen-feature-loading">Cargando lectura destacada…</p>
+          </article>
+        </section>
+      </div>
+    </div>`;
 }
 
 export class HomeFeature {
@@ -28,31 +52,20 @@ export class HomeFeature {
     this.root = root;
     this.contentSource = contentSource;
     this.target = null;
-    this.pageBody = null;
     this.surface = null;
+    this.createdSurface = false;
   }
 
-  renderShell() {
-    this.surface.innerHTML = `
-      <div class="zen-home-workspace zen-home-workspace-single">
-        <div class="zen-home-panel-overview">
-          <section class="zen-home-statement" aria-labelledby="zen-home-intro-title">
-            <p class="zen-kicker">SOBERANÍA · CONSTITUCIÓN · ESTADO</p>
-            <h1 id="zen-home-intro-title">Seguir el origen, los límites y el ejercicio del poder.</h1>
-            <p>Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.</p>
-            <div class="zen-home-quick-actions">
-              <a class="zen-text-button" data-zen-route="zen-explore" href="#zen-explore">Explorar el sistema →</a>
-            </div>
-          </section>
+  ensureSurface() {
+    this.surface = this.target.querySelector('[data-zen-home-surface]');
+    if (this.surface) return;
 
-          <section aria-label="Lectura destacada" class="zen-home-feature-slot">
-            <article class="zen-feature" data-zen-home-feature>
-              <div class="zen-feature-eyebrow"><span class="zen-kicker">DESTACADO</span></div>
-              <p class="zen-feature-loading">Cargando lectura destacada…</p>
-            </article>
-          </section>
-        </div>
-      </div>`;
+    this.surface = document.createElement('div');
+    this.surface.className = 'zen-home-surface';
+    this.surface.setAttribute('data-zen-home-surface', 'true');
+    this.surface.innerHTML = fallbackMarkup();
+    this.target.prepend(this.surface);
+    this.createdSurface = true;
   }
 
   renderFeatured(post) {
@@ -81,24 +94,13 @@ export class HomeFeature {
   }
 
   async boot() {
-    if (!isHomepageLocation()) return;
+    if (!isHomepageDocument()) return;
 
     this.target = this.root.querySelector('#zen-home');
-    if (!this.target || this.target.dataset.homeEnhanced === 'true') return;
+    if (!this.target) return;
 
-    this.pageBody = this.target.querySelector('#page_body');
-    this.surface = document.createElement('div');
-    this.surface.className = 'zen-home-surface';
-    this.surface.setAttribute('data-zen-home-surface', 'true');
-    this.target.prepend(this.surface);
+    this.ensureSurface();
     this.target.dataset.homeEnhanced = 'true';
-
-    if (this.pageBody) {
-      this.pageBody.hidden = true;
-      this.pageBody.setAttribute('aria-hidden', 'true');
-    }
-
-    this.renderShell();
 
     try {
       const posts = await this.contentSource.listPosts();
@@ -109,14 +111,10 @@ export class HomeFeature {
   }
 
   destroy() {
-    this.surface?.remove();
-    if (this.pageBody) {
-      this.pageBody.hidden = false;
-      this.pageBody.removeAttribute('aria-hidden');
-    }
+    if (this.createdSurface) this.surface?.remove();
     if (this.target) delete this.target.dataset.homeEnhanced;
     this.surface = null;
-    this.pageBody = null;
     this.target = null;
+    this.createdSurface = false;
   }
 }
