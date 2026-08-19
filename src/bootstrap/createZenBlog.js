@@ -1,12 +1,12 @@
-import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js?v=0.3.1';
-import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js';
-import { SearchService } from '../search/SearchService.js';
-import { NavigationFeature } from '../features/navigation/NavigationFeature.js?v=0.3.1';
-import { HomeFeature } from '../features/home/HomeFeature.js?v=0.3.1';
-import { ExploreFeature } from '../features/explore/ExploreFeature.js';
-import { ExploreQueryService } from '../features/explore/ExploreQueryService.js';
+import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js?v=0.3.2';
+import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js?v=0.3.2';
+import { SearchService } from '../search/SearchService.js?v=0.3.2';
+import { NavigationFeature } from '../features/navigation/NavigationFeature.js?v=0.3.2';
+import { HomeFeature } from '../features/home/HomeFeature.js?v=0.3.2';
+import { ExploreFeature } from '../features/explore/ExploreFeature.js?v=0.3.2';
+import { ExploreQueryService } from '../features/explore/ExploreQueryService.js?v=0.3.2';
 
-const VERSION = '0.3.1';
+const VERSION = '0.3.2';
 
 export function createZenBlog({ root = document } = {}) {
   const contentSource = new BloggerFeedSource();
