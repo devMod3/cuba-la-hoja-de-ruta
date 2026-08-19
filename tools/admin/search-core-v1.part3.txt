@@ -1,0 +1,218 @@
+ases, query.normalized, ...query.tokens].filter(Boolean);
+    if (!terms.length) return [];
+    const hits = [];
+
+    for (const document of context.documents) {
+      const c = document.metadata.classification;
+      const e = document.metadata.editorial;
+      const candidates = [
+        ["pillars", c.primaryPillar, "pillar"],
+        ...(c.relatedPillars || []).map(id => ["pillars", id, "relatedPillar"]),
+        ["types", c.type, "type"],
+        ["statuses", e.status, "status"]
+      ];
+
+      let score = 0;
+      const reasons = [];
+      for (const [group, id, field] of candidates) {
+        if (!id) continue;
+        for (const term of terms) {
+          const match = this.vocabulary.matches(group, id, term);
+          if (!match) continue;
+          score += this.weights.metadataLabel;
+          reasons.push({kind: "metadataLabel", field, id, value: match.item.label});
+          break;
+        }
+      }
+
+      const indexing = document.metadata.indexing || {};
+      for (const [field, values] of [["alias", indexing.aliases || []], ["keyword", indexing.keywords || []]]) {
+        for (const value of values) {
+          const normalizedValue = this.normalizer.normalize(value);
+          const valueTokens = new Set(this.normalizer.tokens(value));
+          for (const term of terms) {
+            if (!term) continue;
+            const exact = normalizedValue === term;
+            const token = !exact && valueTokens.has(term);
+            if (!exact && !token) continue;
+            score += this.weights.metadataLabel;
+            reasons.push({
+              kind: field === "alias" ? (exact ? "aliasExact" : "aliasToken") : (exact ? "keywordExact" : "keywordToken"),
+              field,
+              value: String(value)
+            });
+            break;
+          }
+        }
+      }
+
+      if (score > 0) hits.push({documentId: document.id, score, reasons});
+    }
+    return hits;
+  }
+}
+
+
+// ---- src/strategies/FullTextSearchStrategy.js ----
+class FullTextSearchStrategy extends SearchStrategy {
+  constructor({normalizer, weights}) {
+    super();
+    this.normalizer = normalizer;
+    this.weights = weights;
+  }
+
+  search(query, context) {
+    const hits = [];
+    const phrases = [...query.phrases];
+    if (query.normalized && query.tokens.length > 1) phrases.push(query.normalized);
+
+    for (const document of context.documents) {
+      const body = this.normalizer.normalize(document.content.bodyText);
+      if (!body) continue;
+      const bodyTokens = new Set(this.normalizer.tokens(body));
+      let score = 0;
+      const reasons = [];
+
+      for (const phrase of phrases) {
+        if (phrase && body.includes(phrase)) {
+          score += this.weights.bodyPhrase;
+          reasons.push({kind: "bodyPhrase", field: "body", value: phrase});
+        }
+      }
+
+      for (const token of query.tokens) {
+        if (bodyTokens.has(token)) {
+          score += this.weights.bodyToken;
+          reasons.push({kind: "bodyToken", field: "body", value: token});
+        }
+      }
+
+      if (score > 0) hits.push({documentId: document.id, score, reasons});
+    }
+    return hits;
+  }
+}
+
+
+// ---- src/ranking/DocumentaryRanker.js ----
+class DocumentaryRanker extends RankingStrategy {
+  rank(hits, query, context) {
+    const merged = new Map();
+
+    for (const hit of hits) {
+      const current = merged.get(hit.documentId) || {score: 0, reasons: []};
+      current.score += hit.score;
+      current.reasons.push(...hit.reasons);
+      merged.set(hit.documentId, current);
+    }
+
+    const out = [];
+    for (const [documentId, aggregate] of merged) {
+      const document = context.byId.get(documentId);
+      if (!document) continue;
+      if (!this.#passesFilters(document, query)) continue;
+      if (!this.#passesNegatives(document, query, context.normalizer)) continue;
+      out.push(new SearchResult({document, score: aggregate.score, reasons: this.#dedupeReasons(aggregate.reasons)}));
+    }
+
+    out.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const da = Date.parse(a.document.metadata.temporal.publishedAt || "") || 0;
+      const db = Date.parse(b.document.metadata.temporal.publishedAt || "") || 0;
+      if (db !== da) return db - da;
+      return a.document.title.localeCompare(b.document.title, "es");
+    });
+    return out;
+  }
+
+  #passesFilters(document, query) {
+    const f = query.filters;
+    const m = document.metadata;
+    const pillars = [m.classification.primaryPillar, ...(m.classification.relatedPillars || [])].filter(Boolean);
+    if (f.pillar && !pillars.includes(f.pillar)) return false;
+    if (f.type && m.classification.type !== f.type) return false;
+    if (f.year && m.temporal.documentYear !== f.year) return false;
+    if (f.yearFrom && (!m.temporal.documentYear || m.temporal.documentYear < Number(f.yearFrom))) return false;
+    if (f.yearTo && (!m.temporal.documentYear || m.temporal.documentYear > Number(f.yearTo))) return false;
+    if (f.status && m.editorial.status !== f.status) return false;
+    if (f.norm && !(m.indexing.norms || []).some(n => n.normId === f.norm)) return false;
+    if (f.article && !(m.indexing.norms || []).some(n => (n.articles || []).map(String).includes(String(f.article)))) return false;
+    return true;
+  }
+
+  #passesNegatives(document, query, normalizer) {
+    if (!query.negatives.length) return true;
+    const haystack = [
+      document.title,
+      document.metadata.classification.primaryPillar,
+      ...(document.metadata.classification.relatedPillars || []),
+      document.metadata.classification.type,
+      ...(document.metadata.indexing.concepts || []),
+      ...(document.metadata.indexing.aliases || []),
+      ...(document.metadata.indexing.keywords || []),
+      document.content.bodyText
+    ].join(" ");
+    const tokens = new Set(normalizer.tokens(haystack));
+    return query.negatives.every(term => !tokens.has(term));
+  }
+
+  #dedupeReasons(reasons) {
+    const seen = new Set();
+    return reasons.filter(reason => {
+      const key = JSON.stringify(reason);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+}
+
+
+// ---- src/application/SearchService.js ----
+class SearchService {
+  constructor({index, queryParser, strategies, ranker, normalizer}) {
+    this.index = index;
+    this.queryParser = queryParser;
+    this.strategies = [...strategies];
+    this.ranker = ranker;
+    this.normalizer = normalizer;
+  }
+
+  search(rawQuery) {
+    const query = typeof rawQuery === "string" ? this.queryParser.parse(rawQuery) : rawQuery;
+    const documents = this.index.all();
+    const byId = new Map(documents.map(d => [d.id, d]));
+    const context = {documents, byId, normalizer: this.normalizer};
+
+    const hasText = Boolean(query.normalized || query.phrases.length || query.tokens.length);
+    const hasFilters = Object.values(query.filters || {}).some(v => v !== null && v !== "");
+
+    let hits = [];
+    if (hasText || query.filters.norm || query.filters.article) {
+      hits = this.strategies.flatMap(strategy => strategy.search(query, context));
+    } else if (hasFilters) {
+      // Filter-only search: seed every document with score 1 so ranker can gate deterministically.
+      hits = documents.map(document => ({
+        documentId: document.id,
+        score: 1,
+        reasons: [{kind: "filterOnly", field: "metadata", value: "Filtros estructurados"}]
+      }));
+    } else {
+      return [];
+    }
+
+    return this.ranker.rank(hits, query, context);
+  }
+}
+
+
+// ---- src/application/createZenSearchCore.js ----
+function createZenSearchCore({documents, vocabulary, rankingConfig}) {
+  const normalizer = new TextNormalizer(vocabulary?.normalization?.locale || "es");
+  const vocabularyResolver = new VocabularyResolver(vocabulary, normalizer);
+  const queryParser = new SearchQueryParser(normalizer, vocabularyResolver);
+  const index = new InMemorySearchIndex().build(documents);
+  const weights = rankingConfig.weights;
+
+  const strategies = [
+    new TitleSea
