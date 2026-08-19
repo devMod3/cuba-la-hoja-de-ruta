@@ -19,6 +19,29 @@ export class SearchService {
     return [classification.primaryPillar, ...(classification.relatedPillars ?? [])].filter(Boolean);
   }
 
+  #parseQuery(value) {
+    let normalized = this.normalizer.normalize(value);
+    let article = null;
+
+    const articleMatch = normalized.match(/\bart(?:iculo)?\.?\s+([0-9]+[a-z-]*)\b/);
+    if (articleMatch) {
+      article = articleMatch[1];
+      normalized = normalized.replace(articleMatch[0], ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    return {
+      text: normalized,
+      article
+    };
+  }
+
+  #hasArticle(record, article) {
+    if (!article) return true;
+    return (record?.indexing?.norms ?? []).some((reference) =>
+      (reference.articles ?? []).map(String).includes(String(article))
+    );
+  }
+
   #haystack(post, record) {
     const indexing = record?.indexing ?? {};
     const classification = record?.classification ?? {};
@@ -36,29 +59,29 @@ export class SearchService {
 
     for (const reference of indexing.norms ?? []) {
       terms.push(reference.normId);
-      for (const article of reference.articles ?? []) {
-        terms.push(`art ${article}`, `articulo ${article}`, `artículo ${article}`);
-      }
     }
 
     return this.normalizer.normalize(terms.filter(Boolean).join(' '));
   }
 
-  #score(post, record, query) {
-    if (!query) return 1;
+  #score(post, record, parsedQuery) {
+    const { text, article } = parsedQuery;
+
+    if (article && !this.#hasArticle(record, article)) return 0;
+    if (!text) return article ? 980 : 1;
 
     const normalizedTitle = this.normalizer.normalize(post.title);
     const haystack = this.#haystack(post, record);
-    const tokens = query.split(' ').filter(Boolean);
+    const tokens = text.split(' ').filter(Boolean);
 
     if (!tokens.every((token) => haystack.includes(token))) return 0;
 
-    let score = 0;
-    if (normalizedTitle === query) score += 1000;
-    else if (normalizedTitle.startsWith(query)) score += 760;
-    else if (normalizedTitle.includes(query)) score += 650;
+    let score = article ? 980 : 0;
+    if (normalizedTitle === text) score += 1000;
+    else if (normalizedTitle.startsWith(text)) score += 760;
+    else if (normalizedTitle.includes(text)) score += 650;
 
-    if (haystack.includes(query)) score += 360;
+    if (haystack.includes(text)) score += 360;
 
     for (const token of tokens) {
       if (normalizedTitle.split(' ').includes(token)) score += 180;
@@ -69,7 +92,8 @@ export class SearchService {
   }
 
   search({ posts = [], registry = {}, query = '', filters = {}, sort = 'recent' } = {}) {
-    const normalizedQuery = this.normalizer.normalize(query);
+    const parsedQuery = this.#parseQuery(query);
+    const hasQuery = Boolean(parsedQuery.text || parsedQuery.article);
     const matches = [];
 
     for (const post of posts) {
@@ -83,14 +107,14 @@ export class SearchService {
       if (filters.yearFrom && (!year || year < Number(filters.yearFrom))) continue;
       if (filters.yearTo && (!year || year > Number(filters.yearTo))) continue;
 
-      const score = this.#score(post, record, normalizedQuery);
+      const score = this.#score(post, record, parsedQuery);
       if (score <= 0) continue;
 
       matches.push({ post, record, score, year });
     }
 
     matches.sort((a, b) => {
-      if (normalizedQuery && sort === 'relevance' && b.score !== a.score) return b.score - a.score;
+      if (hasQuery && sort === 'relevance' && b.score !== a.score) return b.score - a.score;
       if (sort === 'az') return a.post.title.localeCompare(b.post.title, 'es');
 
       const aTime = Date.parse(a.post.publishedAt ?? '') || 0;
