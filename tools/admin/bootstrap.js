@@ -71,7 +71,8 @@ async function bootAdmin() {
   await searchLab.mountFeature();
 
   const { AboutManager } = await import(new URL('./AboutManager.js', import.meta.url).href);
-  const aboutManager = new AboutManager({ metadataManager: window.ZenMetadataManager, searchLab }).mount();
+  const { installBloggerProfileFields } = await import(new URL('./BloggerProfileFields.js', import.meta.url).href);
+  const aboutManager = installBloggerProfileFields(new AboutManager({ metadataManager: window.ZenMetadataManager, searchLab })).mount();
 
   window.ZenMetadataManager.open();
 
