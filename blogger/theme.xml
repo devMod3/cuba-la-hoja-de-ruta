@@ -15,7 +15,11 @@
   <b:include data='blog' name='all-head-content'/>
   <title><data:blog.pageTitle/></title>
 
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.css?v=0.3.0' rel='stylesheet'/>
+  <link href='https://fonts.googleapis.com' rel='preconnect'/>
+  <link crossorigin='anonymous' href='https://fonts.gstatic.com' rel='preconnect'/>
+  <link href='https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&amp;display=swap' rel='stylesheet'/>
+
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.css?v=0.3.1' rel='stylesheet'/>
 
   <b:skin><![CDATA[
     /*
@@ -27,9 +31,12 @@
   ]]></b:skin>
 </head>
 <body>
+  <b:class cond='data:view.isHomepage' name='homepage-view'/>
+  <b:class cond='data:view.isSingleItem' name='item-view'/>
+
   <div id='zen-blog-prototype'>
     <header class='zen-site-header'>
-      <a class='zen-brand' href='#zen-home' data-zen-route='zen-home'>
+      <a aria-label='Ir a la portada' class='zen-brand' href='#zen-home' data-zen-route='zen-home'>
         <span aria-hidden='true' class='zen-brand-mark'>HR</span>
         <span class='zen-brand-copy'>
           <strong>La hoja de ruta</strong>
@@ -37,16 +44,44 @@
         </span>
       </a>
 
-      <nav aria-label='Principal' class='zen-primary-nav'>
+      <nav aria-label='Navegación principal de La hoja de ruta' class='zen-primary-nav'>
         <a data-zen-route='zen-home' href='#zen-home'>Portada</a>
         <a data-zen-route='zen-explore' href='#zen-explore'>Explorar</a>
-        <a href='#zen-radio-player'>Reproductor</a>
+        <a class='zen-player-nav' href='#zen-radio-player'>Reproductor</a>
         <a data-zen-route='zen-about' href='#zen-about'>Acerca de</a>
       </nav>
     </header>
 
     <main id='zen-app'>
-      <section aria-hidden='false' class='zen-view' data-zen-view='home' id='zen-home'>
+      <section aria-hidden='false' class='zen-view' data-home-enhanced='true' data-zen-view='home' id='zen-home'>
+        <b:if cond='data:view.isHomepage'>
+          <!-- Portada estable recuperada de la copia pre-GitHub. El HTML esencial vive en Blogger; JS sólo enriquece DESTACADO. -->
+          <div class='zen-home-surface' data-zen-home-surface='true'>
+            <div class='zen-home-workspace zen-home-workspace-single'>
+              <div class='zen-home-panel-overview'>
+                <section aria-labelledby='zen-home-intro-title' class='zen-home-statement'>
+                  <p class='zen-kicker'>SOBERANÍA · CONSTITUCIÓN · ESTADO</p>
+                  <h1 id='zen-home-intro-title'>Seguir el origen, los límites y el ejercicio del poder.</h1>
+                  <p>Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.</p>
+                  <div class='zen-home-quick-actions'>
+                    <a class='zen-text-button' data-zen-route='zen-explore' href='#zen-explore'>Explorar el sistema →</a>
+                  </div>
+                </section>
+
+                <section aria-label='Lectura destacada' class='zen-home-feature-slot'>
+                  <article class='zen-feature' data-zen-home-feature='true'>
+                    <div class='zen-feature-eyebrow'>
+                      <span class='zen-kicker'>DESTACADO</span>
+                    </div>
+                    <p class='zen-feature-loading'>Cargando lectura destacada…</p>
+                  </article>
+                </section>
+              </div>
+            </div>
+          </div>
+        </b:if>
+
+        <!-- Blogger conserva exactamente un Blog1 en #page_body. En Portada queda como fuente de CMS y se oculta visualmente. -->
         <b:section class='zen-blogger-content' id='page_body' maxwidgets='1' showaddelement='false'>
           <b:widget id='Blog1' locked='true' title='Entradas del blog' type='Blog' visible='true' version='2'/>
         </b:section>
@@ -63,7 +98,7 @@
     </main>
   </div>
 
-  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.3.0' type='module'></script>
+  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.3.1' type='module'></script>
 
   <!-- (🔥 Inicio) Reproductor zen-radio-player -->
   <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.2' type='module'>
