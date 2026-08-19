@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://devmod3.github.io/cuba-la-hoja-de-ruta/config/metadata-schema.json",
+  "title": "Zen Metadata v1",
+  "type": "object",
+  "required": ["contractVersion", "identity", "title", "classification", "temporal", "indexing", "editorial"],
+  "properties": {
+    "contractVersion": { "const": "1.0.0" },
+    "identity": {
+      "type": "object",
+      "required": ["postId", "canonicalUrl"],
+      "properties": {
+        "postId": { "type": "string", "minLength": 1 },
+        "canonicalUrl": { "type": "string", "minLength": 1 }
+      }
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "classification": {
+      "type": "object",
+      "required": ["primaryPillar", "relatedPillars", "type"],
+      "properties": {
+        "primaryPillar": { "type": ["string", "null"] },
+        "relatedPillars": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "type": { "type": ["string", "null"] }
+      }
+    },
+    "temporal": {
+      "type": "object",
+      "properties": {
+        "publishedAt": { "type": ["string", "null"] },
+        "updatedAt": { "type": ["string", "null"] },
+        "documentYear": { "type": ["integer", "null"], "minimum": 1500, "maximum": 2200 },
+        "period": { "type": ["string", "null"] }
+      }
+    },
+    "indexing": {
+      "type": "object",
+      "properties": {
+        "concepts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "norms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["normId", "articles"],
+            "properties": {
+              "normId": { "type": "string" },
+              "articles": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+            }
+          }
+        },
+        "aliases": { "type": "array", "items": { "type": "string" } },
+        "keywords": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "editorial": {
+      "type": "object",
+      "properties": {
+        "status": { "type": ["string", "null"] },
+        "revision": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
