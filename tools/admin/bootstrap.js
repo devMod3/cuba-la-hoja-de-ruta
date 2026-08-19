@@ -40,19 +40,13 @@ function loadStylesheet(href, id) {
 }
 
 async function loadMetadataManager() {
-  const responses = await Promise.all(
-    METADATA_PARTS.map((part) => fetch(new URL(`./${part}`, import.meta.url)))
-  );
-
+  const responses = await Promise.all(METADATA_PARTS.map((part) => fetch(new URL(`./${part}`, import.meta.url))));
   for (const response of responses) {
-    if (!response.ok) {
-      throw new Error(`Metadata source HTTP ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Metadata source HTTP ${response.status}`);
   }
 
   const source = (await Promise.all(responses.map((response) => response.text()))).join('');
   const blobUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
-
   try {
     await import(blobUrl);
   } finally {
@@ -71,27 +65,31 @@ async function bootAdmin() {
   }
 
   ensureMetadataMount();
-
   loadStylesheet(new URL('./admin.css', import.meta.url).href, 'zen-admin-css');
   loadStylesheet(new URL('./metadata-manager-v0.5.css', import.meta.url).href, 'zen-metadata-manager-css');
+  loadStylesheet(new URL('./search-lab.css', import.meta.url).href, 'zen-search-lab-css');
 
   await loadMetadataManager();
+  if (!window.ZenMetadataManager?.open) throw new Error('ZenMetadataManager no se inicializó');
 
-  if (!window.ZenMetadataManager?.open) {
-    throw new Error('ZenMetadataManager no se inicializó');
-  }
+  const { SearchLab } = await import(new URL('./SearchLab.js', import.meta.url).href);
+  const searchLab = new SearchLab({ metadataManager: window.ZenMetadataManager });
+  await searchLab.mountFeature();
 
   window.ZenMetadataManager.open();
 
   window.ZenBlogAdmin = Object.freeze({
-    version: '0.1.0',
-    module: 'metadata',
+    version: '0.2.0',
+    modules: Object.freeze(['metadata', 'search-lab']),
     metadataVersion: '0.5',
-    openMetadata: () => window.ZenMetadataManager?.open?.()
+    searchCoreVersion: '1.0.0-lab',
+    openMetadata: () => searchLab.closeToMetadata(),
+    openSearchLab: () => searchLab.open(),
+    searchLab
   });
 
   document.dispatchEvent(new CustomEvent('zenadmin:ready', {
-    detail: { version: '0.1.0', module: 'metadata' }
+    detail: { version: '0.2.0', modules: ['metadata', 'search-lab'] }
   }));
 }
 
