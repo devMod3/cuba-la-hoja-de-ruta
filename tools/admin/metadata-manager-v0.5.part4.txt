@@ -1,0 +1,334 @@
+  one('#zmm-primary-pillar').value=r.classification.primaryPillar||'';
+  one('#zmm-type').value=r.classification.type||'';
+  one('#zmm-year').value=r.temporal.documentYear||'';
+  one('#zmm-status-field').value=r.editorial.status||'';
+  one('#zmm-revision').value=r.editorial.revision||'';
+
+  one('#zmm-related-pillars').querySelectorAll('input').forEach(function(input){
+    input.checked=(r.classification.relatedPillars||[]).includes(input.value);
+  });
+
+  renderConceptTags();
+  renderNormRows();
+
+  var issues=state.registry.migrationIssues[String(id)]||[];
+  one('#zmm-migration-section').hidden=!issues.length;
+  one('#zmm-migration-issues').textContent=issues.join(' · ');
+
+  one('#zmm-editor').hidden=false;
+  updateValidation();
+}
+
+function closeEditor(){
+  one('#zmm-editor').hidden=true;
+  state.editingId=null;
+  state.selectedConcepts=new Set();
+  state.draftNorms=[];
+}
+
+function saveEditor(){
+  var post=state.posts.find(function(x){return x.id===state.editingId;});
+  if(!post)return;
+
+  var r=editorDraftRecord();
+  var v=validateRecord(r);
+
+  if(v.errors.length){
+    status('No se guardó: '+v.errors.join(' · '),'error');
+    updateValidation();
+    return;
+  }
+
+  state.registry.records[String(post.id)]=r;
+
+  /* Once canonical controlled values are saved, legacy unresolved issues are considered reviewed.
+     We only clear issues that no longer correspond to any free-text field, because v0.5 no longer
+     permits uncontrolled concepts/norms. */
+  delete state.registry.migrationIssues[String(post.id)];
+
+  persist();
+  renderAll();
+  status('Metadata guardada para “'+post.title+'”.','ok');
+  closeEditor();
+}
+
+function addConcept(){
+  var id=one('#zmm-concept-picker').value;
+  if(!id)return;
+  state.selectedConcepts.add(id);
+  one('#zmm-concept-picker').value='';
+  renderConceptTags();
+  updateValidation();
+}
+
+function removeConcept(id){
+  state.selectedConcepts.delete(id);
+  renderConceptTags();
+  updateValidation();
+}
+
+function addNorm(){
+  var id=one('#zmm-norm-picker').value;
+  if(!id)return;
+  if(!state.draftNorms.some(function(x){return x.normId===id;})){
+    state.draftNorms.push({normId:id,articleText:''});
+  }
+  one('#zmm-norm-picker').value='';
+  renderNormRows();
+  updateValidation();
+}
+
+function syncNormDraftFromDom(){
+  var rows=Array.from(one('#zmm-norm-list').querySelectorAll('[data-norm-index]'));
+  state.draftNorms=rows.map(function(row){
+    return {
+      normId:row.querySelector('.zmm-norm-id').value,
+      articleText:row.querySelector('.zmm-norm-articles').value
+    };
+  });
+}
+
+function removeNorm(index){
+  state.draftNorms.splice(index,1);
+  renderNormRows();
+  updateValidation();
+}
+
+function exportRegistry(){
+  var payload=clone(state.registry);
+  payload.exportedAt=new Date().toISOString();
+
+  var blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='zen-metadata-registry-v1.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},500);
+  status('Registro canónico exportado.','ok');
+}
+
+function importRegistry(file){
+  if(!file)return;
+  var reader=new FileReader();
+
+  reader.onload=function(){
+    try{
+      var parsed=JSON.parse(String(reader.result||''));
+      if(!parsed||parsed.schemaVersion!=='1.0.0'||!parsed.records||typeof parsed.records!=='object'){
+        throw new Error('Formato incompatible');
+      }
+
+      var invalid=[];
+      Object.keys(parsed.records).forEach(function(id){
+        var v=validateRecord(parsed.records[id]);
+        if(v.errors.length)invalid.push(id+': '+v.errors.join(', '));
+      });
+
+      if(invalid.length){
+        throw new Error('El registro contiene metadata inválida: '+invalid[0]);
+      }
+
+      state.registry=parsed;
+      state.registry.migrationIssues=state.registry.migrationIssues||{};
+      persist();
+      reconcilePosts();
+      renderAll();
+      status('Registro importado correctamente.','ok');
+    }catch(error){
+      status('No se pudo importar: '+error.message,'error');
+    }
+  };
+
+  reader.readAsText(file);
+}
+
+function portalToBody(){
+  var root=document.getElementById(ROOT_ID);
+  var button=launcher();
+
+  if(button&&button.parentNode!==document.body)document.body.appendChild(button);
+  if(root&&root.parentNode!==document.body)document.body.appendChild(root);
+  return {root:root,button:button};
+}
+
+function openManager(){
+  var root=document.getElementById(ROOT_ID),b=launcher();
+  if(!root)return;
+  root.hidden=false;
+  if(b)b.setAttribute('aria-expanded','true');
+
+  if(!state.loaded){
+    fetchAllPosts().catch(function(e){
+      status('No se pudieron cargar los artículos: '+e.message,'error');
+    });
+  }
+}
+
+function closeManager(){
+  var root=document.getElementById(ROOT_ID),b=launcher();
+  if(root)root.hidden=true;
+  if(b){b.setAttribute('aria-expanded','false');b.focus();}
+}
+
+function toggleManager(){
+  var root=document.getElementById(ROOT_ID);
+  if(root.hidden)openManager();
+  else closeManager();
+}
+
+function bind(){
+  launcher().addEventListener('click',toggleManager);
+  one('#zmm-close').addEventListener('click',closeManager);
+
+  one('#zmm-refresh').addEventListener('click',function(){
+    fetchAllPosts().catch(function(e){
+      status('No se pudieron cargar los artículos: '+e.message,'error');
+    });
+  });
+
+  one('#zmm-export').addEventListener('click',exportRegistry);
+  one('#zmm-import').addEventListener('click',function(){one('#zmm-import-file').click();});
+  one('#zmm-import-file').addEventListener('change',function(){
+    importRegistry(this.files&&this.files[0]);
+    this.value='';
+  });
+
+  one('#zmm-search').addEventListener('input',function(e){
+    state.query=e.target.value;
+    renderList();
+  });
+
+  one('#zmm-folders').addEventListener('click',function(e){
+    var b=e.target.closest('[data-folder]');
+    if(!b)return;
+    state.folder=b.dataset.folder;
+    state.selected.clear();
+    renderAll();
+  });
+
+  one('#zmm-list').addEventListener('click',function(e){
+    var edit=e.target.closest('[data-edit]');
+    if(edit){openEditor(edit.dataset.edit);return;}
+
+    var row=e.target.closest('.zmm-row');
+    if(row&&e.target.matches('.zmm-row-check')){
+      var id=row.dataset.id;
+      if(e.target.checked)state.selected.add(id);
+      else state.selected.delete(id);
+      syncSelectAll();
+      renderSelection();
+    }
+  });
+
+  one('#zmm-select-all').addEventListener('change',function(e){
+    visiblePosts().forEach(function(p){
+      if(e.target.checked)state.selected.add(p.id);
+      else state.selected.delete(p.id);
+    });
+    renderList();
+    renderSelection();
+  });
+
+  one('#zmm-move-target').addEventListener('change',renderSelection);
+  one('#zmm-move').addEventListener('click',moveSelected);
+
+  one('#zmm-editor-close').addEventListener('click',closeEditor);
+  one('#zmm-save').addEventListener('click',saveEditor);
+
+  one('#zmm-open-post').addEventListener('click',function(){
+    var p=state.posts.find(function(x){return x.id===state.editingId;});
+    if(p)window.open(p.url,'_blank','noopener');
+  });
+
+  ['#zmm-primary-pillar','#zmm-type','#zmm-year','#zmm-status-field','#zmm-revision'].forEach(function(selector){
+    var el=one(selector);
+    el.addEventListener('input',updateValidation);
+    el.addEventListener('change',updateValidation);
+  });
+
+  one('#zmm-related-pillars').addEventListener('change',updateValidation);
+
+  one('#zmm-add-concept').addEventListener('click',addConcept);
+  one('#zmm-concept-tags').addEventListener('click',function(e){
+    var b=e.target.closest('[data-remove-concept]');
+    if(b)removeConcept(b.dataset.removeConcept);
+  });
+
+  one('#zmm-add-norm').addEventListener('click',addNorm);
+  one('#zmm-norm-list').addEventListener('input',function(){
+    syncNormDraftFromDom();
+    updateValidation();
+  });
+  one('#zmm-norm-list').addEventListener('change',function(){
+    syncNormDraftFromDom();
+    updateValidation();
+  });
+  one('#zmm-norm-list').addEventListener('click',function(e){
+    var b=e.target.closest('.zmm-remove-norm');
+    if(!b)return;
+    var row=b.closest('[data-norm-index]');
+    if(row)removeNorm(Number(row.dataset.normIndex));
+  });
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&!one('#zmm-editor').hidden){
+      e.preventDefault();
+      closeEditor();
+    }
+  });
+}
+
+function mount(){
+  var x=portalToBody(),root=x.root;
+  if(!root)return;
+
+  var load=loadRegistry();
+  buildUI(root);
+  bind();
+  renderAll();
+
+  window.ZenMetadataRegistry=state.registry;
+  root.hidden=true;
+
+  if(load.migrated){
+    status('Migrados '+load.count+' registros v0.4 al contrato Zen Metadata v1. Revisa los marcados como inválidos.','warn');
+  }else{
+    status('Schema v1 y Vocabulary v1 activos.','ok');
+  }
+}
+
+window.ZenMetadataManager={
+  __v05:true,
+  open:openManager,
+  close:closeManager,
+  toggle:toggleManager,
+  refresh:fetchAllPosts,
+  validate:validateRecord,
+  vocabulary:VOCABULARY,
+  getRegistry:function(){return clone(state.registry);},
+  getPosts:function(){return clone(state.posts);},
+  diagnostics:function(){
+    return {
+      posts:state.posts.length,
+      records:Object.keys(state.registry.records).length,
+      health:countHealth(),
+      schemaVersion:state.registry.schemaVersion,
+      vocabularyVersion:state.registry.vocabularyVersion,
+      storageKey:STORAGE_KEY,
+      legacyStorageKey:LEGACY_KEY,
+      loaded:state.loaded,
+      buttonParent:launcher()&&launcher().parentElement&&launcher().parentElement.tagName,
+      rootParent:document.getElementById(ROOT_ID)&&document.getElementById(ROOT_ID).parentElement&&document.getElementById(ROOT_ID).parentElement.tagName
+    };
+  }
+};
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',mount,{once:true});
+}else{
+  mount();
+}
+})();
