@@ -2,10 +2,11 @@ import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js';
 import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js';
 import { SearchService } from '../search/SearchService.js';
 import { NavigationFeature } from '../features/navigation/NavigationFeature.js';
+import { HomeFeature } from '../features/home/HomeFeature.js';
 import { ExploreFeature } from '../features/explore/ExploreFeature.js';
 import { ExploreQueryService } from '../features/explore/ExploreQueryService.js';
 
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 
 export function createZenBlog({ root = document } = {}) {
   const contentSource = new BloggerFeedSource();
@@ -14,6 +15,7 @@ export function createZenBlog({ root = document } = {}) {
   const exploreQueryService = new ExploreQueryService({ searchService });
 
   const navigation = new NavigationFeature({ root });
+  const home = new HomeFeature({ root, contentSource });
   const explore = new ExploreFeature({
     root,
     contentSource,
@@ -28,11 +30,13 @@ export function createZenBlog({ root = document } = {}) {
       document.documentElement.dataset.zenBooted = 'true';
 
       navigation.boot();
+      void home.boot();
       explore.boot();
 
       window.ZenBlog = {
         version: VERSION,
         navigation,
+        home,
         explore,
         services: { searchService, exploreQueryService },
         sources: { contentSource, metadataSource }
@@ -44,6 +48,7 @@ export function createZenBlog({ root = document } = {}) {
     },
     destroy() {
       navigation.destroy();
+      home.destroy();
       explore.destroy();
       delete document.documentElement.dataset.zenBooted;
       delete window.ZenBlog;
