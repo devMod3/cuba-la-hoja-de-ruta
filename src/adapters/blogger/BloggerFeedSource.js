@@ -37,6 +37,8 @@ export class BloggerFeedSource extends ContentSource {
       title: entry?.title?.$t ?? '(sin título)',
       publishedAt: entry?.published?.$t ?? null,
       updatedAt: entry?.updated?.$t ?? null,
+      summary: entry?.summary?.$t ?? '',
+      content: entry?.content?.$t ?? '',
       labels: (entry?.category ?? []).map((item) => item.term).filter(Boolean)
     };
   }
