@@ -1,12 +1,12 @@
 {
   "name": "cuba-la-hoja-de-ruta",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "ZenBlog modular frontend for Cuba — La hoja de ruta",
   "scripts": {
     "test": "node --test",
-    "check": "node --check dist/zenblog.js && node --check src/bootstrap/createZenBlog.js && node --check src/search/SearchService.js"
+    "check": "node --check dist/zenblog.js && node --check src/bootstrap/createZenBlog.js && node --check src/search/SearchService.js && node --check src/features/explore/ExploreFeature.js && node --check src/features/explore/ExploreQueryService.js"
   },
   "engines": {
     "node": ">=20"
