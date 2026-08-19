@@ -14,6 +14,24 @@ export class ExploreFeature {
     return this.root.querySelector('#zen-explore');
   }
 
+  escape(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  safeUrl(value) {
+    try {
+      const url = new URL(value, location.href);
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : '#';
+    } catch {
+      return '#';
+    }
+  }
+
   formatDate(value) {
     if (!value) return '—';
     try {
@@ -163,13 +181,18 @@ export class ExploreFeature {
     }
 
     list.innerHTML = results.map(({ post, record }) => {
-      const type = this.typeLabel(record?.classification?.type);
+      const type = this.escape(this.typeLabel(record?.classification?.type));
+      const url = this.escape(this.safeUrl(post.url));
+      const published = this.escape(post.publishedAt ?? '');
+      const title = this.escape(post.title);
+      const date = this.escape(this.formatDate(post.publishedAt));
+
       return `
         <article class="zen-result-row">
-          <a href="${post.url}">
+          <a href="${url}">
             <span class="zen-row-type">${type}</span>
-            <time datetime="${post.publishedAt ?? ''}">${this.formatDate(post.publishedAt)}</time>
-            <h2>${post.title}</h2>
+            <time datetime="${published}">${date}</time>
+            <h2>${title}</h2>
             <span aria-hidden="true" class="zen-row-arrow">›</span>
           </a>
         </article>`;
