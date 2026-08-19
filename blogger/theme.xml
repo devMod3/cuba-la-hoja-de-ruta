@@ -29,7 +29,7 @@
 <body>
   <div id='zen-blog-prototype'>
     <header class='zen-site-header'>
-      <a class='zen-brand' href='/' data-zen-route='zen-home'>
+      <a class='zen-brand' href='#zen-home' data-zen-route='zen-home'>
         <span aria-hidden='true' class='zen-brand-mark'>HR</span>
         <span class='zen-brand-copy'>
           <strong>La hoja de ruta</strong>
@@ -38,7 +38,7 @@
       </a>
 
       <nav aria-label='Principal' class='zen-primary-nav'>
-        <a data-zen-route='zen-home' href='/'>Portada</a>
+        <a data-zen-route='zen-home' href='#zen-home'>Portada</a>
         <a data-zen-route='zen-explore' href='#zen-explore'>Explorar</a>
         <a data-zen-route='zen-about' href='#zen-about'>Acerca de</a>
         <a href='#zen-radio-player'>Reproductor</a>
@@ -66,7 +66,7 @@
   <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js' type='module'></script>
 
   <!-- (🔥 Inicio) Reproductor zen-radio-player -->
-  <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.1' type='module'>
+  <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.2' type='module'>
   </script>
   <!-- (🔥 Fin) Reproductor zen-radio-player -->
 </body>
