@@ -25,7 +25,7 @@ function isHomepageDocument() {
     || location.pathname === '/index.html';
 }
 
-function fallbackMarkup() {
+function homeMarkup() {
   return `
     <div class="zen-home-workspace zen-home-workspace-single">
       <div class="zen-home-panel-overview">
@@ -37,9 +37,12 @@ function fallbackMarkup() {
             <a class="zen-text-button" data-zen-route="zen-explore" href="#zen-explore">Explorar el sistema →</a>
           </div>
         </section>
+
         <section aria-label="Lectura destacada" class="zen-home-feature-slot">
           <article class="zen-feature" data-zen-home-feature>
-            <div class="zen-feature-eyebrow"><span class="zen-kicker">DESTACADO</span></div>
+            <div class="zen-feature-eyebrow">
+              <span class="zen-kicker">DESTACADO</span>
+            </div>
             <p class="zen-feature-loading">Cargando lectura destacada…</p>
           </article>
         </section>
@@ -52,20 +55,16 @@ export class HomeFeature {
     this.root = root;
     this.contentSource = contentSource;
     this.target = null;
+    this.pageBody = null;
     this.surface = null;
-    this.createdSurface = false;
   }
 
-  ensureSurface() {
-    this.surface = this.target.querySelector('[data-zen-home-surface]');
-    if (this.surface) return;
-
+  renderShell() {
     this.surface = document.createElement('div');
     this.surface.className = 'zen-home-surface';
     this.surface.setAttribute('data-zen-home-surface', 'true');
-    this.surface.innerHTML = fallbackMarkup();
+    this.surface.innerHTML = homeMarkup();
     this.target.prepend(this.surface);
-    this.createdSurface = true;
   }
 
   renderFeatured(post) {
@@ -97,24 +96,35 @@ export class HomeFeature {
     if (!isHomepageDocument()) return;
 
     this.target = this.root.querySelector('#zen-home');
-    if (!this.target) return;
+    if (!this.target || this.target.dataset.homeEnhanced === 'true') return;
 
-    this.ensureSurface();
+    this.pageBody = this.target.querySelector('#page_body');
+    if (this.pageBody) {
+      this.pageBody.hidden = true;
+      this.pageBody.setAttribute('aria-hidden', 'true');
+    }
+
+    this.renderShell();
     this.target.dataset.homeEnhanced = 'true';
 
     try {
       const posts = await this.contentSource.listPosts();
       this.renderFeatured(posts[0] ?? null);
-    } catch {
+    } catch (error) {
+      console.error('[ZenBlog/Home] No se pudo cargar el destacado', error);
       this.renderFeatured(null);
     }
   }
 
   destroy() {
-    if (this.createdSurface) this.surface?.remove();
+    this.surface?.remove();
+    if (this.pageBody) {
+      this.pageBody.hidden = false;
+      this.pageBody.removeAttribute('aria-hidden');
+    }
     if (this.target) delete this.target.dataset.homeEnhanced;
     this.surface = null;
+    this.pageBody = null;
     this.target = null;
-    this.createdSurface = false;
   }
 }
