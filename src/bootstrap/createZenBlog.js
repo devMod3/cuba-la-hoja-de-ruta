@@ -1,8 +1,8 @@
-import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js';
+import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js?v=0.3.0';
 import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js';
 import { SearchService } from '../search/SearchService.js';
-import { NavigationFeature } from '../features/navigation/NavigationFeature.js';
-import { HomeFeature } from '../features/home/HomeFeature.js';
+import { NavigationFeature } from '../features/navigation/NavigationFeature.js?v=0.3.0';
+import { HomeFeature } from '../features/home/HomeFeature.js?v=0.3.0';
 import { ExploreFeature } from '../features/explore/ExploreFeature.js';
 import { ExploreQueryService } from '../features/explore/ExploreQueryService.js';
 
