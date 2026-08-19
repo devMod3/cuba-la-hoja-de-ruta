@@ -1,0 +1,227 @@
+(function(){
+'use strict';
+
+if(window.ZenMetadataManager&&window.ZenMetadataManager.__v05)return;
+
+var ROOT_ID='zen-metadata-manager-root';
+var LEGACY_KEY='zenMetadataRegistry.v1';
+var STORAGE_KEY='zenMetadataRegistry.v2';
+var FEED_PAGE_SIZE=150;
+
+var VOCABULARY={"version":"1.0.0","normalization":{"locale":"es","accentInsensitive":true,"caseInsensitive":true,"collapseWhitespace":true},"pillars":[{"id":"soberania","label":"Soberanía","aliases":["soberania"]},{"id":"constitucion","label":"Constitución","aliases":["constitucion"]},{"id":"estado","label":"Estado","aliases":[]}],"types":[{"id":"concepto","label":"Concepto","aliases":["conceptos"]},{"id":"analisis","label":"Análisis","aliases":["analisis"]},{"id":"norma","label":"Norma","aliases":["normativa"]},{"id":"documento","label":"Documento","aliases":["documental"]},{"id":"cronologia","label":"Cronología","aliases":["cronologia","hecho"]},{"id":"historia","label":"Historia","aliases":["historico","histórica","historica"]},{"id":"dossier","label":"Dossier","aliases":["dosier"]}],"statuses":[{"id":"verificado","label":"Verificado","aliases":["validado"]},{"id":"revision","label":"En revisión","aliases":["en revision"]},{"id":"pendiente","label":"Pendiente","aliases":[]}],"norms":[{"id":"c40","label":"Constitución de 1940","aliases":["c40","constitución del 40","constitucion del 40","constitución cubana de 1940","constitucion cubana de 1940"]},{"id":"codigo-electoral-1943","label":"Código Electoral de 1943","aliases":["codigo electoral 1943","código electoral 1943","ley 17"]}],"concepts":[{"id":"pueblo","label":"Pueblo","aliases":[]},{"id":"soberania-popular","label":"Soberanía popular","aliases":["soberania popular"]},{"id":"poder-constituyente","label":"Poder constituyente","aliases":[]},{"id":"continuidad-juridica","label":"Continuidad jurídica","aliases":["continuidad juridica"]},{"id":"legitimidad","label":"Legitimidad","aliases":[]},{"id":"estado-de-derecho","label":"Estado de derecho","aliases":[]}],"queryAliases":[{"canonical":"articulo","aliases":["art","art.","artículo","articulo"]},{"canonical":"constitucion","aliases":["constitución"]},{"canonical":"soberania","aliases":["soberanía"]}]};
+
+var state={
+  registry:{schemaVersion:'1.0.0',vocabularyVersion:'1.0.0',updatedAt:null,records:{},migrationIssues:{}},
+  posts:[],
+  folder:'all',
+  query:'',
+  selected:new Set(),
+  editingId:null,
+  draftNorms:[],
+  selectedConcepts:new Set(),
+  loaded:false
+};
+
+function normalizeText(value){
+  return String(value||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLocaleLowerCase('es').replace(/\s+/g,' ').trim();
+}
+
+function normalizeUrl(raw){
+  try{
+    var u=new URL(raw,location.href);
+    u.hash='';
+    u.searchParams.delete('zenmeta');
+    return u.href;
+  }catch(_){return String(raw||'').trim();}
+}
+
+function esc(v){
+  return String(v==null?'':v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function one(s){return document.querySelector('#'+ROOT_ID+' '+s);}
+function launcher(){return document.getElementById('zen-metadata-launcher');}
+
+function storage(){
+  if(window.ZenMetadataStorage&&typeof window.ZenMetadataStorage.getItem==='function'&&typeof window.ZenMetadataStorage.setItem==='function'){
+    return window.ZenMetadataStorage;
+  }
+  return window.localStorage;
+}
+
+function status(msg,kind){
+  var e=one('#zmm-status');
+  if(e){e.textContent=msg;e.dataset.kind=kind||'info';}
+}
+
+function group(name){return VOCABULARY[name]||[];}
+function itemById(name,id){return group(name).find(function(x){return x.id===id;})||null;}
+function label(name,id){var x=itemById(name,id);return x?x.label:(id||'');}
+
+function resolveVocabulary(name,value){
+  var q=normalizeText(value);
+  if(!q)return null;
+  var items=group(name);
+  for(var i=0;i<items.length;i++){
+    var x=items[i];
+    var candidates=[x.id,x.label].concat(x.aliases||[]);
+    if(candidates.some(function(v){return normalizeText(v)===q;}))return x.id;
+  }
+  return null;
+}
+
+function emptyRecord(post){
+  return {
+    contractVersion:'1.0.0',
+    identity:{
+      postId:String(post.id||post.url||''),
+      canonicalUrl:normalizeUrl(post.url)
+    },
+    title:String(post.title||'(sin título)'),
+    classification:{
+      primaryPillar:null,
+      relatedPillars:[],
+      type:null
+    },
+    temporal:{
+      publishedAt:post.published||null,
+      updatedAt:post.updated||null,
+      documentYear:null,
+      period:null
+    },
+    indexing:{
+      concepts:[],
+      norms:[],
+      aliases:[],
+      keywords:[]
+    },
+    editorial:{
+      status:null,
+      revision:null
+    }
+  };
+}
+
+function canonicalRecord(post){
+  var id=String(post.id||post.url||'');
+  var current=state.registry.records[id];
+  if(!current)return emptyRecord(post);
+
+  current.identity=current.identity||{};
+  current.identity.postId=id;
+  current.identity.canonicalUrl=normalizeUrl(post.url||current.identity.canonicalUrl);
+  current.title=post.title||current.title||'(sin título)';
+  current.classification=current.classification||{primaryPillar:null,relatedPillars:[],type:null};
+  current.classification.relatedPillars=Array.isArray(current.classification.relatedPillars)?current.classification.relatedPillars:[];
+  current.temporal=current.temporal||{publishedAt:null,updatedAt:null,documentYear:null,period:null};
+  current.temporal.publishedAt=post.published||current.temporal.publishedAt||null;
+  current.temporal.updatedAt=post.updated||current.temporal.updatedAt||null;
+  current.indexing=current.indexing||{concepts:[],norms:[],aliases:[],keywords:[]};
+  current.indexing.concepts=Array.isArray(current.indexing.concepts)?current.indexing.concepts:[];
+  current.indexing.norms=Array.isArray(current.indexing.norms)?current.indexing.norms:[];
+  current.indexing.aliases=Array.isArray(current.indexing.aliases)?current.indexing.aliases:[];
+  current.indexing.keywords=Array.isArray(current.indexing.keywords)?current.indexing.keywords:[];
+  current.editorial=current.editorial||{status:null,revision:null};
+  return current;
+}
+
+function validateRecord(record){
+  var errors=[];
+  var missing=[];
+
+  if(!record||record.contractVersion!=='1.0.0')errors.push('Versión de contrato inválida');
+  if(!record||!record.identity||!record.identity.postId)errors.push('Falta postId');
+  if(!record||!record.identity||!record.identity.canonicalUrl)errors.push('Falta URL canónica');
+  if(!record||!record.title)errors.push('Falta título');
+
+  var c=record&&record.classification||{};
+  if(!c.primaryPillar)missing.push('Pilar principal');
+  else if(!itemById('pillars',c.primaryPillar))errors.push('Pilar principal desconocido');
+
+  if(!c.type)missing.push('Tipo');
+  else if(!itemById('types',c.type))errors.push('Tipo desconocido');
+
+  (c.relatedPillars||[]).forEach(function(id){
+    if(!itemById('pillars',id))errors.push('Pilar relacionado desconocido: '+id);
+    if(id===c.primaryPillar)errors.push('El Pilar principal no puede repetirse como relacionado');
+  });
+
+  var y=record&&record.temporal&&record.temporal.documentYear;
+  if(y!=null&&(Number(y)<1500||Number(y)>2200))errors.push('Año documental fuera de rango');
+
+  var statusId=record&&record.editorial&&record.editorial.status;
+  if(statusId&&!itemById('statuses',statusId))errors.push('Estado desconocido');
+
+  (record&&record.indexing&&record.indexing.concepts||[]).forEach(function(id){
+    if(!itemById('concepts',id))errors.push('Concepto desconocido: '+id);
+  });
+
+  (record&&record.indexing&&record.indexing.norms||[]).forEach(function(ref){
+    if(!ref||!itemById('norms',ref.normId))errors.push('Norma desconocida: '+(ref&&ref.normId||''));
+    if(ref&&ref.articles&&!Array.isArray(ref.articles))errors.push('Artículos de norma inválidos');
+  });
+
+  return {
+    state:errors.length?'invalid':(missing.length?'incomplete':'complete'),
+    errors:errors,
+    missing:missing
+  };
+}
+
+function persist(){
+  state.registry.updatedAt=new Date().toISOString();
+  storage().setItem(STORAGE_KEY,JSON.stringify(state.registry));
+  window.ZenMetadataRegistry=state.registry;
+  document.dispatchEvent(new CustomEvent('zenmetadata:changed',{detail:{registry:state.registry}}));
+}
+
+function loadRegistry(){
+  try{
+    var raw=storage().getItem(STORAGE_KEY);
+    var parsed=raw?JSON.parse(raw):null;
+    if(parsed&&parsed.records&&typeof parsed.records==='object'){
+      state.registry=parsed;
+      state.registry.migrationIssues=state.registry.migrationIssues||{};
+      return {loaded:true,migrated:false};
+    }
+  }catch(_){}
+
+  var migration=migrateLegacyV04();
+  return {loaded:false,migrated:migration.migrated,count:migration.count};
+}
+
+function migrateLegacyV04(){
+  var result={migrated:false,count:0};
+  var raw;
+  try{raw=storage().getItem(LEGACY_KEY);}catch(_){return result;}
+  if(!raw)return result;
+
+  try{
+    var legacy=JSON.parse(raw);
+    var records=legacy&&legacy.records||{};
+    Object.keys(records).forEach(function(key){
+      var old=records[key]||{};
+      var id=String(old.postId||old.url||key);
+      if(!id)return;
+
+      var post={
+        id:id,
+        url:old.url||key,
+        title:old.title||'(sin título)',
+        published:old.publishedAt||null,
+        updated:old.updatedAt||null
+      };
+      var rec=emptyRecord(post);
+
+      rec.classification.primaryPillar=itemById('pillars',old.pillar)?old.pillar:null;
+      rec.classification.type=itemById('types',old.type)?old.type:null;
+      rec.temporal.documentYear=Number.isFinite(old.documentYear)?old.documentYear:null;
+      rec.editorial.status=itemById('statuses',old.status)?old.status:null;
+      rec.editorial.revision=old.revision||null;
+
+      var issues=[];
+      var concepts=[];

@@ -1,0 +1,23 @@
+html[data-zen-admin='true'],
+html[data-zen-admin='true'] body {
+  margin: 0 !important;
+  min-height: 100% !important;
+  background: #121416 !important;
+  overflow: hidden !important;
+}
+
+html[data-zen-admin='true'] #zen-blog-prototype {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html[data-zen-admin='true'] #zen-metadata-launcher {
+  display: none !important;
+}
+
+html[data-zen-admin='true'] #zen-metadata-manager-root {
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  border-left: 0 !important;
+}
