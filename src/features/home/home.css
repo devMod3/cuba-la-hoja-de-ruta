@@ -1,4 +1,4 @@
-body.homepage-view #page_body {
+#zen-home[data-home-enhanced="true"] #page_body {
   display: none !important;
 }
 
