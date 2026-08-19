@@ -10,10 +10,18 @@ test('site profile uses an independent v1 storage contract', () => {
 });
 
 test('Blogger-style public profile fields are preserved canonically', () => {
-  const data = canonicalizeSiteProfile({ profile: { displayName:'  Autor  ', photoUrl:'https://example.com/photo.jpg', bloggerProfileUrl:'https://www.blogger.com/profile/123', email:'autor@example.com', website:'https://example.com', gender:'Masculino', industry:'Publicación', occupation:'Editor', location:{city:'La Habana',region:'La Habana',country:'Cuba'}, introduction:'Introducción', interests:['Historia','Historia','Derecho'], favoriteMovies:['Película'], favoriteMusic:['Música'], favoriteBooks:['Libro'] } });
+  const data = canonicalizeSiteProfile({ profile: {
+    displayName:'  Autor  ', photoUrl:'https://example.com/photo.jpg', bloggerProfileUrl:'https://www.blogger.com/profile/123',
+    email:'autor@example.com', website:'https://example.com', audioClipUrl:'https://example.com/audio.mp3',
+    wishlistUrl:'https://example.com/wishlist', randomQuestion:'¿Una pregunta?', randomAnswer:'Una respuesta',
+    gender:'Masculino', industry:'Publicación', occupation:'Editor', location:{city:'La Habana',region:'La Habana',country:'Cuba'},
+    introduction:'Introducción', interests:['Historia','Historia','Derecho'], favoriteMovies:['Película'], favoriteMusic:['Música'], favoriteBooks:['Libro']
+  } });
   assert.equal(data.profile.displayName, 'Autor');
   assert.deepEqual(data.profile.interests, ['Historia', 'Derecho']);
   assert.equal(data.profile.favoriteBooks[0], 'Libro');
+  assert.equal(data.profile.audioClipUrl, 'https://example.com/audio.mp3');
+  assert.equal(data.profile.randomAnswer, 'Una respuesta');
 });
 
 test('profile validation rejects unsafe URLs', () => {
