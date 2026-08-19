@@ -26,10 +26,7 @@ export const RESOURCE_TYPES = Object.freeze([
 const SOCIAL_IDS = new Set(SOCIAL_PLATFORMS.map((x) => x.id));
 const RESOURCE_TYPE_IDS = new Set(RESOURCE_TYPES.map((x) => x.id));
 
-function text(value) {
-  return String(value ?? '').trim();
-}
-
+function text(value) { return String(value ?? '').trim(); }
 function textList(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.map(text).filter(Boolean))];
@@ -82,6 +79,10 @@ export function emptySiteProfile() {
       bloggerProfileUrl: '',
       email: '',
       website: '',
+      audioClipUrl: '',
+      wishlistUrl: '',
+      randomQuestion: '',
+      randomAnswer: '',
       gender: '',
       industry: '',
       occupation: '',
@@ -109,6 +110,10 @@ export function canonicalizeSiteProfile(value = {}) {
       bloggerProfileUrl: text(profile.bloggerProfileUrl),
       email: text(profile.email),
       website: text(profile.website),
+      audioClipUrl: text(profile.audioClipUrl),
+      wishlistUrl: text(profile.wishlistUrl),
+      randomQuestion: text(profile.randomQuestion),
+      randomAnswer: text(profile.randomAnswer),
       gender: text(profile.gender),
       industry: text(profile.industry),
       occupation: text(profile.occupation),
@@ -127,7 +132,13 @@ export function canonicalizeSiteProfile(value = {}) {
 export function validateSiteProfile(value) {
   const data = canonicalizeSiteProfile(value);
   const errors = [];
-  for (const [label, url] of [['Foto', data.profile.photoUrl], ['Perfil Blogger', data.profile.bloggerProfileUrl], ['Sitio web', data.profile.website]]) {
+  for (const [label, url] of [
+    ['Foto', data.profile.photoUrl],
+    ['Perfil Blogger', data.profile.bloggerProfileUrl],
+    ['Sitio web', data.profile.website],
+    ['Audio Clip', data.profile.audioClipUrl],
+    ['Wishlist', data.profile.wishlistUrl]
+  ]) {
     if (url && !isSafeExternalUrl(url)) errors.push(`${label}: URL inválida`);
   }
   if (data.profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.profile.email)) errors.push('Correo electrónico inválido');
