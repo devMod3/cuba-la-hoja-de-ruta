@@ -40,8 +40,8 @@
       <nav aria-label='Principal' class='zen-primary-nav'>
         <a data-zen-route='zen-home' href='#zen-home'>Portada</a>
         <a data-zen-route='zen-explore' href='#zen-explore'>Explorar</a>
-        <a data-zen-route='zen-about' href='#zen-about'>Acerca de</a>
         <a href='#zen-radio-player'>Reproductor</a>
+        <a data-zen-route='zen-about' href='#zen-about'>Acerca de</a>
       </nav>
     </header>
 
