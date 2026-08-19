@@ -1,4 +1,4 @@
-import { createZenBlog } from '../src/bootstrap/createZenBlog.js?v=0.3.1';
+import { createZenBlog } from '../src/bootstrap/createZenBlog.js?v=0.3.2';
 
 const app = createZenBlog();
 
