@@ -27,9 +27,10 @@ Portada, Explorar, navegación, Acerca de y controles deben intentar permanecer 
 
 Orden fijo:
 
-**Portada · Explorar · Acerca de · Reproductor**
+**Portada · Explorar · Reproductor · Acerca de**
 
 - Portada, Explorar y Acerca de son vistas del shell y no deben provocar una recarga completa del documento cuando ya estamos en el documento principal de ZenBlog.
+- Reproductor es una acción persistente de primer nivel y no una vista que destruya el estado del shell.
 - Cambiar entre vistas internas nunca debe destruir el reproductor.
 - En móvil, la navegación debe evolucionar a un overlay compacto; no se debe resolver ocultando acciones funcionales.
 
