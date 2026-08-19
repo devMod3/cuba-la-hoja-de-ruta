@@ -1,0 +1,50 @@
+name: Validate ZenBlog
+
+on:
+  push:
+    branches: [main, lab-v0.1-architecture]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: JavaScript checks
+        run: npm run check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Validate Blogger XML
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          ET.parse('blogger/theme.xml')
+          print('blogger/theme.xml: XML well-formed')
+          PY
+
+      - name: Architecture invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          xml = Path('blogger/theme.xml').read_text()
+          assert xml.count("id='Blog1'") == 1
+          assert "id='page_body'" in xml
+          assert 'zen_main' not in xml
+          assert 'zen-radio-player/assets/zen-radio-player.js' in xml
+          assert 'dist/zenblog.js' in xml
+          assert 'dist/zenblog.css' in xml
+          print('ZenBlog invariants: PASS')
+          PY

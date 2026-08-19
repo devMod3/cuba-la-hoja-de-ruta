@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html b:css='false'
+      b:defaultwidgetversion='2'
+      b:layoutsVersion='3'
+      b:responsive='true'
+      expr:dir='data:blog.languageDirection'
+      expr:lang='data:blog.locale'
+      xmlns='http://www.w3.org/1999/xhtml'
+      xmlns:b='http://www.google.com/2005/gml/b'
+      xmlns:data='http://www.google.com/2005/gml/data'
+      xmlns:expr='http://www.google.com/2005/gml/expr'>
+<head>
+  <meta content='width=device-width,initial-scale=1' name='viewport'/>
+  <b:include data='blog' name='all-head-content'/>
+  <title><data:blog.pageTitle/></title>
+
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.css' rel='stylesheet'/>
+
+  <b:skin><![CDATA[
+    /*
+     * ZenBlog Blogger shell.
+     * Application styles are delivered from GitHub Pages.
+     * Keep this block intentionally small: Blogger requires b:skin.
+     */
+    html,body{margin:0;padding:0}
+  ]]></b:skin>
+</head>
+<body>
+  <div id='zen-blog-prototype'>
+    <header class='zen-site-header'>
+      <a class='zen-brand' href='/' data-zen-route='zen-home'>
+        <span aria-hidden='true' class='zen-brand-mark'>HR</span>
+        <span class='zen-brand-copy'>
+          <strong>La hoja de ruta</strong>
+          <small>Soberanía · Constitución · Estado</small>
+        </span>
+      </a>
+
+      <nav aria-label='Principal' class='zen-primary-nav'>
+        <a data-zen-route='zen-home' href='/'>Portada</a>
+        <a data-zen-route='zen-explore' href='#zen-explore'>Explorar</a>
+        <a data-zen-route='zen-about' href='#zen-about'>Acerca de</a>
+        <a href='#zen-radio-player'>Reproductor</a>
+      </nav>
+    </header>
+
+    <main id='zen-app'>
+      <section aria-hidden='false' class='zen-view' data-zen-view='home' id='zen-home'>
+        <b:section class='zen-blogger-content' id='page_body' maxwidgets='1' showaddelement='false'>
+          <b:widget id='Blog1' locked='true' title='Entradas del blog' type='Blog' visible='true' version='2'/>
+        </b:section>
+      </section>
+
+      <section aria-hidden='true' class='zen-view' data-zen-view='explore' hidden='hidden' id='zen-explore'/>
+
+      <section aria-hidden='true' class='zen-view' data-zen-view='about' hidden='hidden' id='zen-about'>
+        <div class='zen-reading'>
+          <h1>La hoja de ruta</h1>
+          <p>Plataforma editorial y documental para organizar, leer y recuperar conocimiento sobre soberanía, Constitución y Estado.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js' type='module'></script>
+
+  <!-- (🔥 Inicio) Reproductor zen-radio-player -->
+  <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js' type='module'>
+  </script>
+  <!-- (🔥 Fin) Reproductor zen-radio-player -->
+</body>
+</html>

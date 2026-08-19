@@ -1,0 +1,203 @@
+#zen-explore {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.zen-explore-shell {
+  height: calc(100dvh - 78px);
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  border: 1px solid var(--zen-border-strong);
+  background: var(--zen-canvas);
+}
+
+.zen-explore-head {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--zen-border);
+  background: var(--zen-surface-1);
+}
+
+.zen-kicker {
+  display: block;
+  margin-bottom: .2rem;
+  color: var(--zen-accent);
+  font-size: .56rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.zen-explore-head h1 {
+  margin: 0;
+  font-family: var(--zen-editorial-font);
+  font-size: 1.55rem;
+  font-weight: 550;
+}
+
+#zen-explore-count {
+  color: var(--zen-text-secondary);
+  font-size: .66rem;
+}
+
+.zen-explore-search {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--zen-border);
+  background: var(--zen-surface-1);
+}
+
+.zen-explore-search > label {
+  display: block;
+  margin-bottom: .35rem;
+  color: var(--zen-text-tertiary);
+  font-size: .57rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.zen-search-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.zen-search-line input,
+.zen-search-line button,
+.zen-filter-grid input,
+.zen-filter-grid select {
+  min-height: 44px;
+  border: 1px solid var(--zen-border-strong);
+  border-radius: 0;
+  background: var(--zen-canvas);
+  color: var(--zen-text);
+  font: inherit;
+  box-shadow: none;
+}
+
+.zen-search-line input {
+  width: 100%;
+  padding: .55rem .7rem;
+}
+
+.zen-search-line button {
+  width: 44px;
+  margin-left: -1px;
+  font-size: 1.1rem;
+}
+
+.zen-explore-advanced {
+  border-bottom: 1px solid var(--zen-border);
+  background: var(--zen-surface-2);
+}
+
+.zen-explore-advanced summary {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  color: var(--zen-text-secondary);
+  cursor: pointer;
+  font-size: .65rem;
+  font-weight: 750;
+}
+
+.zen-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .55rem;
+  padding: .65rem 1rem .85rem;
+}
+
+.zen-filter-grid label {
+  display: grid;
+  gap: .28rem;
+  color: var(--zen-text-tertiary);
+  font-size: .55rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.zen-filter-grid input,
+.zen-filter-grid select {
+  width: 100%;
+  padding: 0 .55rem;
+}
+
+.zen-explore-status {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  color: var(--zen-text-tertiary);
+  font-size: .6rem;
+}
+
+.zen-explore-results {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.zen-result-row {
+  border-top: 1px solid var(--zen-border);
+}
+
+.zen-result-row:first-child {
+  border-top: 0;
+}
+
+.zen-result-row a {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 100px 120px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: .7rem;
+  padding: .5rem 1rem;
+  color: var(--zen-text);
+  text-decoration: none;
+}
+
+.zen-result-row a:hover,
+.zen-result-row a:focus-visible {
+  background: var(--zen-surface-1);
+}
+
+.zen-row-type,
+.zen-result-row time {
+  color: var(--zen-text-tertiary);
+  font-size: .6rem;
+}
+
+.zen-result-row h2 {
+  margin: 0;
+  font-family: var(--zen-editorial-font);
+  font-size: .94rem;
+  font-weight: 500;
+}
+
+.zen-row-arrow {
+  color: var(--zen-accent);
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+.zen-empty {
+  margin: 0;
+  padding: 2.5rem 1rem;
+  color: var(--zen-text-tertiary);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  #zen-explore { padding: .55rem; }
+  .zen-explore-shell { height: calc(100dvh - 118px); }
+  .zen-filter-grid { grid-template-columns: 1fr 1fr; }
+  .zen-result-row a { grid-template-columns: 76px minmax(0, 1fr) 22px; }
+  .zen-result-row time { display: none; }
+}

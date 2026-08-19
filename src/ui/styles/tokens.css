@@ -1,0 +1,17 @@
+:root {
+  --zen-canvas: #121416;
+  --zen-surface-1: #171A1D;
+  --zen-surface-2: #1D2125;
+  --zen-surface-3: #24292E;
+  --zen-text: #F1F0EB;
+  --zen-text-secondary: #B4B6B8;
+  --zen-text-tertiary: #858A8F;
+  --zen-border: #2D3338;
+  --zen-border-strong: #434A50;
+  --zen-accent: #C5AE7A;
+  --zen-ok: #8FA895;
+  --zen-error: #D16F72;
+  --zen-reading-width: 72ch;
+  --zen-ui-font: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --zen-editorial-font: "Source Serif 4", Georgia, serif;
+}
