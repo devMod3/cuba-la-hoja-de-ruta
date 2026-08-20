@@ -14,6 +14,8 @@
   <meta content='width=device-width,initial-scale=1,viewport-fit=cover' name='viewport'/>
   <meta content='#121416' name='theme-color'/>
   <meta content='dark' name='color-scheme'/>
+  <!-- Public fallback. Blogger custom Favicon, when configured, is emitted later by all-head-content. -->
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/brand/favicon-fallback.png' rel='icon' type='image/png'/>
   <b:include data='blog' name='all-head-content'/>
   <title><data:blog.pageTitle/></title>
 
@@ -70,6 +72,7 @@
   <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/article/article.css?v=0.4.0' rel='stylesheet'/>
   <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/responsive.css?v=0.4.0' rel='stylesheet'/>
   <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.4.0' rel='modulepreload'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/bootstrap/createZenBlog.js?v=0.4.0' rel='modulepreload'/>
 
   <b:skin><![CDATA[
     /* Blogger is the composition root only. Product UI lives in GitHub modules. */
