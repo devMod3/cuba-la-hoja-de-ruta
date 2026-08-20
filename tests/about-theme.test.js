@@ -33,12 +33,25 @@ test('public About uses the profile image as a managed favicon', () => {
   assert.match(feature, /syncProfileFavicon\(profile\.photoUrl\)/);
 });
 
-test('profile favicon is synchronized before About-view availability is checked', () => {
+test('profile favicon is synchronized before a missing About root can end boot', () => {
   const syncIndex = bootstrap.indexOf('syncFavicon(store.load())');
-  const aboutIndex = bootstrap.indexOf("if (!document.getElementById('zen-about')) return");
+  const rootReturnIndex = bootstrap.indexOf('if (!root) return;');
   assert.notEqual(syncIndex, -1);
-  assert.notEqual(aboutIndex, -1);
-  assert.ok(syncIndex < aboutIndex);
+  assert.notEqual(rootReturnIndex, -1);
+  assert.ok(syncIndex < rootReturnIndex);
+});
+
+test('About bootstrap keeps a visible fallback path on runtime failure', () => {
+  assert.match(bootstrap, /zenAboutState = 'fallback'/);
+  assert.match(bootstrap, /zenabout:error/);
+  assert.match(bootstrap, /loadStylesheet\(\)/);
+});
+
+test('About render is transactional and commits only a completed shell', () => {
+  assert.match(feature, /build\(data\)/);
+  assert.match(feature, /const shell = this\.build\(data\)/);
+  assert.match(feature, /this\.commit\(shell\)/);
+  assert.doesNotMatch(feature, /this\.root\.replaceChildren\(\);/);
 });
 
 test('public About removes profile details and decorative arrows', () => {
