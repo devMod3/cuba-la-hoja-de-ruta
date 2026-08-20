@@ -17,6 +17,7 @@ function cropSquare(img, size = 512, quality = .84) {
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext('2d', { alpha: false });
+  if (!ctx) throw new Error('El navegador no pudo preparar la imagen.');
   const source = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
   const sx = ((img.naturalWidth || img.width) - source) / 2;
   const sy = ((img.naturalHeight || img.height) - source) / 2;
