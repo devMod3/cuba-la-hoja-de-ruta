@@ -1,0 +1,49 @@
+/* ZenBlog responsive foundation — layout safety only, no feature behavior. */
+#zen-blog-prototype,#zen-app,.zen-view,#zen-home,#zen-explore,#zen-article,#zen-about{min-width:0;max-width:100%}
+#zen-blog-prototype img,#zen-blog-prototype video,#zen-blog-prototype iframe,#zen-blog-prototype canvas,#zen-blog-prototype svg{max-width:100%}
+#zen-blog-prototype img,#zen-blog-prototype video{height:auto}
+#zen-blog-prototype p,#zen-blog-prototype li,#zen-blog-prototype dd,#zen-blog-prototype a{overflow-wrap:anywhere}
+#zen-blog-prototype input,#zen-blog-prototype select,#zen-blog-prototype textarea,#zen-blog-prototype button{max-width:100%}
+
+/* Tablet portrait / narrow desktop: prevent Home's 360px secondary column from overflowing. */
+@media (min-width:761px) and (max-width:899px){
+  #zen-home[data-home-enhanced="true"]{padding:0 1rem}
+  .zen-home-panel-overview{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:1.25rem;padding:1.25rem 0;align-items:start}
+  .zen-home-statement{max-width:760px}
+  .zen-home-statement h1{font-size:clamp(2.8rem,7vw,4.4rem)}
+  .zen-home-feature-slot{width:min(100%,720px)}
+}
+
+/* Tablet: keep the global chrome compact while retaining every action. */
+@media (min-width:761px) and (max-width:1023px){
+  .zen-site-header{gap:.7rem;padding:0 .8rem}
+  .zen-brand-copy small{display:none}
+  .zen-primary-nav a{padding:0 .58rem}
+  #zen-explore{padding:.8rem}
+  #zen-article{width:min(100% - 2rem,1180px)}
+}
+
+/* Mobile: all public views share the same safe horizontal inset. */
+@media (max-width:760px){
+  .zen-site-header{padding-left:max(.7rem,env(safe-area-inset-left));padding-right:max(.7rem,env(safe-area-inset-right))}
+  .zen-primary-nav{scrollbar-width:none;overscroll-behavior-x:contain}
+  .zen-primary-nav::-webkit-scrollbar{display:none}
+  #zen-home[data-home-enhanced="true"]{padding-left:max(.75rem,env(safe-area-inset-left));padding-right:max(.75rem,env(safe-area-inset-right))}
+  #zen-explore{padding-left:max(.55rem,env(safe-area-inset-left));padding-right:max(.55rem,env(safe-area-inset-right))}
+  #zen-article{width:min(calc(100% - 1.5rem),1180px)}
+  .zen-home-quick-actions,.zen-feature-actions{gap:.7rem}
+}
+
+/* Very narrow phones: preserve function, reduce only non-essential chrome. */
+@media (max-width:420px){
+  .zen-brand-copy small{display:none}
+  .zen-primary-nav a{padding:0 .58rem;font-size:.68rem}
+  .zen-home-statement h1{font-size:clamp(2.2rem,11vw,3rem)}
+  .zen-explore-head{padding-left:.75rem;padding-right:.75rem}
+  .zen-explore-search,.zen-advanced-toolbar,.zen-explore-controls{padding-left:.75rem;padding-right:.75rem}
+  #zen-article .zen-article-header h1{font-size:clamp(2.1rem,11vw,3.2rem)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #zen-blog-prototype *,#zen-blog-prototype *::before,#zen-blog-prototype *::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
