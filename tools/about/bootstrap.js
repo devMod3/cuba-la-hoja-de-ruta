@@ -22,7 +22,7 @@ async function bootAbout() {
   const feature = new AboutFeature().mount();
   if (feature) {
     window.ZenAboutFeature = feature;
-    document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: '0.1.3' } }));
+    document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: '0.1.4' } }));
   }
 }
 
