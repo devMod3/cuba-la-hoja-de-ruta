@@ -3,6 +3,7 @@ import { applySocialIcon } from './SocialIconRegistry.js';
 
 const SOCIAL_LABELS = new Map(SOCIAL_PLATFORMS.map((item) => [item.id, item.label]));
 const RESOURCE_LABELS = new Map(RESOURCE_TYPES.map((item) => [item.id, item.label]));
+const FAVICON_ATTR = 'data-zen-about-favicon';
 
 function node(tag, className, text) {
   const element = document.createElement(tag);
@@ -31,24 +32,24 @@ function joinedLocation(location = {}) {
   return [location.city, location.region, location.country].filter(Boolean).join(', ');
 }
 
-function appendDefinition(list, label, value) {
-  if (!value) return;
-  const row = node('div', 'zen-about-def');
-  row.append(node('dt', '', label), node('dd', '', value));
-  list.appendChild(row);
-}
+function syncProfileFavicon(source) {
+  let favicon = document.head.querySelector(`link[${FAVICON_ATTR}]`);
+  if (!source || !isSafeImageSource(source)) {
+    favicon?.remove();
+    return;
+  }
 
-function appendListDefinition(list, label, values) {
-  if (!Array.isArray(values) || !values.length) return;
-  appendDefinition(list, label, values.join(' · '));
-}
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.setAttribute(FAVICON_ATTR, 'true');
+    document.head.appendChild(favicon);
+  }
 
-function hasExtendedProfile(profile, location) {
-  return Boolean(
-    profile.gender || profile.industry || profile.occupation || location || profile.randomQuestion || profile.randomAnswer ||
-    profile.interests?.length || profile.favoriteMovies?.length || profile.favoriteMusic?.length || profile.favoriteBooks?.length ||
-    profile.audioClipUrl || profile.wishlistUrl || profile.bloggerProfileUrl || profile.website || profile.email
-  );
+  const dataType = /^data:(image\/(?:png|jpeg|webp));/i.exec(source)?.[1];
+  if (dataType) favicon.type = dataType;
+  else favicon.removeAttribute('type');
+  favicon.href = source;
 }
 
 export class AboutFeature {
@@ -61,7 +62,7 @@ export class AboutFeature {
   mount() {
     this.root = this.root ?? document.getElementById('zen-about');
     if (!this.root) return null;
-    this.root.dataset.zenAboutFeature = '0.1.3';
+    this.root.dataset.zenAboutFeature = '0.1.4';
     this.render(this.store.load());
     this.unsubscribe = this.store.subscribe((profile) => this.render(profile));
     return this;
@@ -90,6 +91,8 @@ export class AboutFeature {
       profile.randomAnswer || profile.bloggerProfileUrl || profile.interests?.length || profile.favoriteMovies?.length ||
       profile.favoriteMusic?.length || profile.favoriteBooks?.length
     );
+
+    syncProfileFavicon(profile.photoUrl);
 
     if (!hasProfile && !social.length && !resources.length) {
       this.renderFallback();
@@ -133,36 +136,10 @@ export class AboutFeature {
     intro.appendChild(profileTop);
     shell.appendChild(intro);
 
-    if (hasProfile && hasExtendedProfile(profile, location)) {
-      const details = node('details', 'zen-about-profile-details');
-      const summary = node('summary', 'zen-about-profile-summary');
-      summary.appendChild(node('span', '', 'Más sobre el perfil'));
-      details.appendChild(summary);
-
-      const body = node('div', 'zen-about-profile-details-body');
-      const defs = node('dl', 'zen-about-defs');
-      appendDefinition(defs, 'Género', profile.gender);
-      appendDefinition(defs, 'Sector / Industria', profile.industry);
-      appendDefinition(defs, 'Ocupación', profile.occupation);
-      appendDefinition(defs, 'Ubicación', location);
-      if (profile.randomQuestion || profile.randomAnswer) {
-        appendDefinition(defs, 'Pregunta aleatoria', [profile.randomQuestion, profile.randomAnswer].filter(Boolean).join(' — '));
-      }
-      appendListDefinition(defs, 'Intereses', profile.interests);
-      appendListDefinition(defs, 'Películas favoritas', profile.favoriteMovies);
-      appendListDefinition(defs, 'Música favorita', profile.favoriteMusic);
-      appendListDefinition(defs, 'Libros favoritos', profile.favoriteBooks);
-      if (defs.childElementCount) body.appendChild(defs);
-
-      const legacyLinks = node('div', 'zen-about-links');
-      [
-        externalLink('Audio Clip ↗', profile.audioClipUrl, 'zen-about-link'),
-        externalLink('Wishlist ↗', profile.wishlistUrl, 'zen-about-link')
-      ].filter(Boolean).forEach((link) => legacyLinks.appendChild(link));
-      if (legacyLinks.childElementCount) body.appendChild(legacyLinks);
-
-      details.appendChild(body);
-      shell.appendChild(details);
+    if (hasProfile && (social.length || resources.length)) {
+      const divider = node('div', 'zen-about-divider');
+      divider.setAttribute('aria-hidden', 'true');
+      shell.appendChild(divider);
     }
 
     if (social.length) {
@@ -183,9 +160,7 @@ export class AboutFeature {
         copy.appendChild(node('span', 'zen-about-social-name', item.label || SOCIAL_LABELS.get(item.platform) || 'Red social'));
         if (item.username) copy.appendChild(node('span', 'zen-about-social-user', item.username));
 
-        const arrow = node('span', 'zen-about-social-arrow', '↗');
-        arrow.setAttribute('aria-hidden', 'true');
-        a.replaceChildren(icon, copy, arrow);
+        a.replaceChildren(icon, copy);
         list.appendChild(a);
       });
       section.appendChild(list);
@@ -209,7 +184,7 @@ export class AboutFeature {
         copy.appendChild(top);
         if (item.description) copy.appendChild(node('span', 'zen-about-resource-description', item.description));
 
-        a.append(copy, node('span', 'zen-about-resource-arrow', '↗'));
+        a.appendChild(copy);
         list.appendChild(a);
       });
       section.appendChild(list);
