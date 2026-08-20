@@ -1,5 +1,5 @@
 const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
-const RELEASE = '0.9.1';
+const RELEASE = '0.9.2';
 
 function isAdminPath(pathname = location.pathname) {
   const normalized = pathname.replace(/\/+$/, '') || '/';
