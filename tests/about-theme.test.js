@@ -5,6 +5,7 @@ import { supportedSocialIcons, socialIconUrl } from '../tools/about/SocialIconRe
 
 const EXPECTED = ['x','github','youtube','telegram','linkedin','instagram','facebook','bluesky','mastodon','other'];
 const feature = readFileSync(new URL('../tools/about/AboutFeature.js', import.meta.url), 'utf8');
+const bootstrap = readFileSync(new URL('../tools/about/bootstrap.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../tools/about/about.css', import.meta.url), 'utf8');
 
 test('About social icon registry covers every supported platform', () => {
@@ -30,6 +31,14 @@ test('public About uses the profile image as a managed favicon', () => {
   assert.match(feature, /data-zen-about-favicon/);
   assert.match(feature, /favicon\.rel = 'icon'/);
   assert.match(feature, /syncProfileFavicon\(profile\.photoUrl\)/);
+});
+
+test('profile favicon is synchronized before About-view availability is checked', () => {
+  const syncIndex = bootstrap.indexOf('syncFavicon(store.load())');
+  const aboutIndex = bootstrap.indexOf("if (!document.getElementById('zen-about')) return");
+  assert.notEqual(syncIndex, -1);
+  assert.notEqual(aboutIndex, -1);
+  assert.ok(syncIndex < aboutIndex);
 });
 
 test('public About removes profile details and decorative arrows', () => {
