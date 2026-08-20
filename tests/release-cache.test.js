@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const RELEASE = '0.9.1';
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+
+const theme = read('blogger/theme.xml');
+const entry = read('dist/zenblog.js');
+const composition = read('src/bootstrap/createZenBlog.js');
+const runtime = read('tools/runtime/bootstrap.js');
+const about = read('tools/about/bootstrap.js');
+
+test('Blogger production surface uses the release cache key everywhere critical', () => {
+  for (const path of [
+    'src/ui/styles/tokens.css',
+    'src/ui/styles/shell.css',
+    'src/features/home/home.css',
+    'src/features/explore/explore.css',
+    'src/features/article/article.css',
+    'src/ui/styles/responsive.css',
+    'dist/zenblog.js',
+    'tools/runtime/bootstrap.js'
+  ]) {
+    assert.match(theme, new RegExp(`${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\?v=${RELEASE.replaceAll('.', '\\.')}`));
+  }
+});
+
+test('public ES module chain is cache-busted with the same release', () => {
+  assert.match(entry, new RegExp(`createZenBlog\\.js\\?v=${RELEASE.replaceAll('.', '\\.')}`));
+  assert.equal(composition.includes("const VERSION = '0.9.1'"), true);
+  assert.equal((composition.match(/\?v=0\.9\.1/g) || []).length >= 9, true);
+  assert.equal(runtime.includes("const RELEASE = '0.9.1'"), true);
+  assert.equal(about.includes("const RELEASE = '0.9.1'"), true);
+});
+
+test('social image and fallback favicon also receive a release key', () => {
+  assert.match(theme, /favicon-fallback\.png\?v=0\.9\.1/);
+  assert.match(theme, /zenblog-social-card\.png\?v=0\.9\.1/);
+});
