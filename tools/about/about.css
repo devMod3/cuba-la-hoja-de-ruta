@@ -1,5 +1,5 @@
-/* ZenBlog About v0.1.4 — minimal institutional/editorial profile view. */
-#zen-about{overflow:auto;padding:0!important}
+/* ZenBlog About v0.1.5 — minimal institutional/editorial profile view. */
+#zen-about{overflow:auto;padding:0!important;overscroll-behavior-y:contain}
 #zen-about .zen-about-shell{width:min(820px,calc(100% - 48px));margin:0 auto;padding:48px 0 88px;color:var(--zen-text,#f2f0ea)}
 #zen-about .zen-about-intro{padding:0}
 #zen-about .zen-about-intro--fallback{max-width:680px}
@@ -7,9 +7,9 @@
 #zen-about .zen-about-photo-frame{width:132px;height:132px;border:1px solid rgba(255,255,255,.12);border-radius:50%;padding:3px;background:#15171a;overflow:hidden}
 #zen-about .zen-about-photo{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;background:#181a1d}
 #zen-about .zen-about-identity{min-width:0;padding-top:4px}
-#zen-about .zen-about-identity h1,#zen-about .zen-about-intro--fallback h1{margin:0;font:600 clamp(1.75rem,3vw,2.65rem)/1.04 "Source Serif 4",serif;letter-spacing:-.028em}
-#zen-about .zen-about-meta-line{margin:8px 0 0;color:#96938c;font:600 .71rem/1.45 "Source Sans 3",sans-serif}
-#zen-about .zen-about-lead{max-width:620px;margin:13px 0 0;color:#d2cfc8;font:400 .98rem/1.62 "Source Serif 4",serif}
+#zen-about .zen-about-identity h1,#zen-about .zen-about-intro--fallback h1{margin:0;font:600 clamp(1.75rem,3vw,2.65rem)/1.04 "Source Serif 4",serif;letter-spacing:-.028em;overflow-wrap:anywhere}
+#zen-about .zen-about-meta-line{margin:8px 0 0;color:#96938c;font:600 .71rem/1.45 "Source Sans 3",sans-serif;overflow-wrap:anywhere}
+#zen-about .zen-about-lead{max-width:620px;margin:13px 0 0;color:#d2cfc8;font:400 .98rem/1.62 "Source Serif 4",serif;overflow-wrap:anywhere}
 #zen-about .zen-about-quick-links,#zen-about .zen-about-links{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:15px}
 #zen-about .zen-about-link{display:inline-flex;align-items:center;min-height:28px;color:#97948d;text-decoration:none;font:650 .67rem/1.2 "Source Sans 3",sans-serif}
 #zen-about .zen-about-link:hover,#zen-about .zen-about-link:focus-visible{color:var(--zen-accent,#d5b46a);outline:none}
@@ -32,10 +32,10 @@
 #zen-about .zen-about-resource-list{display:grid;gap:22px}
 #zen-about .zen-about-resource{display:block;padding:0;color:inherit;text-decoration:none}
 #zen-about .zen-about-resource-copy{display:grid;gap:5px;min-width:0}
-#zen-about .zen-about-resource-top{display:flex;align-items:baseline;gap:10px;min-width:0}
-#zen-about .zen-about-resource-top strong{font:700 .86rem/1.35 "Source Sans 3",sans-serif}
+#zen-about .zen-about-resource-top{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap}
+#zen-about .zen-about-resource-top strong{font:700 .86rem/1.35 "Source Sans 3",sans-serif;overflow-wrap:anywhere}
 #zen-about .zen-about-resource-type{color:#706d67;font:650 .58rem/1.3 "Source Sans 3",sans-serif;letter-spacing:.035em;text-transform:uppercase}
-#zen-about .zen-about-resource-description{max-width:620px;color:#918e87;font:400 .75rem/1.5 "Source Sans 3",sans-serif}
+#zen-about .zen-about-resource-description{max-width:620px;color:#918e87;font:400 .75rem/1.5 "Source Sans 3",sans-serif;overflow-wrap:anywhere}
 #zen-about .zen-about-resource:hover,#zen-about .zen-about-resource:focus-visible{color:var(--zen-accent,#d5b46a);outline:none}
 #zen-about .zen-about-resource:hover .zen-about-resource-description,#zen-about .zen-about-resource:focus-visible .zen-about-resource-description{color:#a29f98}
 
@@ -46,22 +46,41 @@
 }
 
 @media(max-width:700px){
-  #zen-about .zen-about-shell{width:min(100% - 32px,820px);padding:30px 0 calc(68px + env(safe-area-inset-bottom))}
-  #zen-about .zen-about-profile-top{grid-template-columns:100px minmax(0,1fr);gap:18px}
-  #zen-about .zen-about-photo-frame{width:92px;height:92px;padding:2px}
-  #zen-about .zen-about-identity h1{font-size:clamp(1.6rem,7vw,2.15rem)}
-  #zen-about .zen-about-lead{font-size:.94rem;line-height:1.58}
-  #zen-about .zen-about-divider{margin-top:30px}
-  #zen-about .zen-about-section{padding-top:32px}
-  #zen-about .zen-about-social-list{grid-template-columns:1fr;gap:2px}
-  #zen-about .zen-about-social{min-height:46px}
+  #zen-about{min-height:calc(100dvh - var(--zen-header-h));padding-bottom:var(--zen-player-safe)!important}
+  #zen-about .zen-about-shell{width:min(100% - 32px,820px);padding:24px 0 28px}
+  #zen-about .zen-about-profile-top{grid-template-columns:104px minmax(0,1fr);gap:18px;align-items:start}
+  #zen-about .zen-about-photo-frame{width:96px;height:96px;padding:2px}
+  #zen-about .zen-about-identity{padding-top:1px}
+  #zen-about .zen-about-identity h1{font-size:clamp(1.5rem,6.5vw,2rem)}
+  #zen-about .zen-about-meta-line{margin-top:6px;font-size:.68rem}
+  #zen-about .zen-about-lead{margin-top:10px;font-size:.91rem;line-height:1.52}
+  #zen-about .zen-about-quick-links{margin-top:11px;gap:7px 13px}
+  #zen-about .zen-about-link{min-height:32px}
+  #zen-about .zen-about-divider{margin-top:24px}
+  #zen-about .zen-about-section{padding-top:27px}
+  #zen-about .zen-about-section-head{margin-bottom:10px}
+  #zen-about .zen-about-social-list{grid-template-columns:1fr;gap:0}
+  #zen-about .zen-about-social{min-height:44px;padding:2px 0}
+  #zen-about .zen-about-resource-list{gap:18px}
 }
 
+/* Keep portrait + identity side by side on normal phones. */
 @media(max-width:500px){
-  #zen-about .zen-about-profile-top{grid-template-columns:1fr;gap:16px}
-  #zen-about .zen-about-photo-frame{width:104px;height:104px}
-  #zen-about .zen-about-resource-top{display:grid;gap:3px}
-  #zen-about .zen-about-quick-links{gap:8px 14px}
+  #zen-about .zen-about-profile-top{grid-template-columns:96px minmax(0,1fr);gap:15px}
+  #zen-about .zen-about-photo-frame{width:90px;height:90px}
+  #zen-about .zen-about-resource-top{gap:6px 9px}
+}
+
+/* Only genuinely narrow screens stack the portrait. */
+@media(max-width:340px){
+  #zen-about .zen-about-profile-top{grid-template-columns:1fr;gap:14px}
+  #zen-about .zen-about-photo-frame{width:92px;height:92px}
+}
+
+@supports(height:100svh){
+  @media(max-width:700px){
+    #zen-about{min-height:calc(100svh - var(--zen-header-h))}
+  }
 }
 
 @media(prefers-reduced-motion:reduce){#zen-about *{scroll-behavior:auto!important}}
