@@ -19,13 +19,13 @@
   <b:include data='blog' name='all-head-content'/>
   <title><data:blog.pageTitle/></title>
 
-  <!-- Search identity. Blogger keeps canonical/feed/platform head data in all-head-content. -->
+  <!-- Search identity. Blogger remains authoritative for index/noindex and canonical/platform head data. -->
   <b:if cond='data:view.isHomepage'>
     <meta content='Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.' name='description'/>
-    <meta content='index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' name='robots'/>
+    <meta content='max-image-preview:large,max-snippet:-1,max-video-preview:-1' name='robots'/>
   </b:if>
   <b:if cond='data:view.isSingleItem'>
-    <meta content='index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' name='robots'/>
+    <meta content='max-image-preview:large,max-snippet:-1,max-video-preview:-1' name='robots'/>
   </b:if>
 
   <!-- Open Graph + X Card. Server-rendered so social crawlers do not depend on JavaScript. -->
