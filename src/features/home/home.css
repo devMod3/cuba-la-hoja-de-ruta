@@ -3,8 +3,8 @@
 }
 
 #zen-home[data-home-enhanced="true"] {
-  height: calc(100dvh - 58px);
-  min-height: calc(100dvh - 58px);
+  height: calc(100dvh - var(--zen-header-h) - var(--zen-player-safe));
+  min-height: 0;
   overflow: hidden;
   padding: 0 1.2rem;
 }
@@ -12,6 +12,7 @@
 #zen-home[data-home-enhanced="true"] .zen-home-surface,
 #zen-home[data-home-enhanced="true"] .zen-home-workspace-single {
   height: 100%;
+  min-height: 0;
 }
 
 .zen-home-workspace-single {
@@ -22,6 +23,7 @@
 }
 
 .zen-home-panel-overview {
+  min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr);
   align-items: center;
@@ -30,6 +32,7 @@
 }
 
 .zen-home-statement {
+  min-width: 0;
   max-width: 720px;
 }
 
@@ -98,6 +101,7 @@
 }
 
 .zen-feature {
+  min-width: 0;
   padding: clamp(1.3rem, 2.5vw, 2rem);
   border: 1px solid var(--zen-border-strong);
   background: var(--zen-surface-1);
@@ -157,26 +161,34 @@
 
 .zen-primary-action {
   display: inline-flex;
-  min-height: 38px;
+  min-height: 44px;
   align-items: center;
   padding: .55rem .72rem;
   border: 1px solid var(--zen-accent);
   color: var(--zen-text);
+  touch-action: manipulation;
+}
+
+@media (max-width: 899px) {
+  .zen-home-panel-overview {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0,1fr);
+    align-items: start;
+    gap: 1rem;
+    padding: 1rem 0;
+  }
+
+  .zen-home-feature-slot {
+    width: min(100%, 720px);
+  }
 }
 
 @media (max-width: 760px) {
   #zen-home[data-home-enhanced="true"] {
-    height: calc(100dvh - 101px);
-    min-height: calc(100dvh - 101px);
-    padding: 0 .75rem;
-  }
-
-  .zen-home-panel-overview {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
-    align-items: start;
-    gap: 1rem;
-    padding: 1rem 0;
+    height: calc(100dvh - var(--zen-header-h) - var(--zen-player-safe));
+    min-height: 0;
+    padding-left: max(.75rem, env(safe-area-inset-left));
+    padding-right: max(.75rem, env(safe-area-inset-right));
   }
 
   .zen-home-question {
@@ -218,4 +230,10 @@
   .zen-home-panel-overview { padding: 1rem 0; }
   .zen-home-statement h1 { font-size: clamp(2.7rem, 5vw, 4.4rem); }
   .zen-feature-title { font-size: clamp(1.8rem, 3vw, 2.8rem); }
+}
+
+@media (max-height: 620px) and (max-width: 899px) {
+  #zen-home[data-home-enhanced="true"] { overflow-y: auto; }
+  #zen-home[data-home-enhanced="true"] .zen-home-surface,
+  #zen-home[data-home-enhanced="true"] .zen-home-workspace-single { height: auto; min-height: 100%; }
 }
