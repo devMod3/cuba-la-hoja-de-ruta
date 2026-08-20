@@ -16,10 +16,21 @@ function loadStylesheet() {
 
 async function bootAbout() {
   if (isAdminPath()) return;
+
+  const [{ AboutFeature, syncProfileFavicon }, { SiteProfileStore }] = await Promise.all([
+    import(new URL('./AboutFeature.js', import.meta.url).href),
+    import(new URL('./SiteProfileStore.js', import.meta.url).href)
+  ]);
+
+  const store = new SiteProfileStore();
+  const syncFavicon = (data) => syncProfileFavicon(data?.profile?.photoUrl || '');
+  syncFavicon(store.load());
+  const unsubscribeFavicon = store.subscribe(syncFavicon);
+  window.addEventListener('pagehide', unsubscribeFavicon, { once: true });
+
   if (!document.getElementById('zen-about')) return;
   loadStylesheet();
-  const { AboutFeature } = await import(new URL('./AboutFeature.js', import.meta.url).href);
-  const feature = new AboutFeature().mount();
+  const feature = new AboutFeature({ store }).mount();
   if (feature) {
     window.ZenAboutFeature = feature;
     document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: '0.1.4' } }));
