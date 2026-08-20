@@ -1,78 +1,105 @@
-# Cuba — La hoja de ruta
+# La hoja de ruta — ZenBlog
 
-Plataforma editorial y documental modular sobre soberanía, constitucionalismo y Estado.
+Plataforma editorial y documental modular sobre soberanía, Constitución y Estado.
 
-**Producto:** Cuba — La hoja de ruta  
-**Arquitectura técnica:** ZenBlog
+**Producto público:** La hoja de ruta  
+**Arquitectura técnica:** ZenBlog  
+**CMS/host actual:** Blogger  
+**Sitio:** `https://cubalahojaderuta.blogspot.com/`
 
-## Objetivo
+## Antes de modificar código
 
-Blogger funciona como CMS y host del contenido. La aplicación vive en este repositorio y se sirve como recursos externos, manteniendo el XML de Blogger pequeño, estable y fácil de recuperar.
+**No empieces de cero.** Lee primero:
+
+1. [`docs/ZENBLOG-FORENSIC-MEMORY.txt`](docs/ZENBLOG-FORENSIC-MEMORY.txt) — contexto operativo e invariantes.
+2. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — fronteras técnicas actuales.
+3. [`docs/UI-UX-CONTRACT.md`](docs/UI-UX-CONTRACT.md) — contrato visual/experiencia.
+4. [`docs/ZENBLOG-MAINTENANCE-GUIDE.md`](docs/ZENBLOG-MAINTENANCE-GUIDE.md) — protocolo de cambios y code review.
+5. [`docs/PRODUCTION-AUDIT-v0.9.md`](docs/PRODUCTION-AUDIT-v0.9.md) y [`docs/CODE-AUDIT-v0.9.md`](docs/CODE-AUDIT-v0.9.md) — hallazgos de producción y deuda aceptada.
+
+Regla operativa: **si una función está validada y no forma parte del alcance, se considera protegida.**
+
+## Arquitectura resumida
 
 ```text
-Blogger
-  └─ blogger/theme.xml
-      ├─ dist/zenblog.css
-      └─ dist/zenblog.js
-            ↓
-       createZenBlog()
-            ↓
-   Navigation / Explore / Search
-            ↓
-   ContentSource / MetadataSource
-            ↓
-   Blogger / Registry adapters
+Blogger document
+│
+├─ server-rendered SEO / Open Graph / X metadata
+├─ #page_body → Blog1   [protected]
+├─ public CSS modules   [parallel]
+├─ dist/zenblog.js
+│     ↓
+│  createZenBlog()
+│     ├─ Navigation
+│     ├─ Home
+│     ├─ Explore
+│     ├─ Article
+│     └─ Mobile gestures [lazy]
+├─ tools/runtime/bootstrap.js
+│     ├─ About     [lazy]
+│     ├─ Inspector [lazy]
+│     └─ Admin     [admin route]
+└─ zenRadioPlayer [independent / protected]
 ```
 
-## Estructura v0.1
+Blogger sigue siendo CMS y propietario de URLs/documentos. El comportamiento de producto vive en módulos externos y depende de adapters/contracts para que la infraestructura pueda cambiar sin reconstruir features estables.
+
+## Estructura
 
 ```text
+assets/
+  brand/
+  social/
 blogger/
   theme.xml
 config/
-  metadata-schema.json
-  vocabulary.json
 dist/
-  zenblog.css
-  zenblog.js
 docs/
-  ARCHITECTURE.md
 src/
   adapters/
   bootstrap/
   contracts/
+  domain/
   features/
   search/
   ui/
 tests/
+tools/
+  about/
+  admin/
+  inspector/
+  runtime/
 .github/workflows/
 ```
 
-## Principios
+## Invariantes
 
-- XML de Blogger mínimo y estable.
-- Arquitectura modular basada en SOLID.
-- Dominio y features desacoplados de Blogger y del almacenamiento.
-- Metadata explícita: la clasificación documental no se infiere.
-- Explore muestra Tipo · Fecha · Título, sin resúmenes.
-- Año documental y fecha de publicación son dimensiones distintas.
-- Progressive disclosure: menos interfaz visible, sin perder capacidad.
-- zenRadioPlayer permanece independiente y protegido.
-- Desarrollo LAB antes de producción.
+- exactamente un `#page_body` y un `Blog1`;
+- no `zen_main` sustituyendo la anatomía Blogger;
+- Explore simple sigue title-only y sus filas no muestran resumen;
+- año documental ≠ fecha de publicación;
+- player independiente/protegido;
+- metadata explícita, no clasificación inventada;
+- vertical page scroll pertenece principalmente a lectura;
+- Admin/Inspector no forman parte del critical path lector;
+- crawler metadata debe ser server-rendered;
+- cambios pasan LAB + CI + Blogger real antes de congelarse.
 
-## Recursos públicos
+## Desarrollo
 
-Cuando GitHub Pages esté activo desde `main`:
-
-```text
-https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.css
-https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js
+```bash
+npm run check
+npm test
 ```
 
-El XML de Blogger sólo necesita esos dos recursos externos, además del loader independiente de zenRadioPlayer.
+El workflow `Validate ZenBlog` añade validación XML e invariantes de arquitectura/producción.
 
-## Estado
+## Deploy
 
-`v0.1` está en integración LAB. El Metadata Registry actual sigue siendo `zenMetadataRegistry.v2` en localStorage mediante un adapter. El siguiente paso de infraestructura será sustituir ese adapter por un Registry persistente compartido sin modificar Explore.
+GitHub Pages publica el repositorio desde `main`, pero **GitHub y Blogger son superficies separadas**. Actualizar `blogger/theme.xml` en GitHub no modifica automáticamente el tema activo del blog. Cada release del theme requiere XML completo validado e instalación/verificación en Blogger.
 
-Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+## Estado de infraestructura
+
+Metadata y Site Profile mantienen adapters/storage locales durante la fase LAB. La evolución prevista es persistencia compartida y autenticación detrás de contratos existentes, sin reescribir Explore/About por tecnología de almacenamiento.
+
+Para cualquier cambio, la memoria forense es el punto de entrada, no esta sección de estado.

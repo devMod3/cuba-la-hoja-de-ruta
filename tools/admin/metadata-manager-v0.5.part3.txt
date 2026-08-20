@@ -1,0 +1,313 @@
+    health.incomplete+' incompletos · '+
+    health.invalid+' inválidos.',
+    health.invalid?'warn':'ok'
+  );
+}
+
+function reconcilePosts(){
+  state.posts.forEach(function(post){
+    var id=String(post.id);
+    var old=state.registry.records[id];
+
+    /* Legacy v0.4 may have used URL as the effective id. */
+    if(!old){
+      var byUrl=Object.keys(state.registry.records).find(function(key){
+        var r=state.registry.records[key];
+        return r&&r.identity&&normalizeUrl(r.identity.canonicalUrl)===normalizeUrl(post.url);
+      });
+      if(byUrl){
+        old=state.registry.records[byUrl];
+        delete state.registry.records[byUrl];
+        old.identity.postId=id;
+        state.registry.records[id]=old;
+
+        if(state.registry.migrationIssues[byUrl]){
+          state.registry.migrationIssues[id]=state.registry.migrationIssues[byUrl];
+          delete state.registry.migrationIssues[byUrl];
+        }
+      }
+    }
+
+    if(old){
+      canonicalRecord(post);
+    }
+  });
+  persist();
+}
+
+function recordFor(post){
+  return state.registry.records[String(post.id)]||null;
+}
+
+function pillarOf(post){
+  var r=recordFor(post);
+  return r&&r.classification&&r.classification.primaryPillar||null;
+}
+
+function healthFor(post){
+  var r=recordFor(post);
+  if(!r)return {state:'incomplete',errors:[],missing:['Pilar principal','Tipo']};
+  var v=validateRecord(r);
+  var issues=state.registry.migrationIssues[String(post.id)]||[];
+  if(issues.length){
+    return {state:'invalid',errors:v.errors.concat(issues),missing:v.missing};
+  }
+  return v;
+}
+
+function countHealth(){
+  var result={complete:0,incomplete:0,invalid:0};
+  state.posts.forEach(function(p){result[healthFor(p).state]++;});
+  return result;
+}
+
+function folderCounts(){
+  var c={all:state.posts.length,unclassified:0,soberania:0,constitucion:0,estado:0};
+  state.posts.forEach(function(p){
+    var x=pillarOf(p);
+    if(x&&c[x]!=null)c[x]++;
+    else c.unclassified++;
+  });
+  return c;
+}
+
+function folderDefs(){
+  return [
+    ['all','Todos','▤'],
+    ['unclassified','Sin clasificar','□']
+  ].concat(group('pillars').map(function(x){return [x.id,x.label,'▣'];}));
+}
+
+function renderFolders(){
+  var counts=folderCounts(),wrap=one('#zmm-folders');
+  wrap.innerHTML=folderDefs().map(function(f){
+    return `<li><button type="button" class="zmm-folder" data-folder="${esc(f[0])}" aria-current="${state.folder===f[0]?'true':'false'}">
+      <span class="zmm-folder-icon">${f[2]}</span>
+      <span>${esc(f[1])}</span>
+      <span class="zmm-folder-count">${counts[f[0]]||0}</span>
+    </button></li>`;
+  }).join('');
+}
+
+function visiblePosts(){
+  var q=normalizeText(state.query);
+  return state.posts.filter(function(p){
+    var pillar=pillarOf(p);
+    var folderOK=state.folder==='all'||(state.folder==='unclassified'?!pillar:pillar===state.folder);
+    var qOK=!q||normalizeText(p.title).includes(q);
+    return folderOK&&qOK;
+  });
+}
+
+function renderList(){
+  var list=one('#zmm-list'),visible=visiblePosts();
+
+  if(!visible.length){
+    list.innerHTML='<li class="zmm-empty">No hay artículos en esta vista.</li>';
+    one('#zmm-select-all').checked=false;
+    one('#zmm-select-all').indeterminate=false;
+    return;
+  }
+
+  list.innerHTML=visible.map(function(p){
+    var r=recordFor(p);
+    var h=healthFor(p);
+    var checked=state.selected.has(p.id);
+    var pillar=r&&r.classification&&r.classification.primaryPillar;
+    var type=r&&r.classification&&r.classification.type;
+
+    return `<li class="zmm-row" data-id="${esc(p.id)}">
+      <input class="zmm-row-check" type="checkbox" ${checked?'checked':''} aria-label="Seleccionar ${esc(p.title)}">
+
+      <button class="zmm-title-btn" type="button" data-edit="${esc(p.id)}">
+        <strong>${esc(p.title)}</strong>
+        <small>${pillar?esc(label('pillars',pillar)):'Sin clasificar'}</small>
+      </button>
+
+      <span class="zmm-health" data-state="${h.state}">
+        ${h.state==='complete'?'Completa':h.state==='invalid'?'Inválida':'Incompleta'}
+      </span>
+
+      <span class="zmm-type">${type?esc(label('types',type)):'—'}</span>
+      <span class="zmm-date">${esc(formatDate(p.published))}</span>
+    </li>`;
+  }).join('');
+
+  syncSelectAll();
+}
+
+function formatDate(value){
+  if(!value)return '—';
+  try{
+    return new Intl.DateTimeFormat('es',{year:'numeric',month:'short',day:'2-digit'}).format(new Date(value));
+  }catch(_){return String(value).slice(0,10);}
+}
+
+function renderSelection(){
+  var n=state.selected.size;
+  one('#zmm-selected-count').textContent=String(n);
+  one('#zmm-move').disabled=!n||!one('#zmm-move-target').value;
+}
+
+function renderAll(){
+  renderFolders();
+  renderList();
+  renderSelection();
+}
+
+function syncSelectAll(){
+  var visible=visiblePosts();
+  var n=visible.filter(function(p){return state.selected.has(p.id);}).length;
+  var box=one('#zmm-select-all');
+  box.checked=!!visible.length&&n===visible.length;
+  box.indeterminate=n>0&&n<visible.length;
+}
+
+function moveSelected(){
+  var target=one('#zmm-move-target').value;
+  if(!target||!state.selected.size)return;
+
+  var pillar=target==='unclassified'?null:target;
+  var moved=0;
+
+  state.selected.forEach(function(id){
+    var post=state.posts.find(function(x){return x.id===id;});
+    if(!post)return;
+    var r=canonicalRecord(post);
+    r.classification.primaryPillar=pillar;
+
+    r.classification.relatedPillars=(r.classification.relatedPillars||[]).filter(function(x){
+      return x!==pillar;
+    });
+
+    state.registry.records[String(post.id)]=r;
+    moved++;
+  });
+
+  state.selected.clear();
+  one('#zmm-move-target').value='';
+  persist();
+  renderAll();
+  status(moved+' artículos actualizados.','ok');
+}
+
+function clone(value){return JSON.parse(JSON.stringify(value));}
+
+function editorDraftRecord(){
+  var post=state.posts.find(function(x){return x.id===state.editingId;});
+  if(!post)return null;
+
+  var r=clone(canonicalRecord(post));
+
+  r.classification.primaryPillar=one('#zmm-primary-pillar').value||null;
+
+  r.classification.relatedPillars=Array.from(
+    one('#zmm-related-pillars').querySelectorAll('input:checked')
+  ).map(function(x){return x.value;}).filter(function(x){
+    return x!==r.classification.primaryPillar;
+  });
+
+  r.classification.type=one('#zmm-type').value||null;
+
+  var y=one('#zmm-year').value.trim();
+  r.temporal.documentYear=y?Number(y):null;
+
+  r.editorial.status=one('#zmm-status-field').value||null;
+  r.editorial.revision=one('#zmm-revision').value.trim()||null;
+
+  r.indexing.concepts=Array.from(state.selectedConcepts);
+  r.indexing.norms=state.draftNorms
+    .filter(function(x){return x.normId;})
+    .map(function(x){
+      return {
+        normId:x.normId,
+        articles:Array.from(new Set(
+          String(x.articleText||'')
+            .split(',')
+            .map(function(v){return v.trim();})
+            .filter(Boolean)
+        ))
+      };
+    });
+
+  return r;
+}
+
+function updateValidation(){
+  if(!state.editingId)return;
+  var r=editorDraftRecord();
+  var v=validateRecord(r);
+  var issues=state.registry.migrationIssues[String(state.editingId)]||[];
+
+  if(issues.length){
+    v.state='invalid';
+    v.errors=v.errors.concat(issues);
+  }
+
+  var box=one('#zmm-validation');
+  box.dataset.state=v.state;
+
+  var labelText=v.state==='complete'?'Completa':v.state==='invalid'?'Inválida':'Incompleta';
+  one('#zmm-validation-label').textContent=labelText;
+
+  var detail='Metadata lista para indexar.';
+  if(v.errors.length)detail=v.errors[0]+(v.errors.length>1?' · +'+(v.errors.length-1):'');
+  else if(v.missing.length)detail='Falta: '+v.missing.join(', ');
+  one('#zmm-validation-detail').textContent=detail;
+
+  /* Disable related checkbox equal to primary pillar. */
+  var primary=r.classification.primaryPillar;
+  one('#zmm-related-pillars').querySelectorAll('input').forEach(function(input){
+    input.disabled=input.value===primary;
+    if(input.disabled)input.checked=false;
+  });
+}
+
+function renderConceptTags(){
+  var wrap=one('#zmm-concept-tags');
+  if(!state.selectedConcepts.size){
+    wrap.innerHTML='<span style="color:var(--t3);font-size:.59rem">Ninguno.</span>';
+    return;
+  }
+
+  wrap.innerHTML=Array.from(state.selectedConcepts).map(function(id){
+    return `<span class="zmm-tag">
+      ${esc(label('concepts',id))}
+      <button type="button" data-remove-concept="${esc(id)}" aria-label="Quitar ${esc(label('concepts',id))}">×</button>
+    </span>`;
+  }).join('');
+}
+
+function renderNormRows(){
+  var wrap=one('#zmm-norm-list');
+  if(!state.draftNorms.length){
+    wrap.innerHTML='<span style="color:var(--t3);font-size:.59rem">Ninguna referencia normativa.</span>';
+    return;
+  }
+
+  wrap.innerHTML=state.draftNorms.map(function(ref,index){
+    return `<div class="zmm-norm-row" data-norm-index="${index}">
+      <select class="zmm-norm-id" aria-label="Norma">
+        ${group('norms').map(function(n){
+          return `<option value="${esc(n.id)}" ${n.id===ref.normId?'selected':''}>${esc(n.label)}</option>`;
+        }).join('')}
+      </select>
+      <input class="zmm-norm-articles" type="text" value="${esc(ref.articleText||'')}" placeholder="Arts. 2, 40">
+      <button type="button" class="zmm-remove-norm" aria-label="Quitar norma">×</button>
+    </div>`;
+  }).join('');
+}
+
+function openEditor(id){
+  var post=state.posts.find(function(x){return x.id===id;});
+  if(!post)return;
+
+  var r=canonicalRecord(post);
+  state.editingId=id;
+  state.selectedConcepts=new Set(r.indexing.concepts||[]);
+  state.draftNorms=(r.indexing.norms||[]).map(function(ref){
+    return {normId:ref.normId,articleText:(ref.articles||[]).join(', ')};
+  });
+
+  one('#zmm-editor-title').textContent=post.title;
+  one('#zmm-editor-url').textContent=post.url;

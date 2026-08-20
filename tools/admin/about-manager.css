@@ -1,0 +1,56 @@
+/* ZenBlog Admin — About Manager v0.1 */
+#zen-about-manager-root[hidden]{display:none!important}
+#zen-about-manager-root{position:fixed;inset:0;z-index:2147482500;background:#121416;color:#f1f0eb;font-family:"Source Sans 3",system-ui,sans-serif}
+#zen-about-manager-root *{box-sizing:border-box}
+#zen-about-manager-root button,#zen-about-manager-root input,#zen-about-manager-root select,#zen-about-manager-root textarea{font:inherit}
+#zen-about-manager-root button{border:1px solid #32363b;border-radius:0;background:#1a1d20;color:#e8e6df;min-height:34px;padding:.45rem .65rem;cursor:pointer}
+#zen-about-manager-root button:hover,#zen-about-manager-root button:focus-visible{border-color:#777268;color:#d5b46a;outline:none}
+#zen-about-manager-root button.primary{background:#d5b46a;color:#121416;border-color:#d5b46a;font-weight:800}
+#zen-about-manager-root input,#zen-about-manager-root select,#zen-about-manager-root textarea{width:100%;border:1px solid #30343a;border-radius:0;background:#111315;color:#ece9e2;padding:.55rem .6rem;outline:none}
+#zen-about-manager-root textarea{resize:vertical;min-height:82px}
+#zen-about-manager-root input:focus,#zen-about-manager-root select:focus,#zen-about-manager-root textarea:focus{border-color:#8e897f}
+#zen-about-manager-root .zam-shell{height:100dvh;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto}
+#zen-about-manager-root .zam-header{min-height:58px;display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid #292d31;background:#15171a}
+#zen-about-manager-root .zam-brand{margin-right:auto;display:grid;gap:1px}
+#zen-about-manager-root .zam-brand small{color:#848078;font-size:.57rem;letter-spacing:.08em;text-transform:uppercase}
+#zen-about-manager-root .zam-brand strong{font-size:.9rem}
+#zen-about-manager-root .zam-header-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+#zen-about-manager-root .zam-status{min-height:30px;display:flex;align-items:center;padding:5px 12px;border-bottom:1px solid #24282c;color:#a9a59d;font-size:.66rem}
+#zen-about-manager-root .zam-status[data-kind="ok"]{color:#b8c9b8}
+#zen-about-manager-root .zam-status[data-kind="error"]{color:#d9a3a3}
+#zen-about-manager-root .zam-workspace{min-height:0;display:grid;grid-template-columns:210px minmax(0,1fr)}
+#zen-about-manager-root .zam-tabs{padding:10px;border-right:1px solid #292d31;background:#131518;display:flex;flex-direction:column;gap:4px}
+#zen-about-manager-root .zam-tabs button{text-align:left;background:transparent;border-color:transparent}
+#zen-about-manager-root .zam-tabs button[aria-current="true"]{border-color:#3a3f44;background:#1a1d20;color:#d5b46a}
+#zen-about-manager-root .zam-main{min-width:0;overflow:auto;padding:18px}
+#zen-about-manager-root .zam-panel{width:min(920px,100%);margin:0 auto}
+#zen-about-manager-root .zam-panel-intro{display:flex;justify-content:space-between;gap:20px;align-items:end;padding:0 0 16px;border-bottom:1px solid #2b2f34;margin-bottom:14px}
+#zen-about-manager-root .zam-panel-intro small{color:#817e77;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase}
+#zen-about-manager-root .zam-panel-intro h2{margin:3px 0 0;font:600 1.5rem/1.1 "Source Serif 4",serif}
+#zen-about-manager-root .zam-panel-intro p{max-width:430px;margin:0;color:#99958e;font-size:.72rem;line-height:1.5;text-align:right}
+#zen-about-manager-root .zam-group{margin:0 0 14px;border:1px solid #292e33;background:#16191c}
+#zen-about-manager-root .zam-group-title{min-height:36px;display:flex;justify-content:space-between;align-items:center;padding:7px 9px;border-bottom:1px solid #292e33;background:#191c1f;font-size:.61rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+#zen-about-manager-root .zam-group-title span:last-child{color:#79766f;font-size:.53rem}
+#zen-about-manager-root .zam-field{display:grid;grid-template-columns:180px minmax(0,1fr);gap:14px;align-items:start;padding:9px;border-top:1px solid #23272b}
+#zen-about-manager-root .zam-field:first-of-type{border-top:0}
+#zen-about-manager-root .zam-field>span{padding-top:.55rem;color:#98948c;font-size:.67rem;font-weight:700}
+#zen-about-manager-root .zam-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+#zen-about-manager-root .zam-grid-3 .zam-field{grid-template-columns:1fr;gap:4px;border-top:0;border-left:1px solid #23272b}
+#zen-about-manager-root .zam-grid-3 .zam-field:first-child{border-left:0}
+#zen-about-manager-root .zam-grid-3 .zam-field>span{padding-top:0}
+#zen-about-manager-root .zam-details{margin:0 0 14px;border:1px solid #292e33;background:#16191c}
+#zen-about-manager-root .zam-details>summary{min-height:38px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 10px;cursor:pointer;list-style:none;background:#191c1f;font-size:.64rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
+#zen-about-manager-root .zam-details>summary::-webkit-details-marker{display:none}
+#zen-about-manager-root .zam-details>summary small{color:#7e7a73;font-size:.53rem;text-transform:none;letter-spacing:0}
+#zen-about-manager-root .zam-details-body{border-top:1px solid #292e33}
+#zen-about-manager-root .zam-repeater{display:grid;gap:10px}
+#zen-about-manager-root .zam-empty{padding:22px;border:1px dashed #34383d;color:#858078;font-size:.72rem;text-align:center}
+#zen-about-manager-root .zam-card{border:1px solid #2d3237;background:#16191c}
+#zen-about-manager-root .zam-card-head{min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 9px;border-bottom:1px solid #292e33;background:#191c1f}
+#zen-about-manager-root .zam-card-head strong{font-size:.67rem;text-transform:uppercase;letter-spacing:.06em}
+#zen-about-manager-root .zam-card-head button{min-height:28px;padding:.25rem .5rem;font-size:.61rem}
+#zen-about-manager-root .zam-check{display:flex;gap:7px;align-items:center;padding:9px;color:#aaa69e;font-size:.68rem;border-top:1px solid #23272b}
+#zen-about-manager-root .zam-check input{width:auto}
+#zen-about-manager-root .zam-footer{min-height:54px;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:8px 12px;border-top:1px solid #292d31;background:#15171a}
+#zen-about-manager-root .zam-footer span{color:#7f7b74;font-size:.6rem}
+@media(max-width:760px){#zen-about-manager-root .zam-header{align-items:flex-start}#zen-about-manager-root .zam-workspace{grid-template-columns:1fr}#zen-about-manager-root .zam-tabs{border-right:0;border-bottom:1px solid #292d31;display:grid;grid-template-columns:repeat(3,1fr)}#zen-about-manager-root .zam-tabs button{text-align:center}#zen-about-manager-root .zam-main{padding:12px}#zen-about-manager-root .zam-field{grid-template-columns:1fr;gap:4px}#zen-about-manager-root .zam-field>span{padding-top:0}#zen-about-manager-root .zam-grid-3{grid-template-columns:1fr}#zen-about-manager-root .zam-grid-3 .zam-field{border-left:0;border-top:1px solid #23272b}#zen-about-manager-root .zam-panel-intro{align-items:start}#zen-about-manager-root .zam-panel-intro p{display:none}}

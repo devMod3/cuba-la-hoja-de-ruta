@@ -1,60 +1,168 @@
-# ZenBlog architecture v0.1
+# ZenBlog architecture v0.9
 
 ## Goal
 
-Keep Blogger responsible for CMS/content delivery and keep application behavior outside the XML template.
+Keep **Blogger responsible for CMS, public document URLs and platform head integration**, while ZenBlog owns product behavior through bounded modules. Infrastructure must be replaceable without rebuilding working features.
 
 ```text
-Blogger
-  └─ blogger/theme.xml
-      ├─ dist/zenblog.css
-      └─ dist/zenblog.js
-            ↓
-        Composition Root
-            ↓
-  ┌─────────┼──────────┐
-  │         │          │
-Navigation Explore   Search
-            │
-      ContentSource
-      MetadataSource
+Blogger public document
+│
+├─ server-rendered <head>
+│  ├─ Blogger all-head-content
+│  ├─ search identity
+│  ├─ Open Graph / X Card
+│  └─ WebSite JSON-LD
+│
+├─ protected composition anatomy
+│  └─ #page_body → Blog1
+│
+├─ public styles (parallel links)
+│  ├─ tokens
+│  ├─ shell
+│  ├─ Home
+│  ├─ Explore
+│  ├─ Article
+│  └─ responsive
+│
+├─ dist/zenblog.js
+│     ↓
+│  createZenBlog (composition root)
+│     ├─ NavigationFeature
+│     ├─ HomeFeature
+│     ├─ ExploreFeature
+│     ├─ ArticleFeature
+│     └─ MobileGestureNavigation [lazy / touch mobile]
+│
+├─ tools/runtime/bootstrap.js
+│     ├─ Admin [lazy / admin route]
+│     ├─ About [lazy / about route]
+│     └─ Inspector [lazy / enabled or Alt+I]
+│
+└─ zen-radio-player [independent / protected]
 ```
 
 ## Dependency direction
 
-`features` depend on contracts/services. They do not depend directly on Blogger or localStorage.
-
-`adapters` implement infrastructure concerns:
-
-- `BloggerFeedSource` → Blogger public feed.
-- `LocalMetadataSource` → LAB `zenMetadataRegistry.v2`.
-
-The Composition Root in `src/bootstrap/createZenBlog.js` wires concrete adapters to features.
-
-## Why this matters
-
-The Blogger XML stays small. Replacing localStorage with a remote persistent registry later only requires a new `MetadataSource` implementation and a Composition Root change. Explore does not need to be rebuilt around the storage technology.
-
-## Public entrypoints
-
-Blogger loads only:
-
-```html
-<link rel="stylesheet" href="https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.css">
-<script type="module" src="https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js"></script>
+```text
+Infrastructure (Blogger, storage)
+        ↓
+Adapters implement contracts
+        ↓
+Domain / services
+        ↓
+Features
+        ↓
+Composition root
 ```
 
-`dist/zenblog.css` composes feature styles through CSS imports. `dist/zenblog.js` imports the application Composition Root.
+Features should not know whether metadata comes from localStorage, an API or another repository. The composition root chooses implementations.
+
+## Core contracts / adapters
+
+- `BloggerFeedSource` → public Blogger content feed.
+- `LocalMetadataSource` → current LAB `zenMetadataRegistry.v2` adapter.
+- `ContentSource` / `MetadataSource` → infrastructure boundaries.
+
+Future shared persistence should be introduced by adding/replacing adapters behind these boundaries rather than rewriting Explore/Home/Article.
+
+## Feature ownership
+
+### Navigation
+Owns internal public route state for `zen-home`, `zen-explore`, `zen-about`. Direct Blogger article documents preserve their real URL and have special return-to-home behavior.
+
+### MobileGestureNavigation
+Optional enhancement only. Dynamically imported for coarse-pointer mobile devices. Never replaces visible navigation and deliberately excludes articles, player, result scroll and interactive controls.
+
+### Home
+Discovery surface: product statement + highlighted reading. Summary belongs here.
+
+### Explore
+Locating surface: title/type/date, title-only simple search, advanced structured filtering, bounded internal scroll. Explore semantics are protected from layout/performance refactors.
+
+### Article
+Reading surface: adapts Blogger content into long-form reading, TOC/rail/progress/print. Vertical page scroll is expected here.
+
+### About
+Public site identity backed by `zenSiteProfile.v1`. Loaded only when needed. Profile storage is currently local-browser infrastructure and therefore is not suitable as a global crawler-visible favicon source.
+
+## Runtime auxiliary boundary
+
+`tools/runtime/bootstrap.js` is intentionally tiny. It answers one question: **which optional tool must be loaded for this context?**
+
+It must not accumulate domain logic.
+
+- `/admin` → Admin bootstrap.
+- `#zen-about` → About bootstrap.
+- Inspector enabled / Alt+I → Inspector bootstrap.
+
+This keeps authoring/diagnostic code off the normal reader critical path.
+
+## Public head / crawler boundary
+
+Search and social metadata must be available in Blogger's initial HTML. Do not move Open Graph/X/structured data into SPA JavaScript.
+
+Blogger `all-head-content` remains in place for platform-managed head data. ZenBlog layers product identity and social metadata around it without replacing Blogger internals.
+
+## CSS delivery
+
+`dist/zenblog.css` remains a compatibility composition entry that uses CSS imports.
+
+The **active production Blogger theme does not load it**. It links the six product CSS owners directly so the browser can discover them in parallel. This preserves modular ownership while removing the import waterfall.
+
+A future build system may produce a bundled/minified CSS artifact, but it must preserve module ownership and regression gates.
+
+## Layout contracts
+
+Global tokens include:
+
+- `--zen-header-h`
+- `--zen-player-safe`
+- `--zen-safe-inline`
+- `--zen-reading-width`
+
+Feature CSS should consume these instead of duplicating header/player heights.
+
+Responsive foundation owns generic safety: safe areas, media/embed overflow, tables/code, pointer/touch ergonomics, reduced motion. Feature CSS owns feature-specific layout.
 
 ## Product invariants
 
-- Explore results use title/type/date only; no summaries.
-- Documentary year is not Blogger publication date.
-- Explicit metadata classifies; missing metadata remains missing.
-- No popularity sorting without analytics.
-- The zenRadioPlayer loader is kept independent and protected.
-- Vertical page scroll is for reading; Explore uses its own bounded result scroll.
+- exactly one `#page_body`;
+- exactly one `Blog1` under it;
+- no `zen_main` replacement root;
+- Explore simple query stays title-only;
+- Explore rows do not gain summaries;
+- documentary year is not publication date;
+- no popularity sorting without analytics;
+- player remains independent/protected;
+- vertical page scroll belongs primarily to reading;
+- Admin/Inspector must not affect readers when unused;
+- social/search metadata is server-rendered;
+- working features are not rewritten during unrelated hardening.
 
-## LAB boundary
+## Current persistence boundary
 
-v0.1 still uses `zenMetadataRegistry.v2` from localStorage. This is intentionally an adapter, not the architecture's source of truth. A shared persistent Registry is the next infrastructure milestone.
+LAB/local browser stores:
+
+- `zenMetadataRegistry.v2`
+- `zenSiteProfile.v1`
+- `zenInspector.enabled`
+
+These are implementations, not the long-term model. The architectural migration path is shared persistence + authentication behind bounded repositories/adapters.
+
+## Deployment boundary
+
+GitHub Pages deploys repository assets from `main`.
+
+Blogger theme deployment is separate: changing `blogger/theme.xml` in GitHub **does not update the active Blogger site**. Release procedure therefore produces a full validated XML, installs it in Blogger, verifies the real site, then freezes the accepted SHA/XML.
+
+## Required context
+
+Before architecture changes read:
+
+1. `ZENBLOG-FORENSIC-MEMORY.txt`
+2. this file
+3. `UI-UX-CONTRACT.md`
+4. `ZENBLOG-MAINTENANCE-GUIDE.md`
+5. relevant tests and latest validated PR
+
+The forensic memory is authoritative when a historical workaround or product invariant is not obvious from code alone.

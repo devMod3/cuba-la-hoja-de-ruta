@@ -1,4 +1,7 @@
-@import url('../src/ui/styles/tokens.css?v=0.3.2');
-@import url('../src/ui/styles/shell.css?v=0.3.2');
-@import url('../src/features/home/home.css?v=0.3.2');
-@import url('../src/features/explore/explore.css?v=0.3.2');
+/* Compatibility entry only. Production Blogger links feature CSS in parallel. */
+@import url('../src/ui/styles/tokens.css?v=0.4.0');
+@import url('../src/ui/styles/shell.css?v=0.4.0');
+@import url('../src/features/home/home.css?v=0.4.0');
+@import url('../src/features/explore/explore.css?v=0.4.0');
+@import url('../src/features/article/article.css?v=0.4.0');
+@import url('../src/ui/styles/responsive.css?v=0.4.0');
