@@ -3,3 +3,4 @@
 @import url('../src/features/home/home.css?v=0.3.3');
 @import url('../src/features/explore/explore.css?v=0.3.3');
 @import url('../src/features/article/article.css?v=0.3.3');
+@import url('../src/ui/styles/responsive.css?v=0.8.0');
