@@ -197,9 +197,9 @@
   }
 
   .zen-home-statement h1 {
-    max-width: 12ch;
+    max-width: 15ch;
     margin: 0 0 .7rem;
-    font-size: clamp(2.4rem, 10vw, 3.5rem);
+    font-size: clamp(2.15rem, 9vw, 3.15rem);
   }
 
   .zen-home-statement > p:not(.zen-kicker):not(.zen-home-question) {
@@ -216,13 +216,63 @@
   }
 
   .zen-feature-title {
+    max-width: 24ch;
     margin: .5rem 0;
-    font-size: clamp(1.7rem, 7vw, 2.4rem);
+    font-size: clamp(1.55rem, 6.3vw, 2.2rem);
   }
 
   .zen-feature-snippet {
     font-size: .78rem;
     -webkit-line-clamp: 2;
+  }
+}
+
+/* Short phones (SE-class devices, mobile browser chrome visible): compact the
+   same information before allowing any fallback scroll. Nothing is removed. */
+@media (max-width: 760px) and (max-height: 760px) {
+  .zen-home-panel-overview {
+    gap: .65rem;
+    padding: .65rem 0;
+  }
+
+  .zen-home-question {
+    margin-bottom: .35rem;
+    font-size: .68rem;
+  }
+
+  .zen-home-statement h1 {
+    max-width: 18ch;
+    margin-bottom: .45rem;
+    font-size: clamp(1.95rem, 8.3vw, 2.75rem);
+    line-height: .96;
+  }
+
+  .zen-home-statement > p:not(.zen-kicker):not(.zen-home-question) {
+    font-size: .84rem;
+    line-height: 1.4;
+  }
+
+  .zen-home-quick-actions {
+    margin-top: .5rem;
+  }
+
+  .zen-feature {
+    padding: .78rem .85rem;
+  }
+
+  .zen-feature-title {
+    margin: .35rem 0;
+    font-size: clamp(1.35rem, 5.8vw, 1.8rem);
+  }
+
+  .zen-feature-snippet {
+    font-size: .72rem;
+    line-height: 1.4;
+    -webkit-line-clamp: 1;
+  }
+
+  .zen-feature-actions {
+    margin-top: .55rem;
   }
 }
 
@@ -232,8 +282,17 @@
   .zen-feature-title { font-size: clamp(1.8rem, 3vw, 2.8rem); }
 }
 
-@media (max-height: 620px) and (max-width: 899px) {
-  #zen-home[data-home-enhanced="true"] { overflow-y: auto; }
+/* Last-resort safety for extremely short landscape/small-phone viewports. */
+@media (max-height: 560px) and (max-width: 899px) {
+  #zen-home[data-home-enhanced="true"] { overflow-y: auto; overscroll-behavior-y: contain; }
   #zen-home[data-home-enhanced="true"] .zen-home-surface,
   #zen-home[data-home-enhanced="true"] .zen-home-workspace-single { height: auto; min-height: 100%; }
+}
+
+@supports (height: 100svh) {
+  @media (max-width: 760px) {
+    #zen-home[data-home-enhanced="true"] {
+      height: calc(100svh - var(--zen-header-h) - var(--zen-player-safe));
+    }
+  }
 }
