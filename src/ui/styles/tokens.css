@@ -21,7 +21,10 @@
 
 @media (max-width: 700px) {
   :root {
-    --zen-header-h: 101px;
-    --zen-player-safe: 56px;
+    /* 92px = brand row + gap + navigation row + bottom padding.
+       The top safe-area is added explicitly so iPhone notches never steal
+       usable height from Home or Article. */
+    --zen-header-h: calc(92px + max(.55rem, env(safe-area-inset-top, 0px)));
+    --zen-player-safe: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 }
