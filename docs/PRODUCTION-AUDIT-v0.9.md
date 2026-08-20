@@ -1,74 +1,65 @@
 # ZenBlog v0.9 — Auditoría de producción
 
-Fecha de auditoría: 2026-08-19/20  
+Fecha: 2026-08-19/20  
 Sitio: **La hoja de ruta**  
-Host público: `cubalahojaderuta.blogspot.com`  
-Rama de hardening: `lab-v0.9-production-hardening`
+Host: `cubalahojaderuta.blogspot.com`  
+Rama: `lab-v0.9-production-hardening`
 
 ## Resumen ejecutivo
 
-El sistema ya tenía una separación arquitectónica útil entre Blogger, adaptadores, servicios y features, pero el despliegue había acumulado **divergencia entre el XML real, `blogger/theme.xml` del repositorio y varios loaders LAB**. La prioridad de v0.9 no es reescribir funciones: es convertir decisiones ya validadas en invariantes de producción, mejorar el head rastreable, reducir el critical path, centralizar responsive y dejar memoria operativa.
+ZenBlog ya tenía fronteras útiles entre Blogger, adapters, servicios y features. El riesgo principal era operativo: **divergencia entre el XML realmente probado y `blogger/theme.xml`, herramientas auxiliares entrando al critical path, metadata social no controlada y supuestos responsive repetidos**. v0.9 endurece esas fronteras sin reescribir las funciones que ya estaban validadas.
 
-## Hallazgos críticos y resolución
+## Hallazgos y resolución
 
 ### A. Favicon local no era global
 
-**Hallazgo:** la foto elegida en About se guarda en `zenSiteProfile.v1`, actualmente browser-local. Crear un `<link rel="icon">` desde ese valor sólo puede afectar el navegador que posee ese storage; no es una identidad global rastreable.
+**Hallazgo:** la foto de About vive en `zenSiteProfile.v1`, browser-local. Un `<link rel="icon">` construido sólo desde ese storage no es identidad pública uniforme para otros visitantes/crawlers.
 
 **Resolución:**
-- se mantiene foto circular en About;
-- Admin exporta esa misma foto como PNG 96×96 mediante **Descargar favicon**;
-- Blogger Settings → Favicon se convierte en la fuente pública/autoritativa;
-- repositorio incluye un favicon fallback público para la instalación inicial.
+- foto circular pública preservada;
+- Admin exporta la misma foto como PNG 96×96 mediante **Descargar favicon**;
+- Blogger → Configuración → Favicon es la fuente autoritativa pública;
+- repo incluye fallback público para instalación inicial.
 
-**Estado:** código resuelto; la subida final al setting de Blogger requiere acción en la cuenta.
+**Pendiente manual:** subir el PNG elegido a Blogger.
 
-### B. Social preview/X no estaba bajo control explícito
+### B. X / Open Graph no estaba bajo control explícito
 
-**Hallazgo:** el XML de trabajo no declaraba en la capa ZenBlog Open Graph/X Card explícitos. No se podía garantizar una tarjeta rica consistente ni una imagen institucional.
-
-**Resolución:** metadata server-rendered en `blogger/theme.xml`:
+**Resolución:** `blogger/theme.xml` emite server-side:
 - `og:title`, `og:url`, `og:type`, `og:site_name`, `og:description`;
-- `og:image` con dimensiones/alt;
+- `og:image` + tamaño/alt;
 - `twitter:card=summary_large_image`;
-- título/descripción X;
-- imagen social pública `assets/social/zenblog-social-card.png`.
+- título/descripción/imagen X.
 
-La imagen está diseñada como traducción social del lenguaje de `<article class="zen-feature">`, no como captura del DOM.
+La imagen `assets/social/zenblog-social-card.png` traduce el lenguaje visual de `<article class="zen-feature">`; no es una captura del DOM.
 
-**Estado:** resuelto en theme v0.9; requiere instalar XML para llegar al sitio activo.
+### C. SEO dependía demasiado del head implícito
 
-### C. SEO de producto dependía demasiado del head implícito de Blogger
+Se preserva `b:include ... all-head-content` porque Blogger debe seguir siendo autoridad de **canonical, plataforma e index/noindex**.
 
-**Hallazgo:** se preservaba `all-head-content`, correctamente, pero ZenBlog no expresaba de forma explícita su identidad semántica/search/social.
+ZenBlog añade sólo su capa de producto:
+- identidad/descripción de homepage;
+- política de preview/snippet (`max-image-preview`, etc.);
+- Open Graph/X;
+- WebSite JSON-LD en homepage.
 
-**Resolución:**
-- descripción homepage;
-- robots index/follow para homepage/single item;
-- `max-image-preview:large`;
-- WebSite JSON-LD en homepage;
-- social metadata server-side;
-- canonical/feed/platform siguen bajo `all-head-content` de Blogger.
+**Decisión de robustez:** ZenBlog NO fuerza `index,follow`. Si Blogger está configurado como noindex, el theme no debe contradecir a la plataforma.
 
-No se añadió `Article` schema inventado: faltan datos server-visible suficientemente controlados para hacerlo sin falsificar propiedades.
+No se añadió `Article` schema inventado: structured data debe usar propiedades server-visibles y trazables.
 
-### D. Sitio público ≠ sitio indexado
+### D. Público no significa indexado
 
-**Hallazgo:** el host responde públicamente, pero una búsqueda pública no aportó evidencia suficiente de indexación del sitio. Son estados distintos.
+El host responde públicamente desde Internet, pero durante la auditoría una búsqueda pública no dio evidencia suficiente de indexación. Accesibilidad HTTP e indexación son estados distintos.
 
-**Resolución:** código queda indexable y la guía de release incluye comprobaciones de cuenta:
-- Privacy → Visible to search engines;
-- Search description;
+Después del deploy comprobar:
+- Blogger → Privacidad → Visible para buscadores;
+- descripción para búsquedas;
 - Search Console;
-- solicitud de indexación cuando proceda.
+- inspección/solicitud de indexación cuando proceda.
 
-**Estado:** acceso público comprobable; indexación debe verificarse externamente después del deploy.
+### E. Cascada CSS `@import`
 
-### E. Cascada CSS por `@import`
-
-**Hallazgo:** `dist/zenblog.css` compone seis módulos mediante `@import`. Es modular pero crea dependencia secuencial de descubrimiento CSS.
-
-**Resolución:** theme activo enlaza los seis CSS directamente/parallel:
+`dist/zenblog.css` sigue existiendo por compatibilidad, pero el theme activo ya no lo usa. Los seis owners CSS se enlazan directamente y el navegador puede descubrirlos en paralelo:
 - tokens;
 - shell;
 - Home;
@@ -76,135 +67,101 @@ No se añadió `Article` schema inventado: faltan datos server-visible suficient
 - Article;
 - responsive.
 
-`dist/zenblog.css` queda como compatibilidad, no como stylesheet activo de producción.
+### F. Tools auxiliares en carga pública
 
-### F. Herramientas auxiliares cargaban en el camino público
+Nuevo `tools/runtime/bootstrap.js` concentra sólo la decisión de lazy loading:
+- Admin únicamente en ruta admin;
+- About al visitar About;
+- Inspector si está habilitado o se solicita.
 
-**Hallazgo:** sucesivas versiones podían cargar About/Inspector/Admin con loaders independientes incluso cuando el visitante no los necesitaba.
+Critical path público objetivo: ZenBlog entry + runtime pequeño + player protegido.
 
-**Resolución:** nuevo `tools/runtime/bootstrap.js`:
-- Admin sólo en ruta admin;
-- About sólo al entrar a `#zen-about`;
-- Inspector sólo si está habilitado o se solicita con Alt+I.
+### G. Responsive con offsets repetidos
 
-Critical path público queda acotado a ZenBlog + runtime ligero + player protegido.
-
-### G. Responsive tenía números de header duplicados
-
-**Hallazgo:** Home/Explore/Article/shell utilizaban varios offsets hardcoded (`58px`, `101px`, etc.), aumentando el riesgo de desalineación cuando cambia el chrome.
-
-**Resolución:** tokens globales:
+Se centralizaron:
 - `--zen-header-h`;
 - `--zen-player-safe`;
 - `--zen-safe-inline`.
 
-Home/Explore usan estos contratos de layout. Responsive global endurece overflow, embeds, tablas, safe areas, coarse-pointer y poca altura.
+Home/Explore consumen el contrato. Responsive global cubre safe-area, media/iframe, tablas, pre/code, overflow, coarse pointer, very narrow phones y short-height/landscape.
 
-### H. Navegación móvil sólo tenía controles visibles
+### H. Mobile gestures
 
-**Hallazgo:** funcionalmente correcto, pero faltaba una capa gestual coherente con la UX móvil solicitada.
-
-**Resolución:** `MobileGestureNavigation` lazy:
-- sólo coarse-pointer móvil;
+Nuevo `MobileGestureNavigation`, lazy sólo en touch/coarse mobile:
 - Home ↔ Explore ↔ About;
-- no roba gestos del artículo, player, resultados, links o controles;
-- edge guard de 24px conserva gestos de sistema/browser;
-- navegación visible permanece siempre disponible.
+- no intercepta links/controles;
+- excluye Article/player/results scroll;
+- reserva 24px de bordes para gestos OS/browser;
+- exige gesto horizontal claro;
+- nunca sustituye navegación visible.
 
-## Arquitectura: evaluación
+## Arquitectura — dictamen
 
-### Fortalezas preservadas
+**No reescribir.** La estrategia correcta es fortalecer los contratos existentes.
 
-- Blogger como CMS y composition host.
-- `ContentSource`/`MetadataSource` como límites de infraestructura.
-- Search/Explore separados.
-- Player desacoplado/protegido.
-- Admin/Metadata/Search Lab pueden evolucionar sin reescribir lector público.
-- Native ESM permite modularidad sin build obligatorio.
+Fortalezas preservadas:
+- Blogger como CMS/document host;
+- `ContentSource`/`MetadataSource` como límites;
+- Search/Explore separados;
+- player desacoplado;
+- Admin/Metadata/Search Lab fuera del lector;
+- native ESM modular.
 
-### Deuda aceptada conscientemente
+Deuda consciente:
+- metadata/profile browser-local;
+- Admin sin autenticación real;
+- deploy Blogger manual;
+- social image común, no por artículo;
+- `dist/zenblog.css` legacy compatible.
 
-- Metadata y Site Profile siguen en storage local.
-- Admin no tiene autenticación real.
-- `dist/zenblog.css` sigue existiendo como entry legacy.
-- GitHub/Blogger despliegues siguen separados/manual para theme.
-- Social image es fallback institucional común, no imagen dinámica por artículo.
+## Rendimiento
 
-Estas deudas tienen fronteras claras; no justifican una reescritura inmediata.
+No se inventan métricas LCP/INP/CLS: no hubo un Lighthouse de la versión v0.9 desplegada porque todavía no está instalada en Blogger.
 
-## Rendimiento — cambios estructurales
-
-Sin inventar métricas de laboratorio que no fueron medidas en un navegador real, v0.9 reduce trabajo inicial de forma verificable por arquitectura:
-
-- elimina la cadena `@import` del XML activo;
-- añade preconnect para fonts/GitHub Pages;
-- usa `display=swap` en fuentes;
-- `modulepreload` para entry + composition root;
-- lazy load de About/Inspector/Admin;
-- lazy load de gesture module sólo móvil touch;
-- social PNG ligero;
-- controls/imágenes/medios con reglas responsive globales.
-
-Recomendación posterior al deploy: capturar Lighthouse/PageSpeed móvil y desktop y guardar LCP/INP/CLS como baseline real. No optimizar contra números no medidos.
-
-## Responsive — matriz cubierta
-
-- escritorio amplio;
-- desktop estrecho;
-- tablet 761–1023;
-- teléfono <=760;
-- teléfono muy estrecho <=420;
-- landscape/poca altura;
-- safe-area devices;
-- pointer coarse;
-- reduced motion;
-- contenido largo, tablas, pre, iframe, imagen/video.
-
-## Código y SOLID — dictamen
-
-No se recomienda una reescritura. La estrategia correcta es fortalecer contratos existentes:
-
-1. mantener features pequeños;
-2. extraer nueva infraestructura a adapters/tools;
-3. dejar bootstrap como composición;
-4. no hacer que UI conozca persistence;
-5. migrar localStorage a un repositorio compartido mediante implementaciones sustitutas;
-6. introducir build tooling sólo cuando su beneficio supere el coste de despliegue/debug.
-
-## Gates nuevos
-
-`tests/production-hardening.test.js` bloquea regresiones en:
-- metadata social/SEO;
-- PNG social local;
+Mejoras estructurales verificables:
+- sin `@import` en theme activo;
 - CSS paralelo;
-- critical path/lazy auxiliary tools;
+- preconnect fonts/CDN;
+- `display=swap`;
+- modulepreload de entry/composition root;
+- About/Admin/Inspector lazy;
+- gesture module lazy móvil;
+- PNG social ligero.
+
+Después del deploy debe crearse baseline PageSpeed/Lighthouse móvil+desktop con fecha y condiciones de prueba.
+
+## SOLID / mantenibilidad
+
+- Navigation y gestos separados por responsabilidad.
+- Runtime lazy no contiene dominio.
+- Metadata core v0.5 no se reescribe; Adaptive UI lo decora.
+- Storage futuro debe entrar detrás de adapters/repositorios.
+- No introducir framework/build tooling hasta que reduzca coste real.
+
+## Gates
+
+`tests/production-hardening.test.js` protege:
+- SEO/social head;
+- asset social PNG;
+- CSS parallel delivery;
+- lazy tools / script budget;
 - mobile gesture guards;
 - responsive safety;
 - favicon export;
 - Blogger/player invariants.
 
-CI actualiza sus architecture invariants en el mismo sentido.
+CI valida además JS, unit tests, Blogger XML e invariantes de arquitectura.
 
-## Acciones de cuenta que el código no puede ejecutar
+## Acciones fuera de alcance del código
 
-Después de instalar el XML validado:
+No existe integración conectada en esta sesión para modificar Blogger/Search Console directamente. Tras instalar XML:
 
-1. Blogger → Configuración → Privacidad → confirmar visible para buscadores.
-2. Blogger → Configuración → Etiquetas meta → descripción de búsqueda.
-3. Admin → About → descargar favicon y Blogger → Configuración → Favicon → subir PNG.
-4. Abrir Search Console desde Blogger/Google, verificar propiedad y revisar indexación.
-5. Tras propagación, probar URL en X y verificar `summary_large_image`.
+1. Blogger → Configuración → Privacidad → Visible para buscadores = ON.
+2. Blogger → Configuración → Metaetiquetas → descripción de búsqueda.
+3. Admin → About → Descargar favicon; Blogger → Configuración → Favicon → subir PNG.
+4. Search Console → verificar propiedad/estado y solicitar indexación si procede.
+5. Probar una URL en X después de que el HTML nuevo esté público.
 
-## Criterio de cierre v0.9
+## Criterio de cierre
 
-No congelar v0.9 hasta que el Product Owner confirme en Blogger real:
-- no regresiones de Home/Explore/Article/player;
-- About correcto;
-- Admin correcto;
-- Inspector correcto;
-- responsive desktop/tablet/mobile;
-- swipe móvil no interfiere;
-- favicon configurado;
-- fuente HTML publicada contiene OG/X metadata.
-
-Después de aceptación, registrar el SHA y XML exactos como nueva base estable.
+v0.9 sólo se congela después de QA real en Blogger: Home, Explore simple/advanced, artículo/retorno, player, About, Admin, Inspector, desktop/tablet/mobile, landscape, swipe no intrusivo, favicon y HTML social/SEO publicado.
