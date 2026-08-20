@@ -25,6 +25,8 @@ export const RESOURCE_TYPES = Object.freeze([
 
 const SOCIAL_IDS = new Set(SOCIAL_PLATFORMS.map((x) => x.id));
 const RESOURCE_TYPE_IDS = new Set(RESOURCE_TYPES.map((x) => x.id));
+const SAFE_IMAGE_DATA = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=\s]+$/i;
+const MAX_INLINE_IMAGE_LENGTH = 900_000;
 
 function text(value) { return String(value ?? '').trim(); }
 function textList(value) {
@@ -41,6 +43,13 @@ export function isSafeExternalUrl(value) {
   } catch {
     return false;
   }
+}
+
+export function isSafeImageSource(value) {
+  const raw = text(value);
+  if (!raw) return true;
+  if (isSafeExternalUrl(raw)) return true;
+  return raw.length <= MAX_INLINE_IMAGE_LENGTH && SAFE_IMAGE_DATA.test(raw);
 }
 
 function canonicalSocial(item, index) {
@@ -132,8 +141,8 @@ export function canonicalizeSiteProfile(value = {}) {
 export function validateSiteProfile(value) {
   const data = canonicalizeSiteProfile(value);
   const errors = [];
+  if (data.profile.photoUrl && !isSafeImageSource(data.profile.photoUrl)) errors.push('Foto: origen de imagen inválido');
   for (const [label, url] of [
-    ['Foto', data.profile.photoUrl],
     ['Perfil Blogger', data.profile.bloggerProfileUrl],
     ['Sitio web', data.profile.website],
     ['Audio Clip', data.profile.audioClipUrl],
