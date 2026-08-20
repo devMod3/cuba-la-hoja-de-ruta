@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SITE_PROFILE_STORAGE_KEY, emptySiteProfile, canonicalizeSiteProfile, validateSiteProfile, isSafeExternalUrl } from '../tools/about/SiteProfileStore.js';
+import { SITE_PROFILE_STORAGE_KEY, emptySiteProfile, canonicalizeSiteProfile, validateSiteProfile, isSafeExternalUrl, isSafeImageSource } from '../tools/about/SiteProfileStore.js';
 
 test('site profile uses an independent v1 storage contract', () => {
   assert.equal(SITE_PROFILE_STORAGE_KEY, 'zenSiteProfile.v1');
@@ -29,6 +29,14 @@ test('profile validation rejects unsafe URLs', () => {
   assert.equal(isSafeExternalUrl('javascript:alert(1)'), false);
   const result = validateSiteProfile({ profile: { website: 'javascript:alert(1)' } });
   assert.equal(result.ok, false);
+});
+
+test('uploaded profile image accepts only bounded image data URLs', () => {
+  const safe = `data:image/webp;base64,${'A'.repeat(64)}`;
+  assert.equal(isSafeImageSource(safe), true);
+  assert.equal(isSafeImageSource('data:text/html;base64,PGgxPk5vPC9oMT4='), false);
+  assert.equal(isSafeImageSource('javascript:alert(1)'), false);
+  assert.equal(validateSiteProfile({ profile: { photoUrl: safe } }).ok, true);
 });
 
 test('social and related resources keep visible/order semantics', () => {
