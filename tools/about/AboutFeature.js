@@ -32,7 +32,7 @@ function joinedLocation(location = {}) {
   return [location.city, location.region, location.country].filter(Boolean).join(', ');
 }
 
-function syncProfileFavicon(source) {
+export function syncProfileFavicon(source) {
   let favicon = document.head.querySelector(`link[${FAVICON_ATTR}]`);
   if (!source || !isSafeImageSource(source)) {
     favicon?.remove();
