@@ -30,7 +30,7 @@ function homeMarkup() {
     <div class="zen-home-workspace zen-home-workspace-single">
       <div class="zen-home-panel-overview">
         <section class="zen-home-statement" aria-labelledby="zen-home-intro-title">
-          <p class="zen-kicker">SOBERANÍA · CONSTITUCIÓN · ESTADO</p>
+          <p class="zen-home-question">¿Qué nos define?</p>
           <h1 id="zen-home-intro-title">Seguir el origen, los límites y el ejercicio del poder.</h1>
           <p>Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.</p>
           <div class="zen-home-quick-actions">
