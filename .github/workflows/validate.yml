@@ -41,10 +41,19 @@ jobs:
           from pathlib import Path
           xml = Path('blogger/theme.xml').read_text()
           assert xml.count("id='Blog1'") == 1
-          assert "id='page_body'" in xml
+          assert xml.count("id='page_body'") == 1
           assert 'zen_main' not in xml
-          assert 'zen-radio-player/assets/zen-radio-player.js' in xml
+          assert 'zen-radio-player/assets/zen-radio-player.js?v=1.0.3' in xml
           assert 'dist/zenblog.js' in xml
-          assert 'dist/zenblog.css' in xml
-          print('ZenBlog invariants: PASS')
+          assert 'tools/runtime/bootstrap.js' in xml
+          assert 'dist/zenblog.css' not in xml
+          for path in (
+              'src/ui/styles/tokens.css', 'src/ui/styles/shell.css',
+              'src/features/home/home.css', 'src/features/explore/explore.css',
+              'src/features/article/article.css', 'src/ui/styles/responsive.css'):
+              assert path in xml
+          assert "name='twitter:card'" in xml
+          assert "property='og:image'" in xml
+          assert 'application/ld+json' in xml
+          print('ZenBlog production invariants: PASS')
           PY
