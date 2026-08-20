@@ -15,7 +15,7 @@
   <meta content='#121416' name='theme-color'/>
   <meta content='dark' name='color-scheme'/>
   <!-- LAB release assets are pinned to an immutable commit. -->
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/assets/brand/favicon-fallback.png' rel='icon' type='image/png'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/assets/brand/favicon-fallback.png' rel='icon' type='image/png'/>
   <b:include data='blog' name='all-head-content'/>
   <title><data:blog.pageTitle/></title>
 
@@ -45,7 +45,7 @@
     <meta content='Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.' property='og:description'/>
     <meta content='Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.' name='twitter:description'/>
   </b:if>
-  <meta content='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/assets/social/zenblog-social-card.png' property='og:image'/>
+  <meta content='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/assets/social/zenblog-social-card.png' property='og:image'/>
   <meta content='image/png' property='og:image:type'/>
   <meta content='600' property='og:image:width'/>
   <meta content='315' property='og:image:height'/>
@@ -53,7 +53,7 @@
   <meta content='summary_large_image' name='twitter:card'/>
   <meta content='@la_RsisTncia' name='twitter:site'/>
   <meta expr:content='data:blog.pageTitle' name='twitter:title'/>
-  <meta content='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/assets/social/zenblog-social-card.png' name='twitter:image'/>
+  <meta content='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/assets/social/zenblog-social-card.png' name='twitter:image'/>
   <meta content='Tarjeta editorial de La hoja de ruta' name='twitter:image:alt'/>
 
   <b:if cond='data:view.isHomepage'>
@@ -65,15 +65,15 @@
   <link crossorigin='anonymous' href='https://fonts.gstatic.com' rel='preconnect'/>
   <link href='https://cdn.jsdelivr.net' rel='preconnect'/>
   <link href='https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&amp;display=swap' rel='stylesheet'/>
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/ui/styles/tokens.css' rel='stylesheet'/>
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/ui/styles/shell.css' rel='stylesheet'/>
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/features/home/home.css' rel='stylesheet'/>
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/features/explore/explore.css' rel='stylesheet'/>
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/features/article/article.css' rel='stylesheet'/>
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/ui/styles/responsive.css' rel='stylesheet'/>
-  <link id='zen-about-css' href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/tools/about/about.css' rel='stylesheet'/>
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/dist/zenblog.js' rel='modulepreload'/>
-  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/bootstrap/createZenBlog.js' rel='modulepreload'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/src/ui/styles/tokens.css' rel='stylesheet'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/src/ui/styles/shell.css' rel='stylesheet'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/src/features/home/home.css' rel='stylesheet'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/src/features/explore/explore.css' rel='stylesheet'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/src/features/article/article.css' rel='stylesheet'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/src/ui/styles/responsive.css' rel='stylesheet'/>
+  <link id='zen-about-css' href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/tools/about/about.css' rel='stylesheet'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/dist/zenblog.js' rel='modulepreload'/>
+  <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/src/bootstrap/createZenBlog.js' rel='modulepreload'/>
 
   <b:skin><![CDATA[
     /* Blogger is the composition root only. Product UI lives in GitHub modules. */
@@ -121,9 +121,9 @@
   </div>
 
   <!-- Public product entry, pinned to the exact LAB asset commit. -->
-  <script src='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/dist/zenblog.js' type='module'></script>
+  <script src='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/dist/zenblog.js' type='module'></script>
   <!-- Auxiliary modules (Admin/About/Inspector) load only when needed. -->
-  <script src='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/tools/runtime/bootstrap.js' type='module'></script>
+  <script src='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/tools/runtime/bootstrap.js' type='module'></script>
 
   <!-- Protected independent foreground player. -->
   <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.3' type='module'></script>
