@@ -12,6 +12,16 @@
   --zen-ok: #8FA895;
   --zen-error: #D16F72;
   --zen-reading-width: 72ch;
+  --zen-header-h: 58px;
+  --zen-player-safe: 52px;
+  --zen-safe-inline: clamp(.75rem, 2vw, 1.2rem);
   --zen-ui-font: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --zen-editorial-font: "Source Serif 4", Georgia, serif;
+}
+
+@media (max-width: 700px) {
+  :root {
+    --zen-header-h: 101px;
+    --zen-player-safe: 56px;
+  }
 }
