@@ -47,31 +47,30 @@
 
 @media(max-width:700px){
   #zen-about{min-height:calc(100dvh - var(--zen-header-h));padding-bottom:var(--zen-player-safe)!important}
-  #zen-about .zen-about-shell{width:min(100% - 32px,820px);padding:24px 0 28px}
-  #zen-about .zen-about-profile-top{grid-template-columns:104px minmax(0,1fr);gap:18px;align-items:start}
-  #zen-about .zen-about-photo-frame{width:96px;height:96px;padding:2px}
+  #zen-about .zen-about-shell{width:min(100% - 32px,820px);padding:18px 0 18px}
+  #zen-about .zen-about-profile-top{grid-template-columns:92px minmax(0,1fr);gap:14px;align-items:start}
+  #zen-about .zen-about-photo-frame{width:86px;height:86px;padding:2px}
   #zen-about .zen-about-identity{padding-top:1px}
-  #zen-about .zen-about-identity h1{font-size:clamp(1.5rem,6.5vw,2rem)}
-  #zen-about .zen-about-meta-line{margin-top:6px;font-size:.68rem}
-  #zen-about .zen-about-lead{margin-top:10px;font-size:.91rem;line-height:1.52}
-  #zen-about .zen-about-quick-links{margin-top:11px;gap:7px 13px}
-  #zen-about .zen-about-link{min-height:32px}
-  #zen-about .zen-about-divider{margin-top:24px}
-  #zen-about .zen-about-section{padding-top:27px}
-  #zen-about .zen-about-section-head{margin-bottom:10px}
+  #zen-about .zen-about-identity h1{font-size:clamp(1.4rem,6vw,1.8rem)}
+  #zen-about .zen-about-meta-line{margin-top:4px;font-size:.64rem;line-height:1.35}
+  #zen-about .zen-about-lead{margin-top:8px;font-size:.86rem;line-height:1.43}
+  #zen-about .zen-about-quick-links{margin-top:7px;gap:5px 12px}
+  #zen-about .zen-about-link{min-height:28px}
+  #zen-about .zen-about-divider{margin-top:18px}
+  #zen-about .zen-about-section{padding-top:20px}
+  #zen-about .zen-about-section-head{margin-bottom:7px}
   #zen-about .zen-about-social-list{grid-template-columns:1fr;gap:0}
-  #zen-about .zen-about-social{min-height:44px;padding:2px 0}
-  #zen-about .zen-about-resource-list{gap:18px}
+  #zen-about .zen-about-social{min-height:40px;padding:2px 0}
+  #zen-about .zen-about-resource-list{gap:12px}
+  #zen-about .zen-about-resource-description{font-size:.71rem;line-height:1.4}
 }
 
-/* Keep portrait + identity side by side on normal phones. */
 @media(max-width:500px){
-  #zen-about .zen-about-profile-top{grid-template-columns:96px minmax(0,1fr);gap:15px}
-  #zen-about .zen-about-photo-frame{width:90px;height:90px}
+  #zen-about .zen-about-profile-top{grid-template-columns:92px minmax(0,1fr);gap:14px}
+  #zen-about .zen-about-photo-frame{width:86px;height:86px}
   #zen-about .zen-about-resource-top{gap:6px 9px}
 }
 
-/* Only genuinely narrow screens stack the portrait. */
 @media(max-width:340px){
   #zen-about .zen-about-profile-top{grid-template-columns:1fr;gap:14px}
   #zen-about .zen-about-photo-frame{width:92px;height:92px}
