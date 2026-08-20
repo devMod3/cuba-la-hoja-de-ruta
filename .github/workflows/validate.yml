@@ -2,7 +2,7 @@ name: Validate ZenBlog
 
 on:
   push:
-    branches: [main, lab-v0.1-architecture]
+    branches: [main, lab-v0.1-architecture, lab-v0.9-production-hardening]
   pull_request:
     branches: [main]
 
