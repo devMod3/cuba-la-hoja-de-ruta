@@ -36,15 +36,16 @@ export class InspectorController {
     this.onStorage = this.onStorage.bind(this);
   }
 
-  setEnabled(value) {
+  applyState(value, { persist = false } = {}) {
     this.enabled = Boolean(value);
-    writeBoolean(this.storage, INSPECTOR_STORAGE_KEY, this.enabled);
+    if (persist) writeBoolean(this.storage, INSPECTOR_STORAGE_KEY, this.enabled);
     document.documentElement.dataset.zenInspector = this.enabled ? 'on' : 'off';
     if (!this.enabled) this.clearSelection();
     document.dispatchEvent(new CustomEvent('zeninspector:changed', { detail: { enabled: this.enabled } }));
     return this.enabled;
   }
 
+  setEnabled(value) { return this.applyState(value, { persist: true }); }
   toggle() { return this.setEnabled(!this.enabled); }
 
   ensureUI() {
@@ -107,7 +108,9 @@ export class InspectorController {
   }
 
   onResize() { if (this.enabled && this.selected) this.select(this.selected); }
-  onStorage(event) { if (event.key === INSPECTOR_STORAGE_KEY) this.setEnabled(event.newValue === 'true'); }
+  onStorage(event) {
+    if (event.key === INSPECTOR_STORAGE_KEY) this.applyState(event.newValue === 'true');
+  }
 
   mount() {
     document.documentElement.dataset.zenInspector = this.enabled ? 'on' : 'off';
