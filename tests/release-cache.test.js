@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const RELEASE = '0.9.1';
+const RELEASE = '0.9.2';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 const theme = read('blogger/theme.xml');
@@ -19,6 +19,7 @@ test('Blogger production surface uses the release cache key everywhere critical'
     'src/features/explore/explore.css',
     'src/features/article/article.css',
     'src/ui/styles/responsive.css',
+    'tools/about/about.css',
     'dist/zenblog.js',
     'tools/runtime/bootstrap.js'
   ]) {
@@ -28,13 +29,13 @@ test('Blogger production surface uses the release cache key everywhere critical'
 
 test('public ES module chain is cache-busted with the same release', () => {
   assert.match(entry, new RegExp(`createZenBlog\\.js\\?v=${RELEASE.replaceAll('.', '\\.')}`));
-  assert.equal(composition.includes("const VERSION = '0.9.1'"), true);
-  assert.equal((composition.match(/\?v=0\.9\.1/g) || []).length >= 9, true);
-  assert.equal(runtime.includes("const RELEASE = '0.9.1'"), true);
-  assert.equal(about.includes("const RELEASE = '0.9.1'"), true);
+  assert.equal(composition.includes("const VERSION = '0.9.2'"), true);
+  assert.equal((composition.match(/\?v=0\.9\.2/g) || []).length >= 9, true);
+  assert.equal(runtime.includes("const RELEASE = '0.9.2'"), true);
+  assert.equal(about.includes("const RELEASE = '0.9.2'"), true);
 });
 
 test('social image and fallback favicon also receive a release key', () => {
-  assert.match(theme, /favicon-fallback\.png\?v=0\.9\.1/);
-  assert.match(theme, /zenblog-social-card\.png\?v=0\.9\.1/);
+  assert.match(theme, /favicon-fallback\.png\?v=0\.9\.2/);
+  assert.match(theme, /zenblog-social-card\.png\?v=0\.9\.2/);
 });
