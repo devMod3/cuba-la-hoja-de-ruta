@@ -7,6 +7,7 @@ import {
 
 export const INSPECTOR_STORAGE_KEY = 'zenInspector.enabled';
 const UI_ATTR = 'data-zen-inspector-ui';
+const SAVED_HREF_ATTR = 'data-zen-inspector-href';
 
 function readBoolean(storage, key) {
   try { return storage?.getItem(key) === 'true'; }
@@ -52,6 +53,7 @@ export class InspectorController {
     this.hovered = null;
     this.currentName = '';
     this.currentLog = '';
+    this.linkObserver = null;
     this.onClick = this.onClick.bind(this);
     this.onPointerOver = this.onPointerOver.bind(this);
     this.onKeyDown = this.onKeyDown.bind(this);
@@ -73,10 +75,69 @@ export class InspectorController {
     return this;
   }
 
+  neutralizeLink(anchor) {
+    if (!this.interactive || !(anchor instanceof Element) || anchor.tagName !== 'A') return;
+    if (!anchor.hasAttribute('href') || anchor.hasAttribute(SAVED_HREF_ATTR)) return;
+    anchor.setAttribute(SAVED_HREF_ATTR, anchor.getAttribute('href') ?? '');
+    anchor.removeAttribute('href');
+  }
+
+  neutralizeLinks(root = document) {
+    if (!this.interactive || !this.enabled) return;
+    if (root instanceof Element && root.matches('a[href]')) this.neutralizeLink(root);
+    root.querySelectorAll?.('a[href]').forEach((anchor) => this.neutralizeLink(anchor));
+  }
+
+  startLinkObserver() {
+    if (!this.interactive || this.linkObserver || typeof MutationObserver === 'undefined') return;
+    this.linkObserver = new MutationObserver((mutations) => {
+      if (!this.enabled) return;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.target instanceof Element) {
+          this.neutralizeLink(mutation.target);
+        }
+        mutation.addedNodes.forEach((node) => {
+          if (node instanceof Element) this.neutralizeLinks(node);
+        });
+      }
+    });
+    this.linkObserver.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['href']
+    });
+  }
+
+  stopLinkObserver() {
+    this.linkObserver?.disconnect();
+    this.linkObserver = null;
+  }
+
+  restoreLinks() {
+    if (!this.interactive) return;
+    document.querySelectorAll(`[${SAVED_HREF_ATTR}]`).forEach((anchor) => {
+      const href = anchor.getAttribute(SAVED_HREF_ATTR) ?? '';
+      anchor.setAttribute('href', href);
+      anchor.removeAttribute(SAVED_HREF_ATTR);
+    });
+  }
+
   applyState(value, { persist = false } = {}) {
     this.enabled = Boolean(value);
     if (persist) writeBoolean(this.storage, INSPECTOR_STORAGE_KEY, this.enabled);
     document.documentElement.dataset.zenInspector = this.enabled ? 'on' : 'off';
+
+    if (this.interactive) {
+      if (this.enabled) {
+        this.neutralizeLinks();
+        this.startLinkObserver();
+      } else {
+        this.stopLinkObserver();
+        this.restoreLinks();
+      }
+    }
+
     if (!this.enabled) {
       this.closeModal();
       this.clearSelection();
@@ -271,12 +332,18 @@ export class InspectorController {
       document.addEventListener('keydown', this.onKeyDown, true);
       window.addEventListener('resize', this.onResize, { passive: true });
       window.addEventListener('scroll', this.onResize, { passive: true, capture: true });
+      if (this.enabled) {
+        this.neutralizeLinks();
+        this.startLinkObserver();
+      }
     }
     window.addEventListener('storage', this.onStorage);
     return this;
   }
 
   destroy() {
+    this.stopLinkObserver();
+    this.restoreLinks();
     document.removeEventListener('pointerover', this.onPointerOver, true);
     document.removeEventListener('click', this.onClick, true);
     document.removeEventListener('keydown', this.onKeyDown, true);
