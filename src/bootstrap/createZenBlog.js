@@ -1,12 +1,13 @@
-import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js?v=0.3.2';
-import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js?v=0.3.2';
-import { SearchService } from '../search/SearchService.js?v=0.3.2';
-import { NavigationFeature } from '../features/navigation/NavigationFeature.js?v=0.3.2';
-import { HomeFeature } from '../features/home/HomeFeature.js?v=0.3.2';
-import { ExploreFeature } from '../features/explore/ExploreFeature.js?v=0.3.2';
-import { ExploreQueryService } from '../features/explore/ExploreQueryService.js?v=0.3.2';
+import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js?v=0.3.3';
+import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js?v=0.3.3';
+import { SearchService } from '../search/SearchService.js?v=0.3.3';
+import { NavigationFeature } from '../features/navigation/NavigationFeature.js?v=0.3.3';
+import { HomeFeature } from '../features/home/HomeFeature.js?v=0.3.3';
+import { ExploreFeature } from '../features/explore/ExploreFeature.js?v=0.3.3';
+import { ExploreQueryService } from '../features/explore/ExploreQueryService.js?v=0.3.3';
+import { ArticleFeature } from '../features/article/ArticleFeature.js?v=0.3.3';
 
-const VERSION = '0.3.2';
+const VERSION = '0.3.3';
 
 export function createZenBlog({ root = document } = {}) {
   const contentSource = new BloggerFeedSource();
@@ -22,6 +23,11 @@ export function createZenBlog({ root = document } = {}) {
     metadataSource,
     exploreQueryService
   });
+  const article = new ArticleFeature({
+    root,
+    contentSource,
+    navigation
+  });
 
   return {
     version: VERSION,
@@ -32,12 +38,14 @@ export function createZenBlog({ root = document } = {}) {
       navigation.boot();
       void home.boot();
       explore.boot();
+      article.boot();
 
       window.ZenBlog = {
         version: VERSION,
         navigation,
         home,
         explore,
+        article,
         services: { searchService, exploreQueryService },
         sources: { contentSource, metadataSource }
       };
@@ -47,6 +55,7 @@ export function createZenBlog({ root = document } = {}) {
       }));
     },
     destroy() {
+      article.destroy();
       navigation.destroy();
       home.destroy();
       explore.destroy();
