@@ -12,7 +12,18 @@ function fileToImage(file) {
   });
 }
 
-function cropSquare(img, size = 512, quality = .84) {
+function sourceToImage(source) {
+  return new Promise((resolve, reject) => {
+    if (!source) return reject(new Error('Primero añade una foto de perfil.'));
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('No se pudo preparar la imagen como favicon.'));
+    if (/^https?:/i.test(source)) img.crossOrigin = 'anonymous';
+    img.src = source;
+  });
+}
+
+function cropSquare(img, size = 512, quality = .84, format = 'image/webp') {
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -24,8 +35,8 @@ function cropSquare(img, size = 512, quality = .84) {
   ctx.fillStyle = '#121416';
   ctx.fillRect(0, 0, size, size);
   ctx.drawImage(img, sx, sy, source, source, 0, 0, size, size);
-  let value = canvas.toDataURL('image/webp', quality);
-  if (!value.startsWith('data:image/webp')) value = canvas.toDataURL('image/jpeg', quality);
+  let value = canvas.toDataURL(format, quality);
+  if (format === 'image/webp' && !value.startsWith('data:image/webp')) value = canvas.toDataURL('image/jpeg', quality);
   return value;
 }
 
@@ -37,6 +48,17 @@ async function normalizeUpload(file) {
   if (data.length > 780000) data = cropSquare(img, 384, .78);
   if (data.length > 880000) throw new Error('La imagen sigue siendo demasiado grande después de optimizarla.');
   return data;
+}
+
+async function downloadFavicon(source) {
+  const img = await sourceToImage(source);
+  const data = cropSquare(img, 96, .92, 'image/png');
+  const a = document.createElement('a');
+  a.href = data;
+  a.download = 'la-hoja-de-ruta-favicon.png';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 export function installProfilePhotoUpload(manager) {
@@ -65,8 +87,10 @@ export function installProfilePhotoUpload(manager) {
         <small>Se recorta al centro y se optimiza automáticamente. La vista pública usa marco circular.</small>
         <div class="zam-photo-actions">
           <button type="button" data-zam-photo-action="choose">Subir foto</button>
+          <button type="button" data-zam-photo-action="favicon">Descargar favicon</button>
           <button type="button" data-zam-photo-action="remove">Eliminar</button>
         </div>
+        <small class="zam-photo-favicon-note">Para que el favicon sea público y rastreable, sube este PNG en Blogger → Configuración → Favicon.</small>
         <details class="zam-photo-advanced"><summary>Usar URL en su lugar</summary></details>
       </div>`;
     wrap.querySelector('.zam-photo-advanced').appendChild(originalField);
@@ -81,9 +105,17 @@ export function installProfilePhotoUpload(manager) {
     identity.insertBefore(wrap, identity.children[1] || null);
     this.photoUpload = { wrap, file, photoInput };
 
-    wrap.addEventListener('click', (event) => {
+    wrap.addEventListener('click', async (event) => {
       const action = event.target instanceof Element ? event.target.closest('[data-zam-photo-action]')?.dataset.zamPhotoAction : null;
       if (action === 'choose') file.click();
+      if (action === 'favicon') {
+        try {
+          await downloadFavicon(photoInput.value.trim());
+          this.status?.('Favicon descargado. Súbelo en Blogger → Configuración → Favicon.', 'ok');
+        } catch (error) {
+          this.status?.(error.message, 'error');
+        }
+      }
       if (action === 'remove') {
         photoInput.value = '';
         this.updatePhotoPreview?.();
