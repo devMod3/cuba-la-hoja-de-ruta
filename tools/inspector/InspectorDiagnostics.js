@@ -65,7 +65,7 @@ export function exactPath(el) {
     let part = node.tagName.toLowerCase();
     const stable = [...(node.classList || [])]
       .filter((name) => !/^is-|^active$|^selected$|^open$/.test(name))
-      .slice(0, 2);
+      .slice(0, 3);
     if (stable.length) part += `.${stable.map(escapeCSS).join('.')}`;
     const parent = node.parentElement;
     if (parent) {
@@ -74,7 +74,7 @@ export function exactPath(el) {
     }
     parts.unshift(part);
     node = parent;
-    if (parts.length >= 8) break;
+    if (parts.length >= 12) break;
   }
   return parts.join(' > ');
 }
@@ -83,7 +83,7 @@ export function genericName(el) {
   const explicit = el?.getAttribute?.('data-zen-component') || el?.getAttribute?.('data-component');
   if (explicit) return `<${String(explicit).replace(/^<|>$/g, '')}>`;
   if (el?.id) return `<DOM#${el.id}>`;
-  const cls = [...(el?.classList || [])].slice(0, 2).join('.');
+  const cls = [...(el?.classList || [])].slice(0, 3).join('.');
   return `<DOM.${el?.tagName?.toLowerCase?.() || 'node'}${cls ? `.${cls}` : ''}>`;
 }
 
@@ -95,22 +95,39 @@ function exactRegistryMatch(el, registry) {
   return null;
 }
 
-export function resolveInspectorTarget(target, registry = DEFAULT_COMPONENT_REGISTRY) {
-  for (const item of registry) {
-    try {
-      if (target.matches(item.selector)) return { element: target, ...item };
-      const parent = target.closest(item.selector);
-      if (parent) return { element: parent, ...item };
-    } catch {}
+function nearestRegisteredOwner(target, registry) {
+  let node = target?.parentElement || null;
+  while (node && node !== document.documentElement) {
+    const match = exactRegistryMatch(node, registry);
+    if (match) return { element: node, ...match };
+    node = node.parentElement;
   }
-  return { element: target, selector:'', name:genericName(target), description:'Elemento DOM sin registro específico.', protected:false };
+  return null;
 }
 
-function includeGenericNode(el) {
-  if (!el || el === document.documentElement || el === document.body) return false;
-  if (el.hasAttribute?.('data-zen-component') || el.hasAttribute?.('data-component')) return true;
-  if (el.id) return true;
-  return /^(MAIN|HEADER|NAV|SECTION|ARTICLE|ASIDE|FORM|BUTTON|A|INPUT|SELECT|TEXTAREA|DIALOG)$/.test(el.tagName);
+export function resolveInspectorTarget(target, registry = DEFAULT_COMPONENT_REGISTRY) {
+  const exact = exactRegistryMatch(target, registry);
+  if (exact) {
+    return {
+      element: target,
+      ...exact,
+      ownerElement: target,
+      ownerName: exact.name,
+      ownerSelector: exact.selector
+    };
+  }
+
+  const owner = nearestRegisteredOwner(target, registry);
+  return {
+    element: target,
+    selector: '',
+    name: genericName(target),
+    description: 'Elemento DOM inspeccionado directamente.',
+    protected: Boolean(owner?.protected),
+    ownerElement: owner?.element || null,
+    ownerName: owner?.name || '',
+    ownerSelector: owner?.selector || ''
+  };
 }
 
 export function componentTree(target, registry = DEFAULT_COMPONENT_REGISTRY) {
@@ -118,7 +135,7 @@ export function componentTree(target, registry = DEFAULT_COMPONENT_REGISTRY) {
   let node = target;
   while (node && node.nodeType === 1 && node !== document.documentElement) {
     const match = exactRegistryMatch(node, registry);
-    const name = match ? match.name : (includeGenericNode(node) ? genericName(node) : '');
+    const name = match ? match.name : genericName(node);
     if (name && nodes[nodes.length - 1] !== name) nodes.push(name);
     node = node.parentElement;
   }
@@ -134,7 +151,10 @@ function datasetText(el) {
 
 function interactionInfo(el) {
   const out = [];
-  if (el.tagName === 'A') out.push(`href=${el.getAttribute('href') || ''}`);
+  if (el.tagName === 'A') {
+    const href = el.getAttribute('href') ?? el.getAttribute('data-zen-inspector-href') ?? '';
+    out.push(`href=${href}`);
+  }
   if (el.tagName === 'BUTTON') out.push(`type=${el.getAttribute('type') || 'submit'}`);
   if (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) {
     out.push(`name=${el.getAttribute('name') || '—'}`);
@@ -154,7 +174,7 @@ export function describeElement(el) {
   return {
     tag: el.tagName.toLowerCase(),
     id: el.id || '',
-    classes: [...el.classList].slice(0, 6),
+    classes: [...el.classList].slice(0, 8),
     width: Math.round(rect.width),
     height: Math.round(rect.height)
   };
@@ -164,12 +184,16 @@ export function buildInspectorLog(info, registry = DEFAULT_COMPONENT_REGISTRY) {
   const el = info.element;
   const rect = el.getBoundingClientRect();
   const style = getComputedStyle(el);
+  const owner = info.ownerName && info.ownerName !== info.name
+    ? `COMPONENTE PROPIETARIO:\n${info.ownerName}\nSelector: ${info.ownerSelector || '—'}\n`
+    : '';
   const protection = info.protected
     ? 'PROTECCIÓN:\nComponente protegido: evita modificar su arquitectura sin una decisión explícita.\n'
     : '';
   return [
     'ZEN INSPECTOR', '',
     'SCOPE:', info.name, '',
+    owner.trim(), '',
     'DESCRIPCIÓN:', info.description || '—', '',
     'TREE:', componentTree(el, registry), '',
     'DOM:',
