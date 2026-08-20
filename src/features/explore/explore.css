@@ -5,7 +5,7 @@
 }
 
 .zen-explore-shell {
-  height: calc(100dvh - 78px);
+  height: calc(100dvh - var(--zen-header-h) - var(--zen-player-safe) - 2rem);
   min-height: 0;
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
@@ -96,6 +96,7 @@
   margin-left: -1px;
   font-size: 1.1rem;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .zen-search-actions,
@@ -113,7 +114,7 @@
 }
 
 .zen-text-action {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -121,6 +122,7 @@
   cursor: pointer;
   font-size: .64rem;
   font-weight: 750;
+  touch-action: manipulation;
 }
 
 .zen-text-action:hover,
@@ -141,6 +143,7 @@
 }
 
 .zen-explore-controls {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: .55rem;
@@ -149,6 +152,7 @@
 
 .zen-explore-controls > label,
 .zen-year-range label {
+  min-width: 0;
   display: grid;
   gap: .28rem;
   color: var(--zen-text-tertiary);
@@ -160,6 +164,7 @@
 .zen-explore-controls input,
 .zen-explore-controls select {
   width: 100%;
+  min-width: 0;
   padding: 0 .55rem;
 }
 
@@ -181,6 +186,7 @@
 
 .zen-results-panel,
 .zen-results-scroll {
+  min-width: 0;
   min-height: 0;
 }
 
@@ -188,6 +194,8 @@
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .zen-archive-row {
@@ -199,6 +207,7 @@
 }
 
 .zen-archive-row a {
+  min-width: 0;
   min-height: 58px;
   display: grid;
   grid-template-columns: 100px 120px minmax(0, 1fr) 28px;
@@ -207,6 +216,7 @@
   padding: .5rem 1rem;
   color: var(--zen-text);
   text-decoration: none;
+  touch-action: manipulation;
 }
 
 .zen-archive-row a:hover,
@@ -221,7 +231,9 @@
 }
 
 .zen-archive-row h2 {
+  min-width: 0;
   margin: 0;
+  overflow-wrap: anywhere;
   font-family: var(--zen-editorial-font);
   font-size: .94rem;
   font-weight: 500;
@@ -252,7 +264,7 @@
   }
 
   .zen-explore-shell {
-    height: calc(100dvh - 118px);
+    height: calc(100dvh - var(--zen-header-h) - var(--zen-player-safe) - 1.1rem);
   }
 
   .zen-explore-head {
@@ -292,4 +304,11 @@
   .zen-archive-row-arrow {
     grid-area: arrow;
   }
+}
+
+@media (max-height: 560px) and (max-width: 900px) {
+  .zen-explore-head { min-height: 54px; }
+  .zen-explore-search { padding-top: .5rem; padding-bottom: .45rem; }
+  .zen-explore-shell { height: auto; min-height: calc(100dvh - var(--zen-header-h) - var(--zen-player-safe) - 1.1rem); }
+  .zen-results-scroll { max-height: 42dvh; }
 }
