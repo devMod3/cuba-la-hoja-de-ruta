@@ -27,6 +27,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: About browser smoke
+        run: npm run test:browser
+
       - name: Validate Blogger XML
         run: |
           python - <<'PY'
