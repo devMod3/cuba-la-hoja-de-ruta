@@ -14,26 +14,45 @@ function loadStylesheet() {
   document.head.appendChild(link);
 }
 
+function reportFailure(root, error) {
+  console.error('[ZenBlog/About] No se pudo montar Acerca de', error);
+  if (root) root.dataset.zenAboutState = 'fallback';
+  document.dispatchEvent(new CustomEvent('zenabout:error', {
+    detail: { message: error instanceof Error ? error.message : String(error) }
+  }));
+}
+
 async function bootAbout() {
   if (isAdminPath()) return;
 
-  const [{ AboutFeature, syncProfileFavicon }, { SiteProfileStore }] = await Promise.all([
-    import(new URL('./AboutFeature.js', import.meta.url).href),
-    import(new URL('./SiteProfileStore.js', import.meta.url).href)
-  ]);
+  const root = document.getElementById('zen-about');
+  if (root) {
+    loadStylesheet();
+    root.dataset.zenAboutState = 'loading';
+  }
 
-  const store = new SiteProfileStore();
-  const syncFavicon = (data) => syncProfileFavicon(data?.profile?.photoUrl || '');
-  syncFavicon(store.load());
-  const unsubscribeFavicon = store.subscribe(syncFavicon);
-  window.addEventListener('pagehide', unsubscribeFavicon, { once: true });
+  try {
+    const [{ AboutFeature, syncProfileFavicon }, { SiteProfileStore }] = await Promise.all([
+      import(new URL('./AboutFeature.js', import.meta.url).href),
+      import(new URL('./SiteProfileStore.js', import.meta.url).href)
+    ]);
 
-  if (!document.getElementById('zen-about')) return;
-  loadStylesheet();
-  const feature = new AboutFeature({ store }).mount();
-  if (feature) {
+    const store = new SiteProfileStore();
+    const syncFavicon = (data) => syncProfileFavicon(data?.profile?.photoUrl || '');
+    syncFavicon(store.load());
+    const unsubscribeFavicon = store.subscribe(syncFavicon);
+    window.addEventListener('pagehide', () => unsubscribeFavicon(), { once: true });
+
+    if (!root) return;
+
+    const feature = new AboutFeature({ store, root }).mount();
+    if (!feature) return;
+
     window.ZenAboutFeature = feature;
-    document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: '0.1.4' } }));
+    root.dataset.zenAboutState = 'ready';
+    document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: '0.1.5' } }));
+  } catch (error) {
+    reportFailure(root, error);
   }
 }
 
