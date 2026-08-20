@@ -1,9 +1,16 @@
 const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
 const INSPECTOR_KEY = 'zenInspector.enabled';
+const RELEASE = '0.9.1';
 
 function isAdminPath(pathname = location.pathname) {
   const normalized = pathname.replace(/\/+$/, '') || '/';
   return ADMIN_PATHS.has(normalized);
+}
+
+function releaseUrl(path) {
+  const url = new URL(path, import.meta.url);
+  url.searchParams.set('v', RELEASE);
+  return url.href;
 }
 
 function readInspectorState() {
@@ -15,12 +22,12 @@ let aboutPromise = null;
 let inspectorPromise = null;
 
 function loadAbout() {
-  aboutPromise ??= import(new URL('../about/bootstrap.js', import.meta.url).href);
+  aboutPromise ??= import(releaseUrl('../about/bootstrap.js'));
   return aboutPromise;
 }
 
 function loadInspector() {
-  inspectorPromise ??= import(new URL('../inspector/bootstrap.js', import.meta.url).href)
+  inspectorPromise ??= import(releaseUrl('../inspector/bootstrap.js'))
     .finally(() => document.removeEventListener('keydown', onInspectorShortcut, true));
   return inspectorPromise;
 }
@@ -39,7 +46,7 @@ function onInspectorShortcut(event) {
 
 async function boot() {
   if (isAdminPath()) {
-    await import(new URL('../admin/bootstrap.js', import.meta.url).href);
+    await import(releaseUrl('../admin/bootstrap.js'));
     return;
   }
 
