@@ -59,17 +59,34 @@ export class AboutFeature {
     this.unsubscribe = null;
   }
 
+  commit(shell) {
+    if (!this.root || !shell) return;
+    this.root.replaceChildren(shell);
+  }
+
   mount() {
     this.root = this.root ?? document.getElementById('zen-about');
     if (!this.root) return null;
-    this.root.dataset.zenAboutFeature = '0.1.4';
-    this.render(this.store.load());
-    this.unsubscribe = this.store.subscribe((profile) => this.render(profile));
+    this.root.dataset.zenAboutFeature = '0.1.5';
+
+    try {
+      this.render(this.store.load());
+    } catch (error) {
+      console.error('[ZenBlog/About] Falló el render inicial; se conserva fallback', error);
+      if (!this.root.childElementCount) this.renderFallback();
+    }
+
+    this.unsubscribe = this.store.subscribe((profile) => {
+      try {
+        this.render(profile);
+      } catch (error) {
+        console.error('[ZenBlog/About] Falló una actualización; se conserva el último render válido', error);
+      }
+    });
     return this;
   }
 
   renderFallback() {
-    this.root.replaceChildren();
     const wrap = node('div', 'zen-about-shell');
     const header = node('header', 'zen-about-intro zen-about-intro--fallback');
     header.append(
@@ -77,10 +94,10 @@ export class AboutFeature {
       node('p', 'zen-about-lead', 'Plataforma editorial y documental para organizar, leer y recuperar conocimiento sobre soberanía, Constitución y Estado.')
     );
     wrap.appendChild(header);
-    this.root.appendChild(wrap);
+    this.commit(wrap);
   }
 
-  render(data) {
+  build(data) {
     const profile = data?.profile ?? {};
     const social = (data?.social ?? []).filter((item) => item.visible && item.url).sort((a, b) => a.order - b.order);
     const resources = (data?.relatedResources ?? []).filter((item) => item.visible && item.title && item.url).sort((a, b) => a.order - b.order);
@@ -94,12 +111,8 @@ export class AboutFeature {
 
     syncProfileFavicon(profile.photoUrl);
 
-    if (!hasProfile && !social.length && !resources.length) {
-      this.renderFallback();
-      return;
-    }
+    if (!hasProfile && !social.length && !resources.length) return null;
 
-    this.root.replaceChildren();
     const shell = node('div', 'zen-about-shell');
     const intro = node('header', 'zen-about-intro');
     const profileTop = node('div', 'zen-about-profile-top');
@@ -152,14 +165,11 @@ export class AboutFeature {
       social.forEach((item) => {
         const a = externalLink('', item.url, 'zen-about-social');
         if (!a) return;
-
         const icon = applySocialIcon(node('span', 'zen-about-social-icon'), item.platform);
         icon.setAttribute('aria-hidden', 'true');
-
         const copy = node('span', 'zen-about-social-copy');
         copy.appendChild(node('span', 'zen-about-social-name', item.label || SOCIAL_LABELS.get(item.platform) || 'Red social'));
         if (item.username) copy.appendChild(node('span', 'zen-about-social-user', item.username));
-
         a.replaceChildren(icon, copy);
         list.appendChild(a);
       });
@@ -177,13 +187,11 @@ export class AboutFeature {
       resources.forEach((item) => {
         const a = externalLink('', item.url, 'zen-about-resource');
         if (!a) return;
-
         const copy = node('span', 'zen-about-resource-copy');
         const top = node('span', 'zen-about-resource-top');
         top.append(node('strong', '', item.title), node('span', 'zen-about-resource-type', RESOURCE_LABELS.get(item.type) || 'Recurso'));
         copy.appendChild(top);
         if (item.description) copy.appendChild(node('span', 'zen-about-resource-description', item.description));
-
         a.appendChild(copy);
         list.appendChild(a);
       });
@@ -191,7 +199,16 @@ export class AboutFeature {
       shell.appendChild(section);
     }
 
-    this.root.appendChild(shell);
+    return shell;
+  }
+
+  render(data) {
+    const shell = this.build(data);
+    if (!shell) {
+      this.renderFallback();
+      return;
+    }
+    this.commit(shell);
   }
 
   destroy() {
