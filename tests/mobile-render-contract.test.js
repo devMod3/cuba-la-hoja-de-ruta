@@ -21,7 +21,7 @@ test('Home has compact short-phone mode before emergency scrolling', () => {
 
 test('About keeps portrait and identity side-by-side on normal phones', () => {
   assert.match(about, /@media\(max-width:500px\)/);
-  assert.match(about, /grid-template-columns:96px minmax\(0,1fr\)/);
+  assert.match(about, /grid-template-columns:92px minmax\(0,1fr\)/);
   assert.match(about, /@media\(max-width:340px\)/);
   assert.match(about, /grid-template-columns:1fr/);
 });
