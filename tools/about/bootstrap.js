@@ -1,8 +1,15 @@
 const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
+const RELEASE = '0.9.1';
 
 function isAdminPath(pathname = location.pathname) {
   const normalized = pathname.replace(/\/+$/, '') || '/';
   return ADMIN_PATHS.has(normalized);
+}
+
+function releaseUrl(path) {
+  const url = new URL(path, import.meta.url);
+  url.searchParams.set('v', RELEASE);
+  return url.href;
 }
 
 function loadStylesheet() {
@@ -10,7 +17,7 @@ function loadStylesheet() {
   const link = document.createElement('link');
   link.id = 'zen-about-css';
   link.rel = 'stylesheet';
-  link.href = new URL('./about.css', import.meta.url).href;
+  link.href = releaseUrl('./about.css');
   document.head.appendChild(link);
 }
 
@@ -18,8 +25,8 @@ async function bootAbout() {
   if (isAdminPath()) return;
 
   const [{ AboutFeature, syncProfileFavicon }, { SiteProfileStore }] = await Promise.all([
-    import(new URL('./AboutFeature.js', import.meta.url).href),
-    import(new URL('./SiteProfileStore.js', import.meta.url).href)
+    import(releaseUrl('./AboutFeature.js')),
+    import(releaseUrl('./SiteProfileStore.js'))
   ]);
 
   const store = new SiteProfileStore();
@@ -33,7 +40,7 @@ async function bootAbout() {
   const feature = new AboutFeature({ store }).mount();
   if (feature) {
     window.ZenAboutFeature = feature;
-    document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: '0.1.4' } }));
+    document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: RELEASE } }));
   }
 }
 
