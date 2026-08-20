@@ -1,0 +1,322 @@
+ZENBLOG v0.9.1 — DEFINITIVE PROJECT HANDOFF
+============================================
+
+PRODUCT
+-------
+Public name: La hoja de ruta
+Engine/project name: ZenBlog
+Public URL: https://cubalahojaderuta.blogspot.com/
+Repository: devMod3/cuba-la-hoja-de-ruta
+Stable code line: main
+Release: v0.9.1
+
+PURPOSE
+-------
+This file exists so a human engineer or AI can continue the project without rediscovering its architecture, rules, UX contract or deployment model. Read it before changing code.
+
+CHANGE LAW
+----------
+If something works, freeze it unless it is explicitly in scope.
+Required workflow: audit -> identify owner -> state protected surfaces -> smallest coherent change -> regression tests -> CI -> install full Blogger XML -> real Blogger QA -> user acceptance -> freeze.
+Never make unrelated improvements while fixing one issue.
+Always preserve the last validated XML/SHA as rollback.
+
+IDENTITY
+--------
+Official title: La hoja de ruta
+Home question: ¿Qué nos define?
+Statement: Seguir el origen, los límites y el ejercicio del poder.
+Supporting text: Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.
+Conceptual line: Soberanía · Constitución · Estado.
+
+DESIGN / UX CONTRACT
+--------------------
+Institutional, editorial, dark, sober.
+iOS-like means hierarchy, restraint, progressive disclosure, predictable controls, strong touch ergonomics and use of empty space. It does not mean decorative imitation.
+Square geometry is preferred for institutional controls. The profile portrait is intentionally circular.
+Vertical page scroll belongs to reading; Explore uses a bounded internal results scroll. Article is the long-form exception.
+Mobile must retain every essential function.
+
+BLOGGER PROTECTED ANATOMY
+-------------------------
+Exactly one #page_body.
+Exactly one Blog1.
+Blog1 must remain under #page_body.
+Never replace Blogger with zen_main.
+Blogger is CMS + public document host. ZenBlog composes around it.
+
+PUBLIC ARCHITECTURE
+-------------------
+Infrastructure -> adapters/contracts -> domain/services -> features -> composition root -> UI.
+
+Entry:
+- dist/zenblog.js
+Composition root:
+- src/bootstrap/createZenBlog.js
+Core public features:
+- NavigationFeature
+- HomeFeature
+- ExploreFeature
+- ArticleFeature
+Optional public feature:
+- MobileGestureNavigation, lazy on coarse-pointer mobile/tablet only
+
+Adapters:
+- BloggerFeedSource: Blogger content feed
+- LocalMetadataSource: current LAB metadata storage adapter
+
+Auxiliary runtime:
+- tools/runtime/bootstrap.js
+  * Admin loaded only on /admin or /p/admin.html
+  * About loaded when needed
+  * Inspector loaded only when enabled/requested
+Authoring/debug code must stay out of the critical reader path.
+
+ROUTES
+------
+#zen-home
+#zen-explore
+#zen-about
+#zen-radio-player (independent player target)
+Articles use real Blogger URLs.
+Direct article -> Portada returns to homepage document.
+
+PLAYER — FROZEN
+---------------
+Repository: devMod3/zen-radio-player
+Loader version: 1.0.3
+ZenBlog must not close, hide or restyle player internals.
+
+HOME — FROZEN SEMANTICS
+-----------------------
+Discovery surface.
+Can show title + summary.
+Highlighted/latest reading uses .zen-feature.
+The public social card intentionally borrows this visual language.
+
+EXPLORE — FROZEN SEMANTICS
+--------------------------
+Simple search = title-only.
+Advanced search = structured metadata/service search.
+Result rows = Type · Date · Title only; no summaries.
+Documentary year is not Blogger publication date.
+No popularity sorting without analytics.
+Responsive changes must not alter query semantics.
+
+ARTICLE
+-------
+Long-form reading surface.
+Keep real Blogger content/URL.
+TOC rail becomes an overlay at smaller widths.
+Print removes UI chrome.
+Article is excluded from global swipe navigation to protect reading gestures.
+
+ABOUT / SITE PROFILE
+--------------------
+Contract/storage key: zenSiteProfile.v1
+Contains profile, social links and related resources.
+Only populated fields render publicly.
+Portrait circular.
+Public expanded Blogger-details accordion and decorative arrows were removed.
+
+IMPORTANT FAVICON MODEL
+-----------------------
+zenSiteProfile.v1 is browser-local. A profile photo saved there cannot become a globally visible crawler favicon by itself.
+Admin photo flow now exports a 96x96 PNG for favicon use.
+Authoritative global favicon must be uploaded in Blogger Settings -> Favicon.
+The theme contains a repository fallback favicon so the site always has a public icon before that account-level upload.
+
+SOCIAL / X CARD
+---------------
+Open Graph + X metadata is server-rendered in blogger/theme.xml. Never move it to client JavaScript.
+Card mode: summary_large_image.
+Image: assets/social/zenblog-social-card.png
+Visual intent: resemble Home .zen-feature, not reproduce browser UI pixel-for-pixel.
+Title comes from current Blogger page title.
+Description uses Blogger metaDescription when available; otherwise the site mission fallback.
+X decides final card chrome/rendering; ZenBlog controls supplied metadata/image.
+
+SEO
+---
+Keep Blogger all-head-content. Blogger remains authoritative for canonical/platform/index-noindex account behavior.
+ZenBlog adds:
+- homepage description
+- robots preview directives without forcing index
+- Open Graph
+- X Card
+- WebSite JSON-LD on homepage
+- theme-color / viewport-fit
+Do not fabricate structured article data.
+For each post, set a useful Blogger Search Description; it becomes the strongest article-specific social/search description available to the theme.
+
+PUBLIC VISIBILITY / INDEXING
+----------------------------
+HTTP-public and indexed are different states.
+The site is reachable publicly when Blogger publishes it, but appearing in Google/X caches is asynchronous.
+Blogger account checks after theme installation:
+- Settings -> Privacy -> Visible to search engines = ON
+- Search description configured
+- Favicon uploaded
+- HTTPS enabled/redirect enabled when Blogger exposes those settings
+Search Console:
+- verify the property
+- submit sitemap.xml
+- submit sitemap-pages.xml when relevant
+- inspect/request indexing for important URLs
+Never claim indexed status without evidence.
+
+PERFORMANCE
+-----------
+Active production theme avoids the old CSS @import waterfall.
+CSS loads in parallel:
+- tokens.css
+- shell.css
+- home.css
+- explore.css
+- article.css
+- responsive.css
+Connection hints exist for fonts and GitHub Pages.
+Module preload covers entry/composition root.
+Admin/About/Inspector are lazy.
+Mobile gestures are lazy.
+Fonts use display=swap.
+Do not add reader-critical global dependencies without measured/documented benefit.
+
+RESPONSIVE
+----------
+Core tokens include header height, player-safe area, safe inline spacing and reading width.
+Global protections:
+- min-width:0 on nested layouts
+- media max-width
+- long URL/text wrapping
+- table/pre/code horizontal containment
+- safe-area insets
+- touch targets >=44px where practical
+Test classes:
+- desktop >=1024
+- tablet 761-1023
+- mobile <=760
+- narrow <=420
+- landscape/short-height
+- safe-area devices
+Test Home, Explore simple+advanced, Article, About, player and Admin.
+
+MOBILE GESTURES
+---------------
+Only coarse-pointer devices <=900px.
+Sequence: Portada <-> Explorar <-> Acerca de.
+Gestures enhance visible navigation; they never replace tabs/links.
+No swipe may start on links/buttons/forms/contenteditable, player, article, Explore results scroll or data-zen-no-swipe.
+Reserve screen edges for OS/browser back gestures.
+Require horizontal dominance and a minimum travel threshold.
+
+ADMIN
+-----
+Unified AdminShell tabs:
+Metadata | Search Lab | Acerca de | Inspector
+Old Metadata floating launcher is compatibility-only during boot and must be removed from final UI.
+
+Metadata Manager:
+- v0.5 core protected
+- v0.6 Adaptive UI decorates/reorders without rewriting core
+- registry: zenMetadataRegistry.v2
+
+About Manager:
+- edits zenSiteProfile.v1
+- photo upload/optimization
+- favicon PNG export
+
+Search Lab:
+- diagnostic/admin only
+- never writes metadata
+Rule: Metadata clasifica. Search Lab verifica.
+
+Inspector:
+- key zenInspector.enabled
+- exact DOM node inspection
+- known logical owner shown as context
+- click opens modal
+- initial focus/select on component/node name
+- arrow cursor, never crosshair
+- while ON, href values are temporarily neutralized to suppress browser hover URL preview and restored exactly when OFF
+- Alt+I loads/toggles
+- when OFF, reader behavior is unchanged
+
+CURRENT STORAGE LIMITS
+----------------------
+zenMetadataRegistry.v2 is browser-local.
+zenSiteProfile.v1 is browser-local.
+zenInspector.enabled is browser-local.
+This is infrastructure debt, not a UI contract. Future remote persistence/auth must be introduced behind adapters/repositories.
+
+SOLID / FUTURE MIGRATION
+------------------------
+Preserve dependency direction and contracts.
+Do not let Blogger/localStorage leak into feature logic when an adapter can own it.
+New persistence: add adapter/repository, keep UI.
+New CMS: add ContentSource implementation, keep features/services where possible.
+A future build/bundle pipeline is allowed only when it lowers operational complexity and preserves debuggability.
+The project may end on a different platform; migrate bounded infrastructure, not proven user behavior.
+
+DEPLOYMENT REALITY
+------------------
+GitHub Pages and Blogger are separate deployments.
+Updating main DOES NOT install blogger/theme.xml into Blogger.
+Release process:
+1. merge/validate GitHub assets
+2. wait for Pages deployment
+3. install full blogger/theme.xml in Blogger Theme -> Edit HTML
+4. real-site smoke test
+5. set Blogger account-level favicon/privacy/search settings
+6. freeze after acceptance
+
+QUALITY GATES
+-------------
+npm run check
+npm test
+Blogger XML well formed
+architecture invariants
+release cache-key tests
+SEO/social tests
+critical-path/performance contract tests
+responsive/mobile tests
+real Blogger smoke test
+
+SMOKE TEST
+----------
+Portada
+Explore simple
+Explore advanced
+Open article
+Article -> Portada
+About
+Player persistence
+/admin: Metadata / Search Lab / About / Inspector
+Profile photo save + favicon export
+Inspector ON/OFF/modal/exact node
+Desktop/tablet/mobile portrait/mobile landscape
+Swipe must not interfere with links, forms, article, player or Explore scrolling
+Refresh and deep-link article
+
+COMMENTS POLICY
+---------------
+Comments are valuable when they preserve WHY: Blogger workaround, compatibility node, invariant, performance boundary, security risk, or deliberate no-change.
+Do not remove forensic comments merely to make files shorter.
+Avoid comments that only narrate obvious syntax.
+
+ONBOARDING ORDER
+----------------
+1. docs/PROJECT-HANDOFF-v0.9.1.txt
+2. docs/ZENBLOG-FORENSIC-MEMORY.txt
+3. docs/ARCHITECTURE.md
+4. docs/UI-UX-CONTRACT.md
+5. docs/ZENBLOG-ADMIN-GUIDE.md
+6. docs/ZENBLOG-MAINTENANCE-GUIDE.md
+7. docs/PRODUCTION-AUDIT-v0.9.md
+8. docs/CODE-AUDIT-v0.9.md
+9. current tests / release pin tests
+10. live Blogger site
+
+FINAL PRINCIPLE
+---------------
+Do not restart this project from zero. Preserve working contracts, tests, deployment knowledge and validated UX. Modernize by replacing bounded infrastructure behind interfaces, not by destroying proven behavior.
