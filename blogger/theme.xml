@@ -15,7 +15,7 @@
   <meta content='#121416' name='theme-color'/>
   <meta content='dark' name='color-scheme'/>
   <!-- Public fallback. Blogger custom Favicon, when configured, is emitted later by all-head-content. -->
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/brand/favicon-fallback.png?v=0.9.1' rel='icon' type='image/png'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/brand/favicon-fallback.png?v=0.9.2' rel='icon' type='image/png'/>
   <b:include data='blog' name='all-head-content'/>
   <title><data:blog.pageTitle/></title>
 
@@ -45,7 +45,7 @@
     <meta content='Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.' property='og:description'/>
     <meta content='Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.' name='twitter:description'/>
   </b:if>
-  <meta content='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/social/zenblog-social-card.png?v=0.9.1' property='og:image'/>
+  <meta content='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/social/zenblog-social-card.png?v=0.9.2' property='og:image'/>
   <meta content='image/png' property='og:image:type'/>
   <meta content='600' property='og:image:width'/>
   <meta content='315' property='og:image:height'/>
@@ -53,7 +53,7 @@
   <meta content='summary_large_image' name='twitter:card'/>
   <meta content='@la_RsisTncia' name='twitter:site'/>
   <meta expr:content='data:blog.pageTitle' name='twitter:title'/>
-  <meta content='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/social/zenblog-social-card.png?v=0.9.1' name='twitter:image'/>
+  <meta content='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/social/zenblog-social-card.png?v=0.9.2' name='twitter:image'/>
   <meta content='Tarjeta editorial de La hoja de ruta' name='twitter:image:alt'/>
 
   <b:if cond='data:view.isHomepage'>
@@ -65,14 +65,15 @@
   <link crossorigin='anonymous' href='https://fonts.gstatic.com' rel='preconnect'/>
   <link href='https://devmod3.github.io' rel='preconnect'/>
   <link href='https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&amp;display=swap' rel='stylesheet'/>
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/tokens.css?v=0.9.1' rel='stylesheet'/>
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/shell.css?v=0.9.1' rel='stylesheet'/>
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/home/home.css?v=0.9.1' rel='stylesheet'/>
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/explore/explore.css?v=0.9.1' rel='stylesheet'/>
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/article/article.css?v=0.9.1' rel='stylesheet'/>
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/responsive.css?v=0.9.1' rel='stylesheet'/>
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.9.1' rel='modulepreload'/>
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/bootstrap/createZenBlog.js?v=0.9.1' rel='modulepreload'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/tokens.css?v=0.9.2' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/shell.css?v=0.9.2' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/home/home.css?v=0.9.2' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/explore/explore.css?v=0.9.2' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/article/article.css?v=0.9.2' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/responsive.css?v=0.9.2' rel='stylesheet'/>
+  <link id='zen-about-css' href='https://devmod3.github.io/cuba-la-hoja-de-ruta/tools/about/about.css?v=0.9.2' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.9.2' rel='modulepreload'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/bootstrap/createZenBlog.js?v=0.9.2' rel='modulepreload'/>
 
   <b:skin><![CDATA[
     /* Blogger is the composition root only. Product UI lives in GitHub modules. */
@@ -120,9 +121,9 @@
   </div>
 
   <!-- Public product entry. -->
-  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.9.1' type='module'></script>
+  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.9.2' type='module'></script>
   <!-- Auxiliary modules (Admin/About/Inspector) load only when needed. -->
-  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/tools/runtime/bootstrap.js?v=0.9.1' type='module'></script>
+  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/tools/runtime/bootstrap.js?v=0.9.2' type='module'></script>
 
   <!-- Protected independent foreground player. -->
   <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.3' type='module'></script>
