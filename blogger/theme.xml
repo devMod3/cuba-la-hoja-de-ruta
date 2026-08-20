@@ -11,18 +11,68 @@
       xmlns:data='http://www.google.com/2005/gml/data'
       xmlns:expr='http://www.google.com/2005/gml/expr'>
 <head>
-  <meta content='width=device-width,initial-scale=1' name='viewport'/>
+  <meta content='width=device-width,initial-scale=1,viewport-fit=cover' name='viewport'/>
+  <meta content='#121416' name='theme-color'/>
+  <meta content='dark' name='color-scheme'/>
   <b:include data='blog' name='all-head-content'/>
   <title><data:blog.pageTitle/></title>
 
+  <!-- Search identity. Blogger keeps canonical/feed/platform head data in all-head-content. -->
+  <b:if cond='data:view.isHomepage'>
+    <meta content='Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.' name='description'/>
+    <meta content='index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' name='robots'/>
+  </b:if>
+  <b:if cond='data:view.isSingleItem'>
+    <meta content='index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1' name='robots'/>
+  </b:if>
+
+  <!-- Open Graph + X Card. Server-rendered so social crawlers do not depend on JavaScript. -->
+  <meta expr:content='data:blog.pageTitle' property='og:title'/>
+  <meta expr:content='data:blog.canonicalUrl' property='og:url'/>
+  <meta content='La hoja de ruta' property='og:site_name'/>
+  <meta content='es' property='og:locale'/>
+  <b:if cond='data:view.isSingleItem'>
+    <meta content='article' property='og:type'/>
+  <b:else/>
+    <meta content='website' property='og:type'/>
+  </b:if>
+  <b:if cond='data:blog.metaDescription'>
+    <meta expr:content='data:blog.metaDescription' property='og:description'/>
+    <meta expr:content='data:blog.metaDescription' name='twitter:description'/>
+  <b:else/>
+    <meta content='Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.' property='og:description'/>
+    <meta content='Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.' name='twitter:description'/>
+  </b:if>
+  <meta content='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/social/zenblog-social-card.png' property='og:image'/>
+  <meta content='image/png' property='og:image:type'/>
+  <meta content='600' property='og:image:width'/>
+  <meta content='315' property='og:image:height'/>
+  <meta content='Tarjeta editorial de La hoja de ruta' property='og:image:alt'/>
+  <meta content='summary_large_image' name='twitter:card'/>
+  <meta content='@la_RsisTncia' name='twitter:site'/>
+  <meta expr:content='data:blog.pageTitle' name='twitter:title'/>
+  <meta content='https://devmod3.github.io/cuba-la-hoja-de-ruta/assets/social/zenblog-social-card.png' name='twitter:image'/>
+  <meta content='Tarjeta editorial de La hoja de ruta' name='twitter:image:alt'/>
+
+  <b:if cond='data:view.isHomepage'>
+    <script type='application/ld+json'>{"@context":"https://schema.org","@type":"WebSite","name":"La hoja de ruta","url":"https://cubalahojaderuta.blogspot.com/","description":"Seguir el origen, los límites y el ejercicio del poder. Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar cada afirmación.","inLanguage":"es"}</script>
+  </b:if>
+
+  <!-- Connection hints and parallel styles: no render-blocking CSS @import chain in the active theme. -->
   <link href='https://fonts.googleapis.com' rel='preconnect'/>
   <link crossorigin='anonymous' href='https://fonts.gstatic.com' rel='preconnect'/>
+  <link href='https://devmod3.github.io' rel='preconnect'/>
   <link href='https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&amp;display=swap' rel='stylesheet'/>
-
-  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.css?v=0.3.2' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/tokens.css?v=0.4.0' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/shell.css?v=0.4.0' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/home/home.css?v=0.4.0' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/explore/explore.css?v=0.4.0' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/features/article/article.css?v=0.4.0' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/src/ui/styles/responsive.css?v=0.4.0' rel='stylesheet'/>
+  <link href='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.4.0' rel='modulepreload'/>
 
   <b:skin><![CDATA[
-    /* Blogger composition root only. ZenBlog UI lives in GitHub modules. */
+    /* Blogger is the composition root only. Product UI lives in GitHub modules. */
     html,body{margin:0;padding:0}
   ]]></b:skin>
 </head>
@@ -32,7 +82,7 @@
 
   <div id='zen-blog-prototype'>
     <header class='zen-site-header'>
-      <a aria-label='Ir a la portada' class='zen-brand' href='#zen-home' data-zen-route='zen-home'>
+      <a aria-label='Ir a la portada' class='zen-brand' data-zen-route='zen-home' href='#zen-home'>
         <span aria-hidden='true' class='zen-brand-mark'>HR</span>
         <span class='zen-brand-copy'>
           <strong>La hoja de ruta</strong>
@@ -66,11 +116,12 @@
     </main>
   </div>
 
-  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.3.2' type='module'></script>
+  <!-- Public product entry. -->
+  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/dist/zenblog.js?v=0.4.0' type='module'></script>
+  <!-- Auxiliary modules (Admin/About/Inspector) load only when needed. -->
+  <script src='https://devmod3.github.io/cuba-la-hoja-de-ruta/tools/runtime/bootstrap.js?v=0.9.0' type='module'></script>
 
-  <!-- (🔥 Inicio) Reproductor zen-radio-player -->
-  <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.2' type='module'>
-  </script>
-  <!-- (🔥 Fin) Reproductor zen-radio-player -->
+  <!-- Protected independent foreground player. -->
+  <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.3' type='module'></script>
 </body>
 </html>
