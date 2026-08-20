@@ -53,7 +53,6 @@ export function installProfilePhotoUpload(manager) {
 
     const originalField = photoInput.closest('.zam-field');
     originalField.classList.add('zam-photo-url-field');
-    originalField.hidden = true;
 
     const wrap = document.createElement('div');
     wrap.className = 'zam-photo-upload';
