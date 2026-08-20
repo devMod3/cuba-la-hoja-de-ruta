@@ -71,6 +71,7 @@
   <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/features/explore/explore.css' rel='stylesheet'/>
   <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/features/article/article.css' rel='stylesheet'/>
   <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/ui/styles/responsive.css' rel='stylesheet'/>
+  <link id='zen-about-css' href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/tools/about/about.css' rel='stylesheet'/>
   <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/dist/zenblog.js' rel='modulepreload'/>
   <link href='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@feaa8f561295204edbe1fa15d13a341899602fdd/src/bootstrap/createZenBlog.js' rel='modulepreload'/>
 
