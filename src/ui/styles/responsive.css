@@ -1,47 +1,75 @@
-/* ZenBlog responsive foundation — layout safety only, no feature behavior. */
-#zen-blog-prototype,#zen-app,.zen-view,#zen-home,#zen-explore,#zen-article,#zen-about{min-width:0;max-width:100%}
-#zen-blog-prototype img,#zen-blog-prototype video,#zen-blog-prototype iframe,#zen-blog-prototype canvas,#zen-blog-prototype svg{max-width:100%}
+/* ZenBlog responsive foundation — layout safety only, no feature semantics. */
+html,body,#zen-blog-prototype,#zen-app,.zen-view,#zen-home,#zen-explore,#zen-article,#zen-about{min-width:0;max-width:100%}
+html,body{overflow-x:hidden}
+
+#zen-blog-prototype img,
+#zen-blog-prototype video,
+#zen-blog-prototype iframe,
+#zen-blog-prototype canvas,
+#zen-blog-prototype svg{max-width:100%}
 #zen-blog-prototype img,#zen-blog-prototype video{height:auto}
+#zen-blog-prototype iframe{width:100%}
+#zen-blog-prototype table{max-width:100%}
 #zen-blog-prototype p,#zen-blog-prototype li,#zen-blog-prototype dd,#zen-blog-prototype a{overflow-wrap:anywhere}
 #zen-blog-prototype input,#zen-blog-prototype select,#zen-blog-prototype textarea,#zen-blog-prototype button{max-width:100%}
+#zen-blog-prototype pre{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#zen-blog-prototype .post-body table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
 
-/* Tablet portrait / narrow desktop: prevent Home's 360px secondary column from overflowing. */
+/* Tablet portrait / narrow desktop. */
 @media (min-width:761px) and (max-width:899px){
   #zen-home[data-home-enhanced="true"]{padding:0 1rem}
-  .zen-home-panel-overview{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:1.25rem;padding:1.25rem 0;align-items:start}
   .zen-home-statement{max-width:760px}
   .zen-home-statement h1{font-size:clamp(2.8rem,7vw,4.4rem)}
   .zen-home-feature-slot{width:min(100%,720px)}
 }
 
-/* Tablet: keep the global chrome compact while retaining every action. */
+/* Tablet. */
 @media (min-width:761px) and (max-width:1023px){
-  .zen-site-header{gap:.7rem;padding:0 .8rem}
+  .zen-site-header{gap:.7rem;padding-left:max(.8rem,env(safe-area-inset-left));padding-right:max(.8rem,env(safe-area-inset-right))}
   .zen-brand-copy small{display:none}
   .zen-primary-nav a{padding:0 .58rem}
   #zen-explore{padding:.8rem}
   #zen-article{width:min(100% - 2rem,1180px)}
 }
 
-/* Mobile: all public views share the same safe horizontal inset. */
+/* Mobile: consistent safe insets and no accidental horizontal page scroll. */
 @media (max-width:760px){
-  .zen-site-header{padding-left:max(.7rem,env(safe-area-inset-left));padding-right:max(.7rem,env(safe-area-inset-right))}
-  .zen-primary-nav{scrollbar-width:none;overscroll-behavior-x:contain}
-  .zen-primary-nav::-webkit-scrollbar{display:none}
   #zen-home[data-home-enhanced="true"]{padding-left:max(.75rem,env(safe-area-inset-left));padding-right:max(.75rem,env(safe-area-inset-right))}
   #zen-explore{padding-left:max(.55rem,env(safe-area-inset-left));padding-right:max(.55rem,env(safe-area-inset-right))}
-  #zen-article{width:min(calc(100% - 1.5rem),1180px)}
+  #zen-article{width:min(calc(100% - 1.5rem - env(safe-area-inset-left) - env(safe-area-inset-right)),1180px)}
   .zen-home-quick-actions,.zen-feature-actions{gap:.7rem}
+  #zen-about{padding-left:max(.75rem,env(safe-area-inset-left));padding-right:max(.75rem,env(safe-area-inset-right))}
 }
 
-/* Very narrow phones: preserve function, reduce only non-essential chrome. */
+/* Very narrow phones: preserve every action; only compress chrome. */
 @media (max-width:420px){
   .zen-brand-copy small{display:none}
-  .zen-primary-nav a{padding:0 .58rem;font-size:.68rem}
   .zen-home-statement h1{font-size:clamp(2.2rem,11vw,3rem)}
   .zen-explore-head{padding-left:.75rem;padding-right:.75rem}
   .zen-explore-search,.zen-advanced-toolbar,.zen-explore-controls{padding-left:.75rem;padding-right:.75rem}
   #zen-article .zen-article-header h1{font-size:clamp(2.1rem,11vw,3.2rem)}
+}
+
+/* Landscape phones and short tablets: prioritize usable height over decorative spacing. */
+@media (max-height:560px) and (max-width:900px){
+  .zen-site-header{position:sticky}
+  .zen-brand-copy small{display:none}
+  #zen-article{padding-top:1rem}
+  #zen-about .zen-about-shell{padding-top:22px}
+}
+
+/* Touch ergonomics. Gestures never replace visible navigation. */
+@media (pointer:coarse){
+  #zen-blog-prototype :where(a,button,input,select,textarea,summary){touch-action:manipulation}
+  #zen-blog-prototype :where(button,.zen-primary-nav a,.zen-text-button,.zen-primary-action){min-height:44px}
+  html[data-zen-gestures='on'] .zen-view{touch-action:pan-y pinch-zoom}
+  html[data-zen-gestures='on'] #zen-radio-player,
+  html[data-zen-gestures='on'] #zen-article,
+  html[data-zen-gestures='on'] .zen-results-scroll{touch-action:auto}
+}
+
+@supports (height:100svh){
+  .zen-view{min-height:calc(100svh - var(--zen-header-h))}
 }
 
 @media (prefers-reduced-motion:reduce){
