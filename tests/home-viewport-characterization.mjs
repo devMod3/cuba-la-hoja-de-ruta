@@ -35,6 +35,14 @@ function safePath(urlPath) {
   return candidate;
 }
 
+function waitForChildExit(child, timeoutMs = 5000) {
+  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
+  return Promise.race([
+    new Promise((done) => child.once('exit', done)),
+    new Promise((done) => setTimeout(done, timeoutMs))
+  ]);
+}
+
 class CdpClient {
   constructor(url) {
     assert.equal(typeof WebSocket, 'function', 'Node WebSocket API unavailable; run with --experimental-websocket on Node 20');
@@ -138,8 +146,18 @@ async function launchBrowser(browser) {
     profileDir,
     async close() {
       cdp.close();
-      child.kill('SIGTERM');
-      await rm(profileDir, { recursive: true, force: true });
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+      await waitForChildExit(child);
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+        await waitForChildExit(child, 2000);
+      }
+      await rm(profileDir, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100
+      });
     }
   };
 }
