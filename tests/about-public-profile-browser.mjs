@@ -164,7 +164,7 @@ try {
     });
   });
 
-  const aboutDom = html.match(/<section id="zen-about"[\s\S]*?<\/section>/)?.[0] || '';
+  const aboutDom = html.match(/<section id="zen-about"[\s\S]*<\/section>(?=\s*<script)/)?.[0] || '';
   assert.ok(aboutDom, 'About DOM missing from browser dump');
   assert.match(html, /data-about-ready="true"/);
   assert.match(html, /data-profile-source="published-main"/);
