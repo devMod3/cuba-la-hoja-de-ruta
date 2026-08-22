@@ -1,6 +1,6 @@
 # Candidate Deltas — Spec 001
 
-**State**: LIVE_CHARACTERIZATION_COMPLETE_T022_T023
+**State**: M002_DECIDED_T031
 **Rule**: no delta may enter product implementation while `decision=UNRESOLVED`.
 
 ## Comparison baseline
@@ -38,13 +38,13 @@ The `aa372e1.../blogger/theme.xml` repository blob is historical source evidence
 - `productionBlob`: `0c1db69994aecac82d27e362d9736b1194a63701`
 - `symptomOrBenefit`: production adds short-phone compaction at <=760px width/height, changes mobile title sizing, delays emergency vertical scroll to <=560px, adds overscroll containment, and adds `100svh`; canonical main retains the older <=620px fallback and lacks the dedicated short-phone compaction block.
 - `protectedNeighbors`: PS-002 player boundary; PS-011 reader critical path; PS-015 responsive/safe areas
-- `reproductionEvidence`: NOT_RUN — ~320/~390/short-height/landscape required
-- `regressionTest`: neutral short-height escape-hatch characterization exists in `tests/mobile-characterization.test.js`; behavioral decision test pending T029–T031
-- `accessibilityImpact`: essential-action visibility, reflow and scroll behavior
+- `reproductionEvidence`: E3 — exact Chrome DevTools Protocol device metrics in GitHub Actions. Run #150 (`32588374314`) proved the harness at 320x568, 390x700, 390x560 and 667x375. Canonical main: 320x568 and 390x560 place essential Home elements outside the initial Home box but keep them reachable by vertical scroll; 390x700 fits; landscape remains reachable by scroll; no horizontal overflow. Deployed production: 320x568 and 390x560 keep essential elements inside the Home box; 390x700 remains fitting; landscape remains reachable by scroll; no horizontal overflow. Run #154 (`32588482004`) tested a bounded candidate consisting only of short-height compaction plus moving last-resort scroll from <=620px to <=560px with overscroll containment. That candidate matched the production critical outcomes for all four viewport classes and printed `M-002 minimal candidate: PASS`.
+- `regressionTest`: `tests/home-viewport-characterization.mjs` now proves exact viewport dimensions and the bounded candidate acceptance criteria; `tests/mobile-characterization.test.js` remains the neutral ownership/boundary test. T032 will convert the accepted rules into product CSS and freeze only those behaviors in regression assertions.
+- `accessibilityImpact`: positive for initial visibility at 320x568 and 390x560 while preserving reachable scroll in extreme landscape; no horizontal overflow observed.
 - `securityImpact`: none identified
-- `criticalPathImpact`: public Home CSS
-- `decision`: UNRESOLVED
-- `decisionEvidence`: static T022 characterization confirms a material delta; empirical T029–T031 still required
+- `criticalPathImpact`: public Home CSS, but bounded to short-height media queries and fallback-scroll threshold.
+- `decision`: ADJUST
+- `decisionEvidence`: T029/T030 exact viewport comparison + T031 bounded-candidate proof. Full deployed `home.css` is NOT accepted wholesale. General mobile title-size changes and `100svh` are not required to obtain the observed benefit and therefore remain excluded. Authorized T032 implementation is limited to: (1) the <=760px width + <=760px height compaction rules that preserve the same content/actions, and (2) changing the last-resort scroll threshold from <=620px to <=560px with `overscroll-behavior-y: contain`.
 
 ## M-003 — About stylesheet preload/delivery
 
@@ -125,13 +125,13 @@ The `aa372e1.../blogger/theme.xml` repository blob is historical source evidence
 
 This is not a new product-behavior CandidateDelta. It is the already accepted ADR-002 release-identity debt and must be normalized coherently to `0.9.2` only after functional delta decisions and before PAYLOAD_SHA capture.
 
-## T022/T023 gate result
+## Gate result through T031
 
-- M-001: MATERIAL / UNRESOLVED
-- M-002: MATERIAL / UNRESOLVED
+- M-001: MATERIAL / UNRESOLVED — WebKit/Safari safe-area evidence still required
+- M-002: MATERIAL / ADJUST — bounded implementation authorized for T032
 - M-003: MATERIAL / UNRESOLVED
 - M-004: MATERIAL / UNRESOLVED
 - M-005: EXACT EQUIVALENCE / KEEP AS NO-OP
 - A-001: NOT DEPLOYED / UNRESOLVED pending realistic reproduction
 
-No functional product source change is authorized by T022/T023 except the explicit decision to leave M-005 untouched.
+Only the explicitly bounded M-002 T032 change is now authorized in product source. M-005 remains untouched; all other product deltas remain blocked.
