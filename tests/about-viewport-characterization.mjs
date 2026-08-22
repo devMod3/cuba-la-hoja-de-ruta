@@ -203,6 +203,8 @@ async function characterize(source, state, testCase) {
     const rootRect = root.getBoundingClientRect();
     const profileStyle = profileTop ? getComputedStyle(profileTop) : null;
     return {
+      innerWidth,
+      innerHeight,
       ready: document.body.dataset.aboutReady === 'true',
       title: title?.textContent?.trim() || '',
       lead: lead?.textContent?.trim() || '',
@@ -224,7 +226,8 @@ async function characterize(source, state, testCase) {
     };
   })()`);
 
-  assert.equal(innerWidth ?? testCase.width, testCase.width);
+  assert.equal(value.innerWidth, testCase.width, `${source}/${state}/${testCase.id}: exact width not established`);
+  assert.equal(value.innerHeight, testCase.height, `${source}/${state}/${testCase.id}: exact height not established`);
   return { source, state, case: testCase.id, width: testCase.width, height: testCase.height, ...value };
 }
 
