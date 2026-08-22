@@ -1,238 +1,265 @@
 # Tasks: ZenBlog v0.9.x Release-Line Convergence
 
-**Input**: `spec.md`, `clarifications.md`, `clarify-closeout.md`, `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`, forensic registries and ADR-001.
+**Input**: `spec.md`, `clarifications.md`, `clarify-closeout.md`, `plan.md`, `research.md`, `data-model.md`, `quickstart.md`, `contracts/`, forensic registries, ADR-001 and ADR-002.
 
-**Task format**: `[ID] [P?] [Story] Description`
+**Target canonical release**: `ZenBlog v0.9.2` as defined by ADR-002. This does NOT make the historical PR/branch named v0.9.2 canonical.
 
-- `[P]` means the task can run in parallel with other tasks in that phase because it targets independent files/evidence.
-- `[US#]` maps directly to the user stories in `spec.md`.
-- Tests/characterization precede implementation for every functional delta.
-- A task marked conditional is closed either by implementing the accepted delta or by recording REJECT/DEFER with evidence; no unresolved task may silently disappear.
+**Format**: `[ID] [P?] [Story] Description`
 
-## Phase 1 — Setup / Baseline Lock
+- `[P]` = safe to execute in parallel because different files/evidence are owned.
+- `[US#]` maps to the user stories in `spec.md`.
+- Characterization/tests precede product changes.
+- Conditional implementation tasks close either with the accepted code delta or an evidence-backed REJECT/DEFER record.
+- No task authorizes wholesale merge/cherry-pick of PR #13 or PR #14.
 
-**Purpose**: ensure implementation starts from attributable source/deployment state and rollback is recoverable.
+## Phase 1 — Baseline Lock and Durable Evidence
 
-- [ ] T001 [US1] Re-read `.specify/memory/constitution.md`, `specs/001-release-line-convergence/plan.md`, `docs/forensic/PROTECTED-SURFACE-REGISTRY-v0.1.txt`, and `docs/architecture/ADR-001-immutable-release-asset-identity.md`; record reviewer/date in `specs/001-release-line-convergence/evidence/implementation-baseline.md`.
-- [ ] T002 [US1] Verify current `main` SHA still matches the planned canonical base or document the new SHA/diff in `specs/001-release-line-convergence/evidence/implementation-baseline.md`; STOP and refresh Plan evidence if main materially advanced.
-- [ ] T003 [US1] Verify the 2026-08-22 Blogger rollback XML bytes against SHA-256 `42b439df1c96915a2568fce9b0a243f26196281d2c9f8afca0bb7f786df114d8`; record storage/location and restoration availability in `specs/001-release-line-convergence/evidence/implementation-baseline.md`.
-- [ ] T004 [US1] Create bounded implementation branch `001-release-line-convergence-impl` from the accepted canonical/SDD base; record base SHA in `specs/001-release-line-convergence/evidence/implementation-baseline.md`.
-- [ ] T005 [P] [US1] Create `specs/001-release-line-convergence/evidence/candidate-deltas.md` with rows M-001, M-002, M-003, M-004, M-005, A-001 and fields from `CandidateDelta` in `data-model.md`.
-- [ ] T006 [P] [US4] Create `specs/001-release-line-convergence/evidence/qa-run.md` from `contracts/qa-evidence.md`, leaving candidate identity/result fields unfilled until execution.
-- [ ] T007 [P] [US1] Create `docs/releases/v0.9x-convergence/RELEASE-MANIFEST.md` from `contracts/release-manifest.md` with status `CANDIDATE-DRAFT`; do not claim source/XML/QA values not yet produced.
+**Purpose**: make source, production and rollback independently attributable before implementation.
 
-**Checkpoint**: exact source baseline and rollback are known; implementation branch exists; evidence ledger is ready.
+- [ ] T001 [US1] Re-read `.specify/memory/constitution.md`, `specs/001-release-line-convergence/plan.md`, `docs/forensic/PROTECTED-SURFACE-REGISTRY-v0.1.txt`, `docs/architecture/ADR-001-immutable-release-asset-identity.md`, and `docs/architecture/ADR-002-single-zenblog-release-version.md`; record reviewer/date in `specs/001-release-line-convergence/evidence/implementation-baseline.md`.
+- [ ] T002 [US1] Verify current `main` SHA against planned canonical base `0a45bc523f0129d83307f1c6f3a972056b219ae0`; if main materially advanced, record the delta and STOP until Spec/Plan evidence is refreshed.
+- [ ] T003 [US1] Re-hash the exact 2026-08-22 Blogger export and confirm SHA-256 `42b439df1c96915a2568fce9b0a243f26196281d2c9f8afca0bb7f786df114d8`.
+- [ ] T004 [US1] Inspect the rollback XML for credentials/secrets/private tokens; if none are present, preserve the exact bytes under `docs/forensic/artifacts/blogger-theme-current-2026-08-22.xml` and add a SHA-256 sidecar/README. If anything sensitive exists, preserve it in a restricted location and record that location/hash instead of committing it publicly.
+- [ ] T005 [P] [US1] Create `specs/001-release-line-convergence/evidence/candidate-deltas.md` with M-001, M-002, M-003, M-004, M-005 and A-001 using the `CandidateDelta` fields from `data-model.md`.
+- [ ] T006 [P] [US4] Create `specs/001-release-line-convergence/evidence/qa-run.md` from `contracts/qa-evidence.md` with results initially `NOT_RUN`.
+- [ ] T007 [P] [US1] Create `docs/releases/v0.9.2/RELEASE-MANIFEST.md` from `contracts/release-manifest.md`, status `CANDIDATE-DRAFT`, with no invented SHA/QA values.
+- [ ] T008 [US1] Create implementation branch `001-release-line-convergence-impl` from the current SDD branch head and open it as a DRAFT stacked PR targeting `001-release-line-convergence`; do not target/merge to `main` until the SDD foundation PR has been explicitly accepted/merged or the branch is safely rebased/retargeted.
 
-## Phase 2 — Foundational Test Extraction / Characterization Harness
+**Checkpoint**: rollback is durable, product implementation has an isolated stacked review path, and no production source changed.
 
-**Purpose**: recover reusable evidence mechanisms without importing divergent branch history.
+## Phase 2 — Preserve Historical Evidence Required by the Spec
 
-- [ ] T008 [P] [US3] Recreate the historical dependency-free About browser fixture as `tests/fixtures/about-smoke.html`, adapting only paths/data needed for current canonical source; preserve `zenSiteProfile.v1` semantics.
-- [ ] T009 [P] [US3] Recreate/review the historical Chromium smoke runner as `tests/about-browser-smoke.mjs`; retain path-traversal protection, local no-network server, explicit browser discovery and fail-on-missing-browser behavior.
-- [ ] T010 [US3] Add `test:browser` to `package.json` only after T008/T009 are reviewed; do not change product version in this task.
-- [ ] T011 [US3] Add the About browser-smoke step to `.github/workflows/validate.yml` only after local/branch execution proves it deterministic; preserve existing syntax/unit/XML/invariant gates.
-- [ ] T012 [US3] Run `npm run check`, `npm test`, and `npm run test:browser` against the unchanged canonical product baseline; record exact source SHA, result and browser binary in `specs/001-release-line-convergence/evidence/about-baseline.md`.
-- [ ] T013 [US3] If T012 fails, determine whether failure is test-harness drift or actual About behavior; update only test harness until a harness defect is eliminated, and record the distinction in `evidence/about-baseline.md` before any product fix.
-- [ ] T014 [P] [US2] Add static regression assertions for M-001/M-002 candidate boundaries in a new `tests/mobile-render-contract.test.js` or equivalent canonical test file, ensuring tests describe desired accepted behavior only after characterization decision; use temporary characterization assertions separately if needed.
-- [ ] T015 [P] [US1] Add/extend release-provenance contract tests in `tests/release-cache.test.js` or a new bounded test file so the eventual release shell cannot mix payload SHAs or release keys; do not change delivery URLs yet.
+**Purpose**: close FR-017/SC-009 before historical PR cleanup.
 
-**Checkpoint**: a real browser smoke and release/mobile characterization harness exist without functional product changes.
+- [ ] T009 [P] [US5] Recover historical `docs/QA-v0.9.md` into `docs/forensic/history/v0.9/QA-v0.9.md` with an unmistakable HISTORICAL header/reference while preserving the original test content.
+- [ ] T010 [P] [US5] Recover historical `docs/RELEASE-v0.9-LAB.md` into `docs/forensic/history/v0.9/RELEASE-v0.9-LAB.md` with an unmistakable HISTORICAL header/reference.
+- [ ] T011 [P] [US5] Recover historical `docs/STATUS-v0.9.md` into `docs/forensic/history/v0.9/STATUS-v0.9.md` with an unmistakable HISTORICAL header/reference.
+- [ ] T012 [US5] Add `docs/forensic/history/v0.9/README.md` explaining that these records are evidence of historical state/gates, not current deployment status.
 
-## Phase 3 — User Story 1: One Trustworthy Release Baseline (Priority P1)
+**Checkpoint**: historical QA/release/status evidence can no longer disappear or be mistaken for current truth.
 
-**Goal**: define exactly which source/deployment state is the starting point and what release identity must converge to.
+## Phase 3 — Foundational Browser/Release Test Harness
 
-**Independent test**: a maintainer can identify current production, canonical source, candidate branch, rollback and release identity from repository docs alone.
+**Purpose**: recover reusable test technique without importing divergent product history.
 
-- [ ] T016 [US1] Populate `evidence/implementation-baseline.md` with canonical SHA, current deployment pin `aa372e1...`, current XML SHA-256, rollback location and all protected-surface stop conditions.
-- [ ] T017 [US1] Confirm ADR-001 two-step payload/release-shell model against current implementation branch; record `PAYLOAD_SHA` and `RELEASE_SHELL_SHA` placeholders in `docs/releases/v0.9x-convergence/RELEASE-MANIFEST.md`.
-- [ ] T018 [US1] Compare the implementation base against current production (`aa372e1...`) at file/blob level for `src/ui/styles/tokens.css`, `src/features/home/home.css`, `tools/about/about.css`, `tools/about/AboutFeature.js`, `tools/about/bootstrap.js`, `src/ui/styles/responsive.css`, `src/bootstrap/createZenBlog.js`, and `blogger/theme.xml`; record only material semantic differences in `evidence/candidate-deltas.md`.
-- [ ] T019 [US1] Verify M-005 `src/ui/styles/responsive.css` remains equivalent; if blob/content differs because main advanced, reclassify M-005 and STOP before implementation until Plan evidence is refreshed.
-- [ ] T020 [US1] Record release/version identity mismatch (`0.4.0` deployed internal graph vs `0.9.1` main release labeling) as a release-provenance concern, not a feature delta; define the target release label in `RELEASE-MANIFEST.md` without modifying `package.json` yet.
+- [ ] T013 [P] [US3] Recreate/review `tests/fixtures/about-smoke.html` from the historical About CI line, adapting only canonical paths/data and preserving `zenSiteProfile.v1` semantics.
+- [ ] T014 [P] [US3] Recreate/review `tests/about-browser-smoke.mjs` using Node built-ins, local no-network HTTP serving, safe path resolution, explicit Chrome/Chromium discovery and fail-on-missing-browser behavior.
+- [ ] T015 [US3] Add `test:browser` to `package.json` after T013/T014 review; do not change the application version in this task.
+- [ ] T016 [US3] Execute the browser smoke against the otherwise unchanged canonical product; record exact SHA, browser binary/version and PASS/FAIL in `specs/001-release-line-convergence/evidence/about-baseline.md`.
+- [ ] T017 [US3] If T016 exposes harness drift, correct the harness only and repeat until harness validity is known; distinguish harness defects from product defects explicitly.
+- [ ] T018 [US3] Add the deterministic browser-smoke command to `.github/workflows/validate.yml` only after it has passed/fails deterministically on the implementation branch; preserve all existing gates.
+- [ ] T019 [P] [US2] Create neutral mobile characterization coverage in `tests/mobile-render-contract.test.js` that checks existing protected boundaries without prematurely encoding KEEP/REJECT decisions for M-001/M-002.
+- [ ] T020 [P] [US1] Create/extend release-provenance tests so application-version consistency and deployable-shell immutable pin consistency can be verified separately; do not require a future payload SHA before it exists.
 
-**Checkpoint**: baseline/release identity is explicit and no feature behavior has been accepted by assumption.
+**Checkpoint**: tests can characterize baseline behavior and later enforce decisions without requiring a new framework/dependency.
 
-## Phase 4 — User Story 2: Preserve Intended Mobile Behavior Without Branch Drift (Priority P1)
+## Phase 4 — User Story 1: One Trustworthy Release Baseline (P1)
 
-**Goal**: decide M-001/M-002/M-003/M-004 from observable behavior, then reconstruct only accepted deltas on the canonical branch.
+**Goal**: make canonical source, deployed source, rollback and target identity unambiguous.
 
-**Independent test**: accepted mobile behavior passes the relevant viewport/device cases while protected semantics remain unchanged.
+- [ ] T021 [US1] Populate `evidence/implementation-baseline.md` with canonical SHA, SDD/implementation branch base, active production `aa372e1...`, release-shell provenance `ad43ac63...`, current XML SHA-256 and rollback location.
+- [ ] T022 [US1] Compare implementation base vs active production at file/blob/semantic level for `src/ui/styles/tokens.css`, `src/features/home/home.css`, `tools/about/about.css`, `tools/about/AboutFeature.js`, `tools/about/bootstrap.js`, `src/ui/styles/responsive.css`, `src/bootstrap/createZenBlog.js`, and `blogger/theme.xml`; record material differences in `evidence/candidate-deltas.md`.
+- [ ] T023 [US1] Verify M-005 `src/ui/styles/responsive.css` remains equivalent; if not, re-open M-005 and STOP before product edits until scope is updated.
+- [ ] T024 [US1] Record ADR-002 target application release `0.9.2` in `docs/releases/v0.9.2/RELEASE-MANIFEST.md`, while keeping `PAYLOAD_SHA`, `RELEASE_SHELL_SHA`, XML hash and QA fields unresolved.
 
-### M-001 Safe-area accounting
+**Independent test**: repository docs identify current production, canonical source, target release and rollback without chat history.
 
-- [ ] T021 [US2] Characterize current production M-001 on a WebKit/Safari safe-area phone class plus a normal non-notch phone; record screenshots/measurements/observations and candidate identities in `evidence/qa-run.md` under Q-PUB-005.
-- [ ] T022 [US2] Characterize unchanged canonical main M-001 using the same acceptance criteria where reproducible; record whether fixed header/player-safe tokens cause overlap/lost space or are equivalent.
-- [ ] T023 [US2] Record M-001 decision KEEP/ADJUST/REJECT in `evidence/candidate-deltas.md` with evidence references.
-- [ ] T024 [US2] Conditional on M-001 KEEP/ADJUST: implement the minimum accepted token delta in `src/ui/styles/tokens.css` and finalize corresponding assertions in `tests/mobile-render-contract.test.js`; otherwise record no-code resolution.
+## Phase 5 — User Story 2: Mobile/Presentation Convergence (P1)
 
-### M-002 Short-height Home density
+**Goal**: decide each deployed presentation delta independently, then reconstruct only accepted behavior on canonical source.
 
-- [ ] T025 [US2] Characterize current production M-002 at ~320/390 widths with short-height and landscape classes; verify no essential content/action is clipped behind header/player and record Q-PUB-003/Q-PUB-004 evidence.
-- [ ] T026 [US2] Characterize unchanged canonical main under the same dimensions and compare scroll threshold/content density without changing source.
-- [ ] T027 [US2] Record M-002 decision KEEP/ADJUST/REJECT in `evidence/candidate-deltas.md`.
-- [ ] T028 [US2] Conditional on M-002 KEEP/ADJUST: implement only accepted Home rules in `src/features/home/home.css` and finalize corresponding regression assertions; otherwise record no-code resolution.
+### M-001 — Safe-area accounting
 
-### M-003 About stylesheet preload/delivery
+- [ ] T025 [US2] Characterize current production on WebKit/Safari safe-area phone class plus normal non-notch phone; record Q-PUB-005 evidence including overlap/lost-space observations.
+- [ ] T026 [US2] Characterize unchanged canonical main under equivalent criteria where reproducible.
+- [ ] T027 [US2] Record M-001 KEEP/ADJUST/REJECT with evidence in `evidence/candidate-deltas.md`.
+- [ ] T028 [US2] Conditional KEEP/ADJUST: implement minimum accepted delta in `src/ui/styles/tokens.css` and finalize M-001 assertions in `tests/mobile-render-contract.test.js`; otherwise record no-code resolution.
 
-- [ ] T029 [US2] Characterize About first-open behavior on current production and canonical main under normal and throttled/slow-style-load conditions; record visible FOUC/blank/unstyled behavior and the global critical-path request cost qualitatively in `evidence/candidate-deltas.md`.
-- [ ] T030 [US2] Record M-003 decision KEEP/ADJUST/REJECT, explicitly balancing first-open stability against Constitution principle IV (minimal reader critical path).
-- [ ] T031 [US2] Conditional on M-003 KEEP/ADJUST: implement the smallest accepted delivery strategy in `blogger/theme.xml` and/or `tools/about/bootstrap.js`, with a regression that prevents duplicate stylesheet ownership; otherwise retain lazy main behavior and record reason.
+### M-002 — Short-height Home density
 
-### M-004 About mobile CSS v0.1.5
+- [ ] T029 [US2] Characterize production at ~320/~390 widths plus short-height/landscape; verify no essential action/content is clipped behind header/player and record Q-PUB-003/Q-PUB-004.
+- [ ] T030 [US2] Characterize unchanged canonical main at the same viewport classes.
+- [ ] T031 [US2] Record M-002 KEEP/ADJUST/REJECT with evidence.
+- [ ] T032 [US2] Conditional KEEP/ADJUST: implement only accepted rules in `src/features/home/home.css` and finalize regression assertions; otherwise record no-code resolution.
 
-- [ ] T032 [US2] Characterize current production About CSS at ~320/~390/~768 with empty and populated profile; verify portrait/identity layout, player-safe spacing, scroll containment, 100svh behavior and no horizontal overflow.
-- [ ] T033 [US2] Compare canonical main About CSS v0.1.4 under the same matrix; record user-visible differences rather than copying branch CSS wholesale.
-- [ ] T034 [US2] Record M-004 decision KEEP/ADJUST/REJECT.
-- [ ] T035 [US2] Conditional on M-004 KEEP/ADJUST: reconstruct only accepted CSS rules in `tools/about/about.css`, preserving portrait/identity semantics and accessibility; otherwise record no-code resolution.
+### M-003 — About stylesheet preload/delivery
 
-### Mobile protected-neighbor gate
+- [ ] T033 [US2] Compare About first-open behavior on production vs canonical main under normal and deliberately slow stylesheet-load conditions; record visible unstyled/blank/flash behavior plus qualitative global-request cost.
+- [ ] T034 [US2] Record M-003 KEEP/ADJUST/REJECT, explicitly checking Constitution principle IV (reader critical path).
+- [ ] T035 [US2] Conditional KEEP/ADJUST: implement smallest accepted ownership/delivery change in `blogger/theme.xml` and/or `tools/about/bootstrap.js`, adding regression coverage that prevents duplicate stylesheet ownership; otherwise retain lazy main behavior and record reason.
 
-- [ ] T036 [US2] Run Explore simple/advanced, Article, visible navigation, gestures exclusions and player boundary regressions after any accepted M delta; record zero intentional semantic changes in `evidence/qa-run.md`.
+### M-004 — About mobile CSS v0.1.5 behavior
 
-**Checkpoint**: each deployed mobile/About presentation delta has an evidence-backed disposition and accepted changes are bounded.
+- [ ] T036 [US2] Characterize production About at ~320/~390/~768 with empty/populated profile; verify portrait/identity layout, player-safe spacing, scroll containment, 100svh behavior and horizontal overflow.
+- [ ] T037 [US2] Characterize canonical main About CSS v0.1.4 under the same cases.
+- [ ] T038 [US2] Record M-004 KEEP/ADJUST/REJECT with evidence.
+- [ ] T039 [US2] Conditional KEEP/ADJUST: reconstruct only accepted CSS in `tools/about/about.css`; do not copy the historical file wholesale.
 
-## Phase 5 — User Story 3: Resolve About Reliability Safely (Priority P1)
+### Protected-neighbor gate
 
-**Goal**: prove whether A-001 transactional rendering is required instead of merging PR #14.
+- [ ] T040 [US2] After accepted M changes, run Explore simple/advanced, Article/open-return, visible navigation, gesture exclusions, keyboard/focus checks and player boundary regressions; record zero intentional protected-semantic changes.
 
-**Independent test**: canonical About either passes deterministic browser coverage unchanged or receives one minimal reliability correction with regression proof.
+**Independent test**: every M delta has evidence-backed disposition and accepted mobile behavior passes its QA cases without branch drift.
 
-- [ ] T037 [US3] Expand `tests/fixtures/about-smoke.html` / `tests/about-browser-smoke.mjs` to cover empty and populated profiles without external network dependency; assert ready/fallback semantics and no `zenabout:error` on valid inputs.
-- [ ] T038 [US3] Run the expanded browser smoke on the implementation branch before any A-001 product change and record result in `evidence/about-baseline.md`.
-- [ ] T039 [US3] Determine whether any realistic valid `zenSiteProfile.v1` state reproduces blank/partial/destructive About output; distinguish actual profile/input defects from synthetic fault-injection resilience scenarios.
-- [ ] T040 [US3] If no realistic defect reproduces, mark A-001 DEFER in `evidence/candidate-deltas.md` and prohibit transactional refactor in Spec 001; create a follow-up maintenance note only if resilience work remains justified.
-- [ ] T041 [US3] Conditional on a realistic reproducible defect: write a failing browser/regression case first, then implement the minimum transactional/error-boundary correction in `tools/about/AboutFeature.js` and/or `tools/about/bootstrap.js`; do not import unrelated PR #14 files.
-- [ ] T042 [US3] After T040 or T041, run `npm run check`, `npm test`, `npm run test:browser`, URL/image-safety tests and About presentation tests; record result and exact SHA.
+## Phase 6 — User Story 3: About Reliability (P1)
 
-**Checkpoint**: PR #14 is no longer needed as an integration source; A-001 is implemented only if evidence requires it.
+**Goal**: decide A-001 from realistic reproduction, not structural preference alone.
 
-## Phase 6 — User Story 4: Real-Environment Release Closure (Priority P1)
+- [ ] T041 [US3] Expand About browser fixture/smoke to cover empty and populated valid profile states without external network dependence; assert ready/fallback semantics and absence of `zenabout:error` on valid data.
+- [ ] T042 [US3] Run expanded smoke before any A-001 product change and record result in `evidence/about-baseline.md`.
+- [ ] T043 [US3] Attempt realistic valid-profile reproduction of blank/partial/destructive About output; explicitly distinguish realistic product failure from synthetic fault-injection resilience scenarios.
+- [ ] T044 [US3] If no realistic defect reproduces, mark A-001 DEFER and prohibit transactional refactor inside Spec 001; preserve any resilience idea as separate follow-up only.
+- [ ] T045 [US3] Conditional on realistic reproducible defect: write failing browser/regression case first, then implement minimum transactional/error-boundary correction in `tools/about/AboutFeature.js` and/or `tools/about/bootstrap.js`; import no unrelated PR #14 files.
+- [ ] T046 [US3] Run syntax/unit/browser/URL-image-safety/About presentation tests after T044 or T045 and record exact SHA/result.
 
-**Goal**: construct one immutable candidate, validate it in Blogger, and either freeze or roll back.
+**Independent test**: PR #14 is no longer an integration dependency; current About is either proven adequate or minimally fixed with regression evidence.
 
-**Independent test**: Release Manifest links exact source/assets/XML/CI/browser/Blogger QA/acceptance/rollback.
+## Phase 7 — Candidate Payload Construction and Version Convergence
 
-### Candidate construction
+**Purpose**: produce exact browser payload bytes before constructing the immutable Blogger shell.
 
-- [ ] T043 [US4] Re-run full automated suite on the bounded implementation branch and perform changed-file blast-radius review before designating payload; STOP on unexpected protected-surface changes.
-- [ ] T044 [US4] Commit the exact accepted product/test payload and record the resulting full `PAYLOAD_SHA` in `docs/releases/v0.9x-convergence/RELEASE-MANIFEST.md`.
-- [ ] T045 [US4] Update all production ZenBlog repository asset references in `blogger/theme.xml` to immutable `@<PAYLOAD_SHA>` URLs per ADR-001, while leaving Zen Radio Player independently pinned to its protected loader version.
-- [ ] T046 [US4] Normalize the chosen release/cache label consistently across diagnostic/internal module keys where applicable; update `tests/release-cache.test.js`/provenance tests without using the label as a substitute for `PAYLOAD_SHA`.
-- [ ] T047 [US4] Commit the release shell and record full `RELEASE_SHELL_SHA` in `RELEASE-MANIFEST.md`.
-- [ ] T048 [US4] Export/materialize the exact candidate Blogger XML from the release shell, compute SHA-256, and record `BLOGGER_XML_SHA256` plus candidate artifact location in `RELEASE-MANIFEST.md`.
-- [ ] T049 [US4] Verify candidate XML well-formedness, one `page_body`, one `Blog1`, no `zen_main`, server-rendered crawler metadata, one coherent payload pin, and player loader invariant before Blogger installation.
-- [ ] T050 [US4] Obtain/record successful GitHub Actions `Validate ZenBlog` run for `RELEASE_SHELL_SHA`; record run ID/result in `RELEASE-MANIFEST.md`.
+- [ ] T047 [US1] Confirm all M/A decisions are KEEP/ADJUST/REJECT/DEFER and no candidate decision remains UNRESOLVED; STOP otherwise.
+- [ ] T048 [US1] Normalize ZenBlog application version to `0.9.2` across `package.json.version`, `src/bootstrap/createZenBlog.js`, release-owned ESM query keys, `tools/runtime/bootstrap.js`, `tools/about/bootstrap.js`, and relevant tests; explicitly exclude schema/contract versions and Zen Radio Player `v1.0.3`.
+- [ ] T049 [US4] Update the pre-shell `blogger/theme.xml` release/cache label to `0.9.2` using the existing mutable-development delivery form only so the payload commit is internally coherent; mark this theme state NON-DEPLOYABLE until immutable pinning in T053.
+- [ ] T050 [US4] Refactor/add version-contract tests so T048/T049 prove one application version without pretending that the pre-shell theme is the final production asset identity.
+- [ ] T051 [US4] Run `npm run check`, `npm test`, adopted `npm run test:browser`, Blogger XML parsing and architecture/player/SEO/protected-surface gates on the complete accepted payload state; STOP on any failure.
+- [ ] T052 [US4] Commit the complete accepted product/test/version payload with no unresolved release-shell pin, then capture the resulting full immutable `PAYLOAD_SHA` externally/in the evidence ledger. Do not modify browser-executed payload bytes after this SHA is designated.
 
-### Blogger installation / QA
+**Checkpoint**: `PAYLOAD_SHA` identifies all JS/CSS/assets/runtime version bytes that the release will execute.
 
-- [ ] T051 [US4] Confirm the pre-change rollback XML hash `42b439df...` remains available immediately before deployment; record confirmation time in `evidence/qa-run.md`.
-- [ ] T052 [US4] Install the full candidate XML in Blogger; record installation date/time and candidate XML SHA-256.
-- [ ] T053 [US4] Execute Q-PUB-001 through Q-PUB-014 from `contracts/qa-evidence.md` as applicable, including Chromium desktop and WebKit/Safari safe-area/mobile classes; record PASS/FAIL/BLOCKED per case with attributable candidate identity.
-- [ ] T054 [US4] Execute Q-ADM-001 through Q-ADM-004 when affected and the final Admin/Inspector smoke required by Spec; record evidence.
-- [ ] T055 [US4] Verify social/SEO head, favicon strategy, no mixed release assets and direct/deep-link behavior on real Blogger; record evidence without claiming crawler indexing status absent external proof.
-- [ ] T056 [US4] On any P0/P1 failure, reinstall the exact 2026-08-22 rollback XML, verify restoration, mark candidate FAIL in manifest and return to the relevant delta task; do not advance to VALIDATED.
-- [ ] T057 [US4] If required Blogger QA passes, record Product Owner acceptance in `RELEASE-MANIFEST.md` and advance state from CANDIDATE to VALIDATED.
-- [ ] T058 [US4] Complete known-debt/rollback/acceptance fields and advance to FROZEN only when the Release Manifest contract is fully satisfied with no unresolved P0/P1 blocker.
+## Phase 8 — Immutable Release Shell Construction (ADR-001)
 
-**Checkpoint**: one release is attributable and reversible; CI/merge/deployment/QA/acceptance are no longer conflated.
+**Purpose**: create a deployable Blogger theme that references exactly `PAYLOAD_SHA`.
 
-## Phase 7 — User Story 5: Historical GitHub Work Has Explicit Disposition (Priority P2)
+- [ ] T053 [US4] Update all ZenBlog repository asset references in `blogger/theme.xml` to immutable `https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@<PAYLOAD_SHA>/...` references; keep Zen Radio Player independently pinned to protected `v1.0.3`.
+- [ ] T054 [US4] Update release-shell provenance tests to require one full payload SHA across favicon/social/CSS/modulepreload/product/runtime references and reject mixed SHAs/mutable production paths.
+- [ ] T055 [US4] Verify release-shell XML well-formedness, exactly one `page_body`, one `Blog1`, no `zen_main`, server-rendered crawler metadata, About stylesheet ownership decision, and player invariant.
+- [ ] T056 [US4] Commit the deployable shell and capture full `RELEASE_SHELL_SHA`. The shell commit should contain no change to browser payload files designated by `PAYLOAD_SHA` except release-shell/test/docs files explicitly required for pin verification.
+- [ ] T057 [US4] Obtain a successful `Validate ZenBlog` CI run for `RELEASE_SHELL_SHA`; if CI requires test-only correction, do not silently redefine the shell SHA—fix, recommit, and capture a new shell SHA.
+- [ ] T058 [US4] Materialize the candidate XML exactly from `RELEASE_SHELL_SHA`, compute `BLOGGER_XML_SHA256`, and record `PAYLOAD_SHA`, `RELEASE_SHELL_SHA`, XML hash, release `0.9.2`, CI run and rollback hash in `docs/releases/v0.9.2/RELEASE-MANIFEST.md` in a subsequent documentation commit.
 
-**Goal**: remove ambiguous open integration paths only after evidence has been retained.
+**Checkpoint**: candidate is reproducible from two immutable SHAs plus one XML hash.
 
-**Independent test**: every relevant PR has a canonical disposition and no superseded/CI-only/experiment PR remains a plausible merge target.
+## Phase 9 — User Story 4: Real Blogger QA / Acceptance (P1)
 
-- [ ] T059 [P] [US5] Verify relevant functionality/evidence from PR #4-#9 is represented in canonical lineage/forensic docs; add missing lineage references before lifecycle changes.
-- [ ] T060 [P] [US5] Verify PR #15/#16 successful browser-smoke evidence (including run #108) is referenced in canonical Spec/research docs.
-- [ ] T061 [US5] Record final M-001..M-004 dispositions and A-001 disposition against PR #13/#14 in `docs/forensic/RELEASE-LINEAGE-v0.1.txt` or its successor.
-- [ ] T062 [US5] Add explanatory GitHub comments and close PR #4-#9 as SUPERSEDED/ARCHIVED without merge after T059.
-- [ ] T063 [US5] Add explanatory comments and close PR #15/#16 as CI-ONLY without product merge after T060.
-- [ ] T064 [US5] Add explanatory disposition and close PR #13/#14 as EXPERIMENT/REFERENCE after T061 and release convergence preserves all useful evidence.
-- [ ] T065 [US5] Confirm PR #17/final implementation PR are the only release-convergence integration paths still active; record status in Release Manifest.
+**Goal**: validate the exact immutable candidate in the actual hosting environment and freeze only with attributable evidence.
 
-**Checkpoint**: repository PR state communicates reality instead of historical accidents.
+- [ ] T059 [US4] Immediately before deployment, verify rollback artifact SHA-256 `42b439df...` and restoration availability; record time/location in `evidence/qa-run.md`.
+- [ ] T060 [US4] Install the full candidate XML generated from `RELEASE_SHELL_SHA` in Blogger; record install date/time and XML SHA-256.
+- [ ] T061 [US4] Execute Q-PUB-001 through Q-PUB-014 as applicable, including Chromium desktop and WebKit/Safari safe-area/mobile classes; record candidate SHA/XML identity for every result.
+- [ ] T062 [US4] Execute Q-ADM-001 through Q-ADM-004 when affected and the final Admin/Inspector smoke required by Spec.
+- [ ] T063 [US4] Verify real Blogger SEO/social head structure, favicon strategy, no mixed payload SHAs, direct/deep-link behavior and player independence; do not claim crawler indexing without external evidence.
+- [ ] T064 [US4] On any P0/P1 failure, reinstall exact rollback XML, verify restoration, mark candidate FAIL and return to the owning M/A task; no VALIDATED/FROZEN status.
+- [ ] T065 [US4] If QA passes, record explicit Product Owner acceptance and advance manifest CANDIDATE -> VALIDATED.
+- [ ] T066 [US4] Complete rollback/debt/evidence fields and advance VALIDATED -> FROZEN only when the Release Manifest contract is fully satisfied and no P0/P1 blocker remains.
 
-## Phase 8 — User Story 6: Maintenance Gaps Recorded Without Scope Expansion (Priority P2)
+**Independent test**: one manifest links payload, shell, XML, CI, browser/Blogger QA, acceptance and rollback.
 
-**Goal**: preserve discovered long-term debt without refactoring protected cores during release convergence.
+## Phase 10 — User Story 5: Historical GitHub Disposition (P2)
 
-**Independent test**: a maintainer can identify follow-up work for Search Core/Metadata source provenance, versioning and performance without reading chat history.
+**Goal**: leave no ambiguous historical merge path after release evidence is preserved.
 
-- [ ] T066 [P] [US6] Create a follow-up Spec/Issue candidate for Search Core v1 modular-source recovery/reproducible generation, referencing discrepancy D-012; do not modify `tools/admin/search-core-v1.part*.txt` in Spec 001.
-- [ ] T067 [P] [US6] Create a follow-up Spec/Issue candidate for Metadata v0.5 source-of-truth/reproducibility, referencing D-013; do not modify Metadata core runtime in Spec 001.
-- [ ] T068 [P] [US6] Create a follow-up versioning ADR/Spec task resolving `package.json` application version vs release/cache label semantics; do not opportunistically renumber unrelated historical releases.
-- [ ] T069 [P] [US6] Create a post-convergence performance-baseline task covering real Lighthouse/PageSpeed/Core Web Vitals measurement before numeric budgets are adopted.
-- [ ] T070 [US6] Update `docs/forensic/DISCREPANCY-REGISTER-v0.1.txt` or successor with final OPEN/CLOSED/DEFERRED state for all discrepancies touched by Spec 001.
+- [ ] T067 [P] [US5] Verify PR #4-#9 useful functionality/evidence is represented in canonical lineage/history before any closure.
+- [ ] T068 [P] [US5] Verify PR #15/#16 browser-smoke evidence, including successful CI run #108, is referenced in canonical research/lineage.
+- [ ] T069 [US5] Record final M-001..M-004 and A-001 dispositions against PR #13/#14 in `docs/forensic/RELEASE-LINEAGE-v0.1.txt` or successor.
+- [ ] T070 [US5] Add explanatory comments and close PR #4-#9 as SUPERSEDED/ARCHIVED without merge after T067.
+- [ ] T071 [US5] Add explanatory comments and close PR #15/#16 as CI-ONLY without product merge after T068.
+- [ ] T072 [US5] Add explanatory comments and close PR #13/#14 as EXPERIMENT/REFERENCE after T069 and after all reusable deltas/tests are preserved.
+- [ ] T073 [US5] Confirm only legitimate current SDD/implementation/release review paths remain open; record final PR dispositions in Release Manifest.
 
-## Phase 9 — Final Convergence / Handoff
+## Phase 11 — User Story 6: Long-Term Maintenance Debt Without Scope Expansion (P2)
 
-**Purpose**: prove Spec, Plan, Tasks, implementation and deployment all describe the same accepted system.
+**Goal**: schedule provenance/performance work without touching protected cores in Spec 001.
 
-- [ ] T071 [US1] Run Spec-to-implementation trace: map FR-001 through FR-024 and SC-001 through SC-011 to task/evidence/manifest references in `specs/001-release-line-convergence/evidence/convergence-report.md`.
-- [ ] T072 [US1] Run protected-surface diff audit against the implementation base; record all intentional product files and zero unexplained changes in `evidence/convergence-report.md`.
-- [ ] T073 [P] [US4] Validate `quickstart.md` against the actual completed workflow and correct documentation drift without changing accepted product behavior.
-- [ ] T074 [P] [US1] Update project handoff/release index so canonical SHA, payload SHA, release-shell SHA, Blogger XML SHA-256, state and rollback are discoverable without chat history.
-- [ ] T075 [US1] Re-run final CI at the release/handoff head and record result.
-- [ ] T076 [US1] Mark Spec 001 complete only after Release Manifest is FROZEN or explicitly close it as non-released with failure/rollback evidence; never leave ambiguous “done” state.
+- [ ] T074 [P] [US6] Create follow-up Spec/Issue for Search Core v1 modular-source recovery/reproducible generation referencing D-012; do not modify `tools/admin/search-core-v1.part*.txt` runtime in Spec 001.
+- [ ] T075 [P] [US6] Create follow-up Spec/Issue for Metadata v0.5 source-of-truth/reproducible generation referencing D-013; do not modify Metadata core runtime in Spec 001.
+- [ ] T076 [P] [US6] Create post-convergence performance-baseline task for real Lighthouse/PageSpeed/Core Web Vitals measurement before numeric budgets.
+- [ ] T077 [US6] Mark discrepancy D-001 version identity RESOLVED by ADR-002/release v0.9.2 if final version tests pass; update all other Spec-001 discrepancies OPEN/CLOSED/DEFERRED in the discrepancy register successor.
 
-## Dependencies & Execution Order
+## Phase 12 — Final ANALYZE/CONVERGE/Handoff
+
+**Purpose**: demonstrate Spec, Plan, Tasks, implementation, deployment and docs describe the same accepted system.
+
+- [ ] T078 [US1] Produce `specs/001-release-line-convergence/evidence/convergence-report.md` mapping FR-001..FR-024 and SC-001..SC-011 to tasks/evidence/manifest references.
+- [ ] T079 [US1] Audit final implementation diff against Protected Surface Registry and list every intentional product file; zero unexplained changes required.
+- [ ] T080 [P] [US4] Validate `quickstart.md` against actual completed workflow and correct documentation drift only.
+- [ ] T081 [P] [US1] Update project handoff/release index so release `0.9.2`, PAYLOAD_SHA, RELEASE_SHELL_SHA, Blogger XML SHA-256, state and rollback are discoverable without chat history.
+- [ ] T082 [US1] Re-run final CI on handoff/documentation head and record result.
+- [ ] T083 [US1] Mark Spec 001 complete only when Release Manifest is FROZEN, or explicitly close it as non-released with failure + rollback evidence; never leave ambiguous DONE state.
+
+## Dependencies / Execution Order
 
 ```text
 Phase 1 Baseline Lock
         |
         v
-Phase 2 Test/Characterization Harness
+Phase 2 Historical Evidence
         |
         v
-Phase 3 US1 Baseline Identity
+Phase 3 Test Harness
         |
-        +---------------------------+
-        |                           |
-        v                           v
-Phase 4 US2 Mobile/Presentation   Phase 5 US3 About Reliability
-        |                           |
-        +-------------+-------------+
-                      |
-                      v
-             Phase 6 US4 Release/QA
-                      |
-             +--------+--------+
-             |                 |
-             v                 v
-      Phase 7 US5 PRs    Phase 8 US6 Debt
-             |                 |
-             +--------+--------+
-                      |
-                      v
-             Phase 9 Convergence
+        v
+Phase 4 Baseline Identity
+        |
+        +--------------------+
+        |                    |
+        v                    v
+Phase 5 US2             Phase 6 US3
+Mobile/Presentation     About Reliability
+        |                    |
+        +---------+----------+
+                  |
+                  v
+Phase 7 Version + Payload
+                  |
+                  v
+Phase 8 Immutable Shell
+                  |
+                  v
+Phase 9 Blogger QA/Acceptance
+                  |
+        +---------+----------+
+        |                    |
+        v                    v
+Phase 10 PR Cleanup     Phase 11 Debt
+        |                    |
+        +---------+----------+
+                  |
+                  v
+Phase 12 Convergence/Handoff
 ```
 
-Phase 6 MUST NOT begin until all candidate deltas have KEEP/ADJUST/REJECT/DEFER decisions.
-
-Historical PR cleanup MUST NOT precede evidence extraction.
-
-FROZEN MUST NOT precede real Blogger QA + Product Owner acceptance.
+Mandatory gates:
+- Phase 7 cannot start with unresolved M/A decisions.
+- `PAYLOAD_SHA` is captured only AFTER all product bytes + application v0.9.2 normalization are complete.
+- No browser payload file changes after `PAYLOAD_SHA` designation; changing one invalidates the SHA and returns to T051/T052.
+- `RELEASE_SHELL_SHA` is captured only after immutable payload pinning and shell validation.
+- Historical PR cleanup never precedes evidence preservation.
+- FROZEN never precedes real Blogger QA + Product Owner acceptance.
+- PR #17 remains independent governance/spec review; the child implementation PR is stacked until explicit base-branch disposition is safe.
 
 ## Parallel Opportunities
 
-Safe parallel groups include:
+Safe groups include:
 - T005/T006/T007;
-- T008/T009;
-- T014/T015;
-- independent evidence preparation for M-001/M-002/M-003/M-004 when different testers/environments are available;
-- T059/T060;
-- T066/T067/T068/T069;
-- T073/T074 after the release manifest is stable.
+- T009/T010/T011;
+- T013/T014;
+- T019/T020;
+- evidence collection for independent M deltas when different test environments are available;
+- T067/T068;
+- T074/T075/T076;
+- T080/T081 after manifest stability.
 
-Tasks modifying the same product file are intentionally sequential.
+Tasks that modify the same product/release file are intentionally sequential.
 
 ## Stop Conditions
 
-Return to Spec/Plan before continuing if:
-- canonical main materially advances;
-- a candidate delta requires an unplanned protected-core modification;
-- rollback artifact cannot be restored;
-- a new dependency/framework/build pipeline becomes necessary;
-- browser/Blogger evidence contradicts the protected product contract;
+Return to Spec/Plan if:
+- `main` materially advances;
+- a desired change requires an unplanned protected-core modification;
+- rollback cannot be restored;
+- a new framework/dependency/build pipeline appears necessary;
+- QA contradicts a protected product contract;
 - asset delivery cannot be attributed to exact payload bytes;
-- a P0/P1 failure cannot be isolated within the approved blast radius.
+- a P0/P1 defect cannot be isolated within approved blast radius;
+- a task would require treating a historical branch merge as evidence.
