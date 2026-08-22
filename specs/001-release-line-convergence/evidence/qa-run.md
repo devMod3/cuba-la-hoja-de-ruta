@@ -119,6 +119,60 @@ T032 result: `PASS — IMPLEMENTED`. This remains pre-release engineering eviden
 
 Decision reference: `specs/001-release-line-convergence/evidence/candidate-deltas.md` — M-002 `ADJUST / COMPLETE_T032`.
 
+## Pre-candidate characterization — M-003 About stylesheet delivery
+
+This section is T033–T034 engineering evidence. It is NOT final-candidate Q-PUB-012 and does not change the release matrix above.
+
+Environment:
+- GitHub Actions `ubuntu-24.04`
+- Node `v20.20.2`
+- Google Chrome `151.0.7922.137`
+- Chrome DevTools Protocol real-time navigation; browser cache disabled
+- deliberate About CSS server delay: `1200ms`
+- workflow run #178: `32589253689`
+- job: `97070337147`
+
+The experiment compared two ownership models without changing product delivery:
+- `lazy`: canonical behavior — reader does not own About CSS; About bootstrap creates it on demand;
+- `global`: deployed-style behavior — a parser-discovered `#zen-about-css` exists in `<head>` before body/route work.
+
+### Key observations
+
+| Scenario | CSS requests | Load / render observation | FOUC |
+|---|---:|---|---:|
+| lazy reader, 1200ms | 0 | wall load ~18ms | n/a |
+| global reader, 1200ms | 1 | wall load ~1216ms; DCL ~1212.4ms | n/a |
+| lazy About, 1200ms | 1 | shell ~27.4ms; About ready ~27.3ms; CSS ~1229.5ms | ~1202.1ms |
+| global About, 1200ms | 1 | CSS ~1212.3ms; shell/About ready ~1224.8ms | 0ms |
+| lazy About, normal | 1 | shell ~29.6ms; CSS ~33.7ms | ~4.1ms |
+| global About, normal | 1 | CSS ~10.8ms before shell ~28.2ms | 0ms |
+
+Run #178 assertion: `M-003 delivery characterization: PASS`.
+
+Repository gates in the same run:
+- JavaScript checks PASS;
+- unit tests 64/64 PASS;
+- About browser smoke PASS;
+- Blogger XML parse PASS;
+- architecture invariants PASS.
+
+### T034 decision
+
+`M-003 = ADJUST`.
+
+Rejected endpoints:
+- KEEP deployed global preload: rejected because an About-only stylesheet can add approximately its full network latency to unrelated reader loading under the controlled slow condition; this conflicts with the protected reader critical path.
+- KEEP canonical lazy behavior unchanged: rejected because About mounts its custom shell before CSS readiness, yielding a material first-open FOUC under slow delivery.
+
+Authorized T035 direction:
+- keep `blogger/theme.xml` free of global About stylesheet ownership;
+- retain lazy/on-demand About CSS;
+- make the single lazy stylesheet readiness a prerequisite for replacing the existing fallback with `AboutFeature`;
+- prevent duplicate `#zen-about-css` ownership;
+- on stylesheet failure, preserve fallback rather than commit an unstyled custom shell.
+
+Decision reference: `specs/001-release-line-convergence/evidence/candidate-deltas.md` — M-003 `ADJUST / AUTHORIZED_T035`.
+
 ## Per-case evidence template
 
 Use this block when a candidate case is executed:
