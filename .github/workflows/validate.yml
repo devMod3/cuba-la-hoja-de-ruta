@@ -27,6 +27,11 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: About browser smoke
+        run: |
+          (google-chrome --version || chromium --version || chromium-browser --version)
+          npm run test:browser
+
       - name: Validate Blogger XML
         run: |
           python - <<'PY'
