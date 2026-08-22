@@ -39,6 +39,52 @@ The release candidate does not exist yet. Public/Admin cases below therefore rem
 | Q-ADM-003 | About Manager | NOT_RUN | — |
 | Q-ADM-004 | Inspector | NOT_RUN | — |
 
+## Pre-candidate characterization — M-002 Home density
+
+This section is T029–T031 decision evidence. It is NOT final-candidate QA and does not change the `NOT_RUN` state of the release matrix above.
+
+Environment:
+- GitHub Actions `ubuntu-24.04`
+- Node `v20.20.2`
+- Google Chrome `151.0.7922.137`
+- exact CSS viewport dimensions established through Chrome DevTools Protocol `Emulation.setDeviceMetricsOverride`
+
+### Canonical main vs deployed production
+
+Workflow run #150 (`32588374314`) compared unchanged canonical Home CSS against immutable deployed payload `aa372e1cc7982d1f8335d0d21760869c396b32c3`.
+
+| Case | main | deployed production | Horizontal overflow |
+|---|---|---|---|
+| 320x568 narrow phone | essential elements extend beyond initial Home; reachable by scroll | essential elements remain inside Home; no scroll required | none |
+| 390x700 normal phone | essential elements inside Home; no scroll | essential elements inside Home; no scroll | none |
+| 390x560 short phone | essential elements extend beyond initial Home; reachable by scroll | essential elements remain inside Home; reachable scroll remains available | none |
+| 667x375 landscape | essential elements extend beyond initial Home; reachable by scroll | same accessibility outcome with lower content height; reachable by scroll | none |
+
+No case produced `essentialInaccessible=true`.
+
+### Bounded M-002 candidate
+
+Workflow run #154 (`32588482004`) tested a candidate built from canonical main plus only:
+
+1. short-height compaction at `max-width:760px` + `max-height:760px`;
+2. moving emergency vertical scroll from `max-height:620px` to `max-height:560px`;
+3. `overscroll-behavior-y: contain` on that last-resort scroll.
+
+Explicitly excluded from this candidate:
+- general deployed mobile title sizing changes outside short-height mode;
+- deployed `100svh` override;
+- safe-area token changes (M-001).
+
+Observed critical results:
+- 320x568: essentials inside Home, no horizontal overflow, no inaccessible content;
+- 390x700: existing passing behavior preserved;
+- 390x560: essentials inside Home, vertical fallback still reachable, no horizontal overflow;
+- 667x375: reachable scroll preserved, no horizontal overflow;
+- harness assertion: `M-002 minimal candidate: PASS`;
+- full run: JavaScript checks PASS; 61/61 unit tests PASS; About browser smoke PASS; exact viewport characterization PASS; Blogger XML parse PASS; architecture invariants PASS.
+
+Decision reference: `specs/001-release-line-convergence/evidence/candidate-deltas.md` — M-002 `ADJUST`.
+
 ## Per-case evidence template
 
 Use this block when a candidate case is executed:
@@ -78,4 +124,4 @@ This section is pre-candidate T016/T017 evidence. It validates the harness again
 
 ## Severity gate
 
-P0/P1 failures block `VALIDATED` and `FROZEN`. Baseline smoke, CI green, screenshots, or historical QA do not substitute for attributable final-candidate browser and Blogger QA.
+P0/P1 failures block `VALIDATED` and `FROZEN`. Baseline smoke, pre-candidate characterization, CI green, screenshots, or historical QA do not substitute for attributable final-candidate browser and Blogger QA.
