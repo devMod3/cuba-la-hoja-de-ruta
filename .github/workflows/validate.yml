@@ -32,6 +32,9 @@ jobs:
           (google-chrome --version || chromium --version || chromium-browser --version)
           npm run test:browser
 
+      - name: Home exact viewport characterization
+        run: node --experimental-websocket tests/home-viewport-characterization.mjs
+
       - name: Validate Blogger XML
         run: |
           python - <<'PY'
