@@ -14,15 +14,24 @@ function releaseUrl(path) {
   return url.href;
 }
 
-function waitForStylesheet(link) {
-  if (link.sheet) return Promise.resolve(true);
+function waitForStylesheet(link, { allowExistingSheet = false } = {}) {
+  if (link.dataset.zenAboutStylesheet === 'ready') return Promise.resolve(true);
+  if (link.dataset.zenAboutStylesheet === 'failed') return Promise.resolve(false);
+
+  // A stylesheet that predates this bootstrap may already have completed
+  // before we can subscribe to its load event. This shortcut is intentionally
+  // forbidden for links we create ourselves because `link.sheet` may become
+  // non-null before the external resource has finished loading.
+  if (allowExistingSheet && link.sheet) {
+    link.dataset.zenAboutStylesheet = 'ready';
+    return Promise.resolve(true);
+  }
+
   if (stylesheetReadiness.has(link)) return stylesheetReadiness.get(link);
 
   const readiness = new Promise((resolve) => {
-    let settled = false;
     const finish = (ready) => {
-      if (settled) return;
-      settled = true;
+      link.dataset.zenAboutStylesheet = ready ? 'ready' : 'failed';
       link.removeEventListener('load', onLoad);
       link.removeEventListener('error', onError);
       resolve(ready);
@@ -32,12 +41,6 @@ function waitForStylesheet(link) {
 
     link.addEventListener('load', onLoad, { once: true });
     link.addEventListener('error', onError, { once: true });
-
-    // Close the race where the stylesheet becomes available between the
-    // initial `link.sheet` check and listener registration.
-    queueMicrotask(() => {
-      if (link.sheet) finish(true);
-    });
   });
 
   stylesheetReadiness.set(link, readiness);
@@ -45,15 +48,19 @@ function waitForStylesheet(link) {
 }
 
 function loadStylesheet() {
-  let link = document.getElementById(ABOUT_STYLESHEET_ID);
-  if (!link) {
-    link = document.createElement('link');
-    link.id = ABOUT_STYLESHEET_ID;
-    link.rel = 'stylesheet';
-    link.href = releaseUrl('./about.css');
-    document.head.appendChild(link);
-  }
-  return waitForStylesheet(link);
+  const existing = document.getElementById(ABOUT_STYLESHEET_ID);
+  if (existing) return waitForStylesheet(existing, { allowExistingSheet: true });
+
+  const link = document.createElement('link');
+  link.id = ABOUT_STYLESHEET_ID;
+  link.rel = 'stylesheet';
+  link.href = releaseUrl('./about.css');
+
+  // Subscribe before insertion so a fast cache/local response cannot outrun
+  // the readiness listener.
+  const readiness = waitForStylesheet(link);
+  document.head.appendChild(link);
+  return readiness;
 }
 
 async function bootAbout() {
