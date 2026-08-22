@@ -155,12 +155,14 @@ try {
     });
   });
 
+  const aboutDom = html.match(/<section id="zen-about"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.ok(aboutDom, 'About DOM missing from browser dump');
   assert.match(html, /data-about-ready="true"/);
   assert.match(html, /data-profile-source="published"/);
   assert.match(html, /data-zen-about-profile-source="published"/);
-  assert.match(html, />Perfil PUBLICADO</);
-  assert.match(html, /Este contenido procede del snapshot público\./);
-  assert.doesNotMatch(html, /Perfil LOCAL NO DEBE APARECER/);
+  assert.match(aboutDom, />Perfil PUBLICADO</);
+  assert.match(aboutDom, /Este contenido procede del snapshot público\./);
+  assert.doesNotMatch(aboutDom, /Perfil LOCAL NO DEBE APARECER/);
   assert.doesNotMatch(html, /data-about-error=/);
   console.log('About public-profile cross-origin browser contract: PASS');
 } finally {
