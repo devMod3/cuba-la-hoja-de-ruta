@@ -1,6 +1,6 @@
 # ZenBlog v0.9.2 — Release Manifest
 
-**Status**: `ADMIN-HOTFIX-READY-FOR-BLOGGER-INSTALL`
+**Status**: `BLOGGER-REAL-HOTFIX-INSTALLED-QA-IN-PROGRESS`
 
 ## Baseline context
 
@@ -11,7 +11,7 @@
 
 ## Previously installed v0.9.2 candidate
 
-The owner reported successful installation in Blogger Real on 2026-08-22 at approximately 17:02 America/New_York. This records installation evidence only; full real QA was not yet completed before the Admin routing hotfix was requested.
+The owner reported successful installation in Blogger Real on 2026-08-22 at approximately 17:02 America/New_York. This records installation evidence only; full real QA was not completed before the Admin routing hotfix was requested.
 
 - Payload SHA: `cefd0adc07e5405ddbeb51e0c53082c8f089c5b0`
 - Release-shell SHA: `dba55ba2ac845c02071fe5236322cab97254c17a`
@@ -20,9 +20,9 @@ The owner reported successful installation in Blogger Real on 2026-08-22 at appr
 - Installation evidence: `USER_CONFIRMED_INSTALLED`
 - Real QA status before hotfix: `INCOMPLETE`
 
-This installed candidate is the immediate rollback point for the Admin routing hotfix.
+This previous candidate remains the immediate rollback point for the Admin routing hotfix.
 
-## Current Admin hotfix identity
+## Current installed Admin hotfix identity
 
 - Release label: `ZenBlog v0.9.2`
 - Hotfix PR: `#23` — `MERGED`
@@ -33,7 +33,9 @@ This installed candidate is the immediate rollback point for the Admin routing h
 - Application/cache release: `0.9.2`
 - Blogger hotfix XML SHA-256: `5ab097112b3e5addce6937dadad4fb33be5e4a5e79d2cc8b29f0adfa233cf416`
 - Blogger hotfix XML bytes: `8380`
-- Blogger hotfix installation date/time: `NOT_INSTALLED`
+- Blogger hotfix installation date/time: `2026-08-22 17:12 America/New_York`
+- Installation evidence: `USER_CONFIRMED_INSTALLED_HOTFIX`
+- Real Blogger QA status: `IN_PROGRESS`
 
 ## Admin routing contract
 
@@ -62,7 +64,9 @@ This routing change does not alter the persistence model: Admin remains browser-
 - Admin deep-path/hash `/admin` browser contract: `PASS`
 - Blogger XML parsing: `PASS`
 - Architecture/player invariants: `PASS`
-- Real Blogger Admin hotfix QA: `NOT_RUN — requires installation of hotfix XML`
+- Real Blogger installation: `PASS — USER_CONFIRMED_INSTALLED_HOTFIX`
+- Real Blogger behavioral QA: `IN_PROGRESS`
+- Remote assistant HTTP/DNS observation: `BLOCKED BY EXECUTION-ENVIRONMENT DNS; not counted as PASS or FAIL`
 
 ## Public About publication boundary
 
@@ -93,11 +97,10 @@ Current state:
 
 ```text
 ENTORNO: BLOGGER REAL / PRODUCCIÓN
-PREVIOUS v0.9.2 CANDIDATE: USER_CONFIRMED_INSTALLED / QA INCOMPLETE
 ADMIN HOTFIX CODE: MERGED TO MAIN
 ADMIN HOTFIX CI: PASS
-ADMIN HOTFIX XML: READY / HASHED
-ADMIN HOTFIX BLOGGER REAL: NOT INSTALLED
+ADMIN HOTFIX XML: INSTALLED — USER CONFIRMED
+BLOGGER REAL: DESPLEGADO / QA EN CURSO
 ```
 
 ## Known debt
