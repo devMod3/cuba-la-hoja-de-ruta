@@ -18,16 +18,16 @@ const publicVersion = capture(createZenBlog, /const VERSION = '([^']+)'/, 'creat
 const runtimeVersion = capture(runtime, /const RELEASE = '([^']+)'/, 'runtime RELEASE');
 const aboutVersion = capture(about, /const RELEASE = '([^']+)'/, 'About RELEASE');
 
-test('application runtime version surfaces are internally consistent before v0.9.2 normalization', () => {
-  assert.deepEqual(new Set([publicVersion, runtimeVersion, aboutVersion]), new Set(['0.9.1']));
-  assert.equal(packageJson.version, '0.4.0', 'known baseline package-version discrepancy must remain explicit until T048');
+test('ZenBlog application release surfaces converge on 0.9.2', () => {
+  assert.equal(packageJson.version, '0.9.2');
+  assert.deepEqual(new Set([publicVersion, runtimeVersion, aboutVersion]), new Set(['0.9.2']));
 });
 
 test('deployable-shell immutable pins, when present, must all identify one payload SHA', () => {
   const pins = [...theme.matchAll(/https:\/\/cdn\.jsdelivr\.net\/gh\/devMod3\/cuba-la-hoja-de-ruta@([a-f0-9]{40})\//g)].map((match) => match[1]);
 
   if (pins.length === 0) {
-    assert.match(theme, /https:\/\/devmod3\.github\.io\/cuba-la-hoja-de-ruta\//, 'pre-shell baseline should remain recognizable until a release shell exists');
+    assert.match(theme, /https:\/\/devmod3\.github\.io\/cuba-la-hoja-de-ruta\//, 'pre-shell state should remain recognizable until the payload SHA exists');
     return;
   }
 
