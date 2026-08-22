@@ -91,8 +91,11 @@ async function bootAdmin() {
   const { AboutManager } = await import(new URL('./AboutManager.js', import.meta.url).href);
   const { installBloggerProfileFields } = await import(new URL('./BloggerProfileFields.js', import.meta.url).href);
   const { installProfilePhotoUpload } = await import(new URL('./ProfilePhotoUpload.js', import.meta.url).href);
-  const aboutManager = installProfilePhotoUpload(
-    installBloggerProfileFields(new AboutManager({ metadataManager: window.ZenMetadataManager, searchLab }))
+  const { installPublicProfilePublishing } = await import(new URL('./PublicProfilePublishing.js', import.meta.url).href);
+  const aboutManager = installPublicProfilePublishing(
+    installProfilePhotoUpload(
+      installBloggerProfileFields(new AboutManager({ metadataManager: window.ZenMetadataManager, searchLab }))
+    )
   ).mount();
 
   const { InspectorController } = await import(new URL('../inspector/InspectorController.js', import.meta.url).href);
