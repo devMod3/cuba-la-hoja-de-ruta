@@ -1,4 +1,4 @@
-const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
+const BLOGGER_ADMIN_PAGE = '/p/admin.html';
 const METADATA_PARTS = [
   'metadata-manager-v0.5.part1.txt',
   'metadata-manager-v0.5.part2.txt',
@@ -6,9 +6,18 @@ const METADATA_PARTS = [
   'metadata-manager-v0.5.part4.txt'
 ];
 
-function isAdminPath(pathname = location.pathname) {
-  const normalized = pathname.replace(/\/+$/, '') || '/';
-  return ADMIN_PATHS.has(normalized);
+function normalizeAdminSegment(value = '') {
+  return String(value).replace(/\\/g, '/').replace(/\/+$/, '');
+}
+
+function isAdminLocation({ pathname = location.pathname, hash = location.hash } = {}) {
+  const path = normalizeAdminSegment(pathname) || '/';
+  const hashPath = normalizeAdminSegment(String(hash).replace(/^#/, ''));
+  return path === BLOGGER_ADMIN_PAGE
+    || path === '/admin'
+    || path.endsWith('/admin')
+    || hashPath === 'admin'
+    || hashPath.endsWith('/admin');
 }
 
 function ensureMetadataMount() {
@@ -52,10 +61,12 @@ async function loadMetadataManager() {
 }
 
 async function bootAdmin() {
-  if (!isAdminPath()) return;
+  if (!isAdminLocation()) return;
   document.documentElement.dataset.zenAdmin = 'true';
   document.title = 'ZenBlog Admin · La hoja de ruta';
-  if (location.pathname === '/p/admin.html') history.replaceState(history.state ?? {}, '', `/admin${location.search}${location.hash}`);
+  if (location.pathname !== '/admin' || location.hash) {
+    history.replaceState(history.state ?? {}, '', `/admin${location.search}`);
+  }
 
   ensureMetadataMount();
   loadStylesheet(new URL('./admin.css', import.meta.url).href, 'zen-admin-css');

@@ -1,10 +1,19 @@
-const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
+const BLOGGER_ADMIN_PAGE = '/p/admin.html';
 const INSPECTOR_KEY = 'zenInspector.enabled';
 const RELEASE = '0.9.2';
 
-function isAdminPath(pathname = location.pathname) {
-  const normalized = pathname.replace(/\/+$/, '') || '/';
-  return ADMIN_PATHS.has(normalized);
+function normalizeAdminSegment(value = '') {
+  return String(value).replace(/\\/g, '/').replace(/\/+$/, '');
+}
+
+function isAdminLocation({ pathname = location.pathname, hash = location.hash } = {}) {
+  const path = normalizeAdminSegment(pathname) || '/';
+  const hashPath = normalizeAdminSegment(String(hash).replace(/^#/, ''));
+  return path === BLOGGER_ADMIN_PAGE
+    || path === '/admin'
+    || path.endsWith('/admin')
+    || hashPath === 'admin'
+    || hashPath.endsWith('/admin');
 }
 
 function releaseUrl(path) {
@@ -45,7 +54,7 @@ function onInspectorShortcut(event) {
 }
 
 async function boot() {
-  if (isAdminPath()) {
+  if (isAdminLocation()) {
     await import(releaseUrl('../admin/bootstrap.js'));
     return;
   }
