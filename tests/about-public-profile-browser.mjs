@@ -41,16 +41,25 @@ const publishedProfile = {
   profile: {
     displayName: 'Perfil PUBLICADO',
     photoUrl: '',
-    bloggerProfileUrl: '',
-    email: '',
-    website: '',
+    bloggerProfileUrl: 'https://www.blogger.com/profile/123',
+    email: 'public@example.com',
+    website: 'https://example.com',
+    audioClipUrl: 'https://example.com/audio.mp3',
+    wishlistUrl: 'https://example.com/wishlist',
+    randomQuestion: '¿Pregunta pública?',
+    randomAnswer: 'Respuesta pública',
+    gender: 'Perfil de prueba',
     occupation: 'Publicación',
-    industry: '',
-    location: { city: '', region: '', country: '' },
-    introduction: 'Este contenido procede del snapshot público.'
+    industry: 'Editorial',
+    location: { city: 'Ciudad', region: 'Región', country: 'País' },
+    introduction: 'Este contenido procede del snapshot público.',
+    interests: ['Constitucionalismo', 'Tecnologías'],
+    favoriteMovies: ['Película pública'],
+    favoriteMusic: ['Música pública'],
+    favoriteBooks: ['Libro público']
   },
-  social: [],
-  relatedResources: []
+  social: [{ id: 'x', platform: 'x', label: 'X', username: '@publico', url: 'https://x.com/publico', visible: true, order: 0 }],
+  relatedResources: [{ id: 'r1', title: 'Recurso público', url: 'https://example.com/recurso', description: 'Descripción pública', type: 'source', visible: true, order: 0 }]
 };
 
 const localProfile = {
@@ -160,11 +169,40 @@ try {
   assert.match(html, /data-about-ready="true"/);
   assert.match(html, /data-profile-source="published-main"/);
   assert.match(html, /data-zen-about-profile-source="published-main"/);
-  assert.match(aboutDom, />Perfil PUBLICADO</);
-  assert.match(aboutDom, /Este contenido procede del snapshot público\./);
+
+  for (const expected of [
+    'Perfil PUBLICADO',
+    'Perfil de prueba',
+    'Publicación',
+    'Editorial',
+    'Ciudad',
+    'Región',
+    'País',
+    'Este contenido procede del snapshot público.',
+    'public@example.com',
+    'Audio Clip ↗',
+    'Wishlist ↗',
+    'Constitucionalismo',
+    'Tecnologías',
+    'Película pública',
+    'Música pública',
+    'Libro público',
+    '¿Pregunta pública?',
+    'Respuesta pública',
+    '@publico',
+    'Recurso público',
+    'Descripción pública'
+  ]) {
+    assert.match(aboutDom, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `public About missing: ${expected}`);
+  }
+
+  assert.match(aboutDom, /href="https:\/\/www\.blogger\.com\/profile\/123"/);
+  assert.match(aboutDom, /href="https:\/\/example\.com\/"/);
+  assert.match(aboutDom, /href="https:\/\/example\.com\/audio\.mp3"/);
+  assert.match(aboutDom, /href="https:\/\/example\.com\/wishlist"/);
   assert.doesNotMatch(aboutDom, /Perfil LOCAL NO DEBE APARECER/);
   assert.doesNotMatch(html, /data-about-error=/);
-  console.log('About public-profile cross-origin browser contract: PASS');
+  console.log('About public-profile Admin-to-public field parity browser contract: PASS');
 } finally {
   await Promise.all([
     new Promise((done) => pageServer.close(done)),
