@@ -1,6 +1,6 @@
 # Candidate Deltas — Spec 001
 
-**State**: M002_IMPLEMENTED_T032
+**State**: M003_DECIDED_T034
 **Rule**: no delta may enter product implementation while `decision=UNRESOLVED`.
 
 ## Comparison baseline
@@ -51,21 +51,22 @@ The `aa372e1.../blogger/theme.xml` repository blob is historical source evidence
 
 ## M-003 — About stylesheet preload/delivery
 
-- `productionState`: present
-- `canonicalMainState`: absent/different
+- `productionState`: global head stylesheet ownership present
+- `canonicalMainState`: lazy bootstrap ownership present
 - `ownerFiles`: `blogger/theme.xml`, `tools/about/bootstrap.js`
 - `canonicalThemeBlob`: `7dd61dc3ec2d2602e249be776c887c8ac5c578b4`
 - `canonicalAboutBootstrapBlob`: `3b753e3980d2e7a02d8f58bd9088ee4e951a5e26`
 - `productionPayloadAboutBootstrapBlob`: `003d8bda7959d83a3864fdc992b4f7e9e2635527`
-- `symptomOrBenefit`: the exact installed Blogger XML declares `tools/about/about.css` globally in `<head>` with immutable `@aa372e1...` identity. Canonical `main` omits that global stylesheet and `tools/about/bootstrap.js` lazy-loads it on About boot. The deployed payload bootstrap also retains defensive `loadStylesheet()` logic but becomes a no-op when the head-owned `#zen-about-css` already exists.
+- `symptomOrBenefit`: the exact installed Blogger XML declares `tools/about/about.css` globally in `<head>`, eliminating first-open unstyled About but moving an auxiliary stylesheet onto every reader path. Canonical main omits the global stylesheet and lazy-loads it only when About boots, but mounts `AboutFeature` immediately without waiting for stylesheet readiness.
 - `protectedNeighbors`: PS-008 About; PS-011 reader critical path; PS-016 deployment boundary
-- `reproductionEvidence`: NOT_RUN — normal and deliberately slow stylesheet-load comparison required
-- `regressionTest`: recovered About browser smoke proves canonical lazy delivery renders a valid profile in Chrome; slow-load/first-open ownership evidence pending T033–T034
-- `accessibilityImpact`: possible visible-layout stability impact
+- `reproductionEvidence`: E3 — GitHub Actions run #178 (`32589253689`), job `97070337147`, Google Chrome `151.0.7922.137`, Node `20.20.2`, CDP real-time delivery characterization with cache disabled. Eight scenarios compared lazy/global × reader/About × normal/1200ms stylesheet delay. Under 1200ms delay: lazy reader made 0 About CSS requests and loaded in ~18ms; global reader made 1 About CSS request and load waited ~1216ms. Lazy About mounted at ~27.4ms while CSS completed at ~1229.5ms, producing ~1202.1ms measured FOUC. Global About CSS completed at ~1212.3ms before shell mount at ~1224.8ms, producing FOUC=0. Normal-network lazy About also rendered before CSS, but only by ~4.1ms. Run #178 completed all repository gates PASS.
+- `regressionTest`: `tests/about-delivery-characterization.mjs` + `tests/fixtures/about-delivery.html` establish the decision baseline. T035 must add a durable contract that (a) reader/theme does not globally own About CSS, (b) only one `#zen-about-css` link is created, and (c) About shell mount waits for stylesheet readiness while preserving fallback on failure.
+- `accessibilityImpact`: lazy-as-is can expose a materially unstyled About on slow delivery; global-as-deployed prevents FOUC but can delay unrelated reader views by the stylesheet latency.
 - `securityImpact`: none identified
-- `criticalPathImpact`: HIGHER REVIEW REQUIRED — retaining preload adds About CSS to every reader navigation; rejecting it risks first-open flash if lazy CSS arrives too late
-- `decision`: UNRESOLVED
-- `decisionEvidence`: static T022 confirms material delivery ownership difference; T033–T034 required
+- `criticalPathImpact`: decisive. Constitution principle IV / protected reader critical path rejects a globally render-blocking About-only request when equivalent About stability can be achieved inside the auxiliary bootstrap.
+- `decision`: ADJUST
+- `decisionEvidence`: T033 run #178 demonstrates both harms empirically. T034 chooses neither historical endpoint wholesale. Preserve canonical lazy ownership so non-About reader views issue zero About CSS requests, but change the About bootstrap so it waits for the single lazy stylesheet to become ready before replacing the existing fallback with `AboutFeature`. Do not add About CSS to `blogger/theme.xml`. If stylesheet loading fails, preserve the fallback rather than committing an unstyled custom shell.
+- `implementationStatus`: AUTHORIZED_T035 — no M-003 product edit had been made at decision time.
 
 ## M-004 — About mobile CSS v0.1.5 behavior
 
@@ -128,13 +129,13 @@ The `aa372e1.../blogger/theme.xml` repository blob is historical source evidence
 
 This is not a new product-behavior CandidateDelta. It is the already accepted ADR-002 release-identity debt and must be normalized coherently to `0.9.2` only after functional delta decisions and before PAYLOAD_SHA capture.
 
-## Gate result through T032
+## Gate result through T034
 
 - M-001: MATERIAL / UNRESOLVED — WebKit/Safari safe-area evidence still required
 - M-002: MATERIAL / ADJUST / IMPLEMENTED — T032 browser + CI PASS
-- M-003: MATERIAL / UNRESOLVED
+- M-003: MATERIAL / ADJUST — T033 E3 PASS; bounded T035 bootstrap implementation authorized
 - M-004: MATERIAL / UNRESOLVED
 - M-005: EXACT EQUIVALENCE / KEEP AS NO-OP
 - A-001: NOT DEPLOYED / UNRESOLVED pending realistic reproduction
 
-M-002 is the only functional product delta implemented so far. M-005 remains untouched; all other product deltas remain blocked until their own evidence gates are satisfied.
+M-002 remains the only functional product delta implemented so far. M-003 is authorized only for a bounded lazy-stylesheet readiness change in `tools/about/bootstrap.js`; `blogger/theme.xml` must remain free of globally owned About CSS. All other unresolved product deltas remain blocked.
