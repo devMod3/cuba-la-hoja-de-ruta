@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, lab-v0.1-architecture]
   pull_request:
-    branches: [main]
+    branches: [main, 001-release-line-convergence]
 
 permissions:
   contents: read
