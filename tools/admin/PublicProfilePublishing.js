@@ -37,6 +37,10 @@ async function responseError(response, fallback) {
   }
 }
 
+function browserFetch(...args) {
+  return globalThis.fetch(...args);
+}
+
 export function requestEphemeralGitHubToken({ documentRef = globalThis.document } = {}) {
   if (!documentRef?.body) return Promise.reject(new Error('No hay interfaz disponible para autorizar la publicación.'));
 
@@ -79,7 +83,7 @@ export function requestEphemeralGitHubToken({ documentRef = globalThis.document 
 
 export class GitHubPublicProfilePublisher {
   constructor({
-    fetchImpl = globalThis.fetch,
+    fetchImpl = browserFetch,
     tokenProvider = requestEphemeralGitHubToken,
     publicProfileUrl = PUBLIC_PROFILE_URL,
     delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
