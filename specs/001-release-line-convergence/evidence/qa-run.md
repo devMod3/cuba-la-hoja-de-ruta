@@ -33,7 +33,7 @@ The release candidate does not exist yet. Public/Admin cases below therefore rem
 ## Admin/debug QA cases
 
 | Case ID | Surface | Result | Evidence reference |
-|---|---|---|---|
+|---|---|---|
 | Q-ADM-001 | Metadata | NOT_RUN | — |
 | Q-ADM-002 | Search Lab | NOT_RUN | — |
 | Q-ADM-003 | About Manager | NOT_RUN | — |
@@ -41,7 +41,7 @@ The release candidate does not exist yet. Public/Admin cases below therefore rem
 
 ## Pre-candidate characterization — M-002 Home density
 
-This section is T029–T031 decision evidence. It is NOT final-candidate QA and does not change the `NOT_RUN` state of the release matrix above.
+This section is T029–T032 engineering evidence. It is NOT final-candidate QA and does not change the `NOT_RUN` state of the release matrix above.
 
 Environment:
 - GitHub Actions `ubuntu-24.04`
@@ -53,7 +53,7 @@ Environment:
 
 Workflow run #150 (`32588374314`) compared unchanged canonical Home CSS against immutable deployed payload `aa372e1cc7982d1f8335d0d21760869c396b32c3`.
 
-| Case | main | deployed production | Horizontal overflow |
+| Case | canonical main | deployed production | Horizontal overflow |
 |---|---|---|---|
 | 320x568 narrow phone | essential elements extend beyond initial Home; reachable by scroll | essential elements remain inside Home; no scroll required | none |
 | 390x700 normal phone | essential elements inside Home; no scroll | essential elements inside Home; no scroll | none |
@@ -83,7 +83,41 @@ Observed critical results:
 - harness assertion: `M-002 minimal candidate: PASS`;
 - full run: JavaScript checks PASS; 61/61 unit tests PASS; About browser smoke PASS; exact viewport characterization PASS; Blogger XML parse PASS; architecture invariants PASS.
 
-Decision reference: `specs/001-release-line-convergence/evidence/candidate-deltas.md` — M-002 `ADJUST`.
+### T032 implemented product verification
+
+Product implementation:
+- Home CSS commit: `a462c89a80dc10e0f64c9bc60ce2164ac98d35dd`
+- exact post-implementation characterization harness head: `4aa2120ec2c5242499001db0c490e24fffc29ebb`
+- CI-only execution workflow commit: `71c6876de2a5d88c84e665be93bff5e091144687`
+- Workflow run #162: `32588735098`
+- Job: `97069058114`
+
+The post-implementation harness used three explicit identities:
+- canonical = immutable `0a45bc523f0129d83307f1c6f3a972056b219ae0`;
+- implementation = local implementation branch content;
+- production = immutable `aa372e1cc7982d1f8335d0d21760869c396b32c3`.
+
+Implemented critical results:
+- 320x568: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, no Home scroll required;
+- 390x700: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, existing normal-phone fit preserved;
+- 390x560: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, reachable vertical fallback preserved;
+- 667x375: `essentialOutside=true`, `essentialInaccessible=false`, `horizontalOverflow=false`, `scrollable=true`.
+
+These three critical outcomes (`essentialOutside`, `essentialInaccessible`, `horizontalOverflow`) match deployed production for all four tested viewport classes. The implementation deliberately retains canonical M-001 tokens (`101px` / `56px`) because safe-area accounting remains a separate unresolved delta.
+
+Run #162 full gate:
+- JavaScript checks: PASS
+- unit tests: 64/64 PASS
+- M-002 contract tests: 3/3 PASS
+- About browser smoke: PASS
+- exact viewport characterization: PASS
+- browser assertion: `M-002 implementation contract: PASS`
+- Blogger XML parse: PASS
+- architecture invariants: PASS
+
+T032 result: `PASS — IMPLEMENTED`. This remains pre-release engineering evidence; Blogger real and final-candidate Q-PUB-003/Q-PUB-004 remain `NOT_RUN` until the final candidate exists.
+
+Decision reference: `specs/001-release-line-convergence/evidence/candidate-deltas.md` — M-002 `ADJUST / COMPLETE_T032`.
 
 ## Per-case evidence template
 
