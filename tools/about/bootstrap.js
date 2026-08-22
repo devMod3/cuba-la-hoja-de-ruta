@@ -1,5 +1,5 @@
 const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
-const RELEASE = '0.9.1';
+const RELEASE = '0.9.2';
 const ABOUT_STYLESHEET_ID = 'zen-about-css';
 const PUBLIC_PROFILE_PATH = '../../config/site-profile.public.json';
 const stylesheetReadiness = new WeakMap();
