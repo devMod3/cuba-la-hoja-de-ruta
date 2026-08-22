@@ -197,7 +197,7 @@ try {
   }
 
   assert.match(aboutDom, /href="https:\/\/www\.blogger\.com\/profile\/123"/);
-  assert.match(aboutDom, /href="https:\/\/example\.com\/"/);
+  assert.match(aboutDom, /href="https:\/\/example\.com\/?"/);
   assert.match(aboutDom, /href="https:\/\/example\.com\/audio\.mp3"/);
   assert.match(aboutDom, /href="https:\/\/example\.com\/wishlist"/);
   assert.doesNotMatch(aboutDom, /Perfil LOCAL NO DEBE APARECER/);
