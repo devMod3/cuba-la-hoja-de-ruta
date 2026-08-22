@@ -15,8 +15,8 @@ These baseline identities are rollback/starting evidence. They are not the v0.9.
 
 - Release label / ADR-002 application release: `ZenBlog v0.9.2`
 - Spec: `specs/001-release-line-convergence/`
-- Promotion branch: `release-v0.9.2-blogger-real`
-- Production PR: `#22` targeting `main`
+- Production PR: `#22` — `MERGED`
+- Main promotion merge SHA: `112d23e089bcf5447fa93f0e7f961b00736e514d`
 - Payload SHA: `cefd0adc07e5405ddbeb51e0c53082c8f089c5b0`
 - Release-shell SHA: `dba55ba2ac845c02071fe5236322cab97254c17a`
 - Asset delivery identity: `https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@cefd0adc07e5405ddbeb51e0c53082c8f089c5b0/...`
@@ -29,10 +29,13 @@ These baseline identities are rollback/starting evidence. They are not the v0.9.
 
 - Payload CI: run #221 (`32597502257`) — `SUCCESS`
 - Release-shell CI: run #222 (`32597556213`) — `SUCCESS`
+- Final promotion-head CI: run #223 (`32597668897`) — `SUCCESS`
 - Automated test result: `PASS`
 - Browser smoke result: `PASS`
 - T040 protected-neighbor gate: `PASS` in release test suite
 - About local/public cross-origin contract: `PASS`
+- `main` promotion: `VERIFIED` at `112d23e089bcf5447fa93f0e7f961b00736e514d`
+- GitHub Pages post-merge deployment result: `UNVERIFIED FROM CURRENT TOOLING` — do not conflate main promotion with Pages deployment
 - Real Blogger QA result: `NOT_RUN`
 - Safari/iPhone safe-area acceptance: `NOT_RUN_ON_CANDIDATE`
 - QA evidence: `specs/001-release-line-convergence/evidence/qa-run.md`
@@ -69,9 +72,10 @@ Current state:
 
 ```text
 ENTORNO: BLOGGER REAL / PRODUCCIÓN
-GITHUB PAGES: NOT YET PROMOTED TO MAIN
+MAIN: PROMOTED / VERIFIED
+GITHUB PAGES: POST-MERGE RESULT UNVERIFIED FROM CURRENT TOOLING
 BLOGGER REAL: NOT INSTALLED
-DESPLIEGUE EN ESTA INTERVENCIÓN: IN PROGRESS
+DESPLIEGUE EN ESTA INTERVENCIÓN: BLOCKED ONLY AT BLOGGER INSTALLATION BOUNDARY
 ```
 
 ## Known debt
@@ -86,7 +90,8 @@ DESPLIEGUE EN ESTA INTERVENCIÓN: IN PROGRESS
 - PR #13: `EXPERIMENT/REFERENCE — no wholesale merge`.
 - PR #14: `EXPERIMENT/REFERENCE — no wholesale merge; A-001 deferred without importing it`.
 - PR #15/#16/#19/#20/#21: historical/CI-only lanes; not production merge sources.
-- PR #18: stacked implementation evidence line; production promotion occurs through PR #22.
+- PR #18: `CLOSED WITHOUT MERGE / SUPERSEDED BY PR #22`.
+- PR #22: `MERGED TO MAIN / PRODUCTION PROMOTION SOURCE`.
 
 ## Freeze rule
 
