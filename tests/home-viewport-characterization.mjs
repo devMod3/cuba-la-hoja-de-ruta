@@ -259,24 +259,32 @@ async function characterize(source, testCase) {
 }
 
 try {
-  for (const source of ['main', 'candidate', 'production']) {
+  for (const source of ['canonical', 'implementation', 'production']) {
     for (const testCase of cases) {
       results.push({ source, case: testCase.id, ...await characterize(source, testCase) });
     }
   }
 
-  const candidate = new Map(results.filter((row) => row.source === 'candidate').map((row) => [row.case, row]));
-  for (const row of candidate.values()) {
-    assert.equal(row.horizontalOverflow, false, `candidate/${row.case}: horizontal overflow`);
-    assert.equal(row.essentialInaccessible, false, `candidate/${row.case}: essential content inaccessible`);
+  const implementation = new Map(results.filter((row) => row.source === 'implementation').map((row) => [row.case, row]));
+  const production = new Map(results.filter((row) => row.source === 'production').map((row) => [row.case, row]));
+
+  for (const row of implementation.values()) {
+    assert.equal(row.horizontalOverflow, false, `implementation/${row.case}: horizontal overflow`);
+    assert.equal(row.essentialInaccessible, false, `implementation/${row.case}: essential content inaccessible`);
   }
-  assert.equal(candidate.get('narrow-phone').essentialOutside, false, 'candidate/narrow-phone should keep essentials inside Home');
-  assert.equal(candidate.get('normal-phone').essentialOutside, false, 'candidate/normal-phone should preserve current passing behavior');
-  assert.equal(candidate.get('short-phone').essentialOutside, false, 'candidate/short-phone should keep essentials inside Home');
-  assert.equal(candidate.get('phone-landscape').scrollable, true, 'candidate/phone-landscape must keep a reachable scroll fallback');
+  assert.equal(implementation.get('narrow-phone').essentialOutside, false, 'implementation/narrow-phone should keep essentials inside Home');
+  assert.equal(implementation.get('normal-phone').essentialOutside, false, 'implementation/normal-phone should preserve current passing behavior');
+  assert.equal(implementation.get('short-phone').essentialOutside, false, 'implementation/short-phone should keep essentials inside Home');
+  assert.equal(implementation.get('phone-landscape').scrollable, true, 'implementation/phone-landscape must keep a reachable scroll fallback');
+
+  for (const id of cases.map((item) => item.id)) {
+    assert.equal(implementation.get(id).essentialOutside, production.get(id).essentialOutside, `implementation/${id}: essential-outside outcome differs from deployed production`);
+    assert.equal(implementation.get(id).essentialInaccessible, production.get(id).essentialInaccessible, `implementation/${id}: accessibility outcome differs from deployed production`);
+    assert.equal(implementation.get(id).horizontalOverflow, production.get(id).horizontalOverflow, `implementation/${id}: horizontal-overflow outcome differs from deployed production`);
+  }
 
   console.log(JSON.stringify({ browser, protocol: 'CDP exact device metrics', results }, null, 2));
-  console.log('M-002 minimal candidate: PASS');
+  console.log('M-002 implementation contract: PASS');
 } finally {
   await browserSession.close();
   await new Promise((done) => server.close(done));
