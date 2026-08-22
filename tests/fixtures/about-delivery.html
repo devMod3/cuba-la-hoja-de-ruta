@@ -77,7 +77,9 @@
         const shell = root.querySelector('.zen-about-shell');
         if (!shell || window.__aboutDelivery.shellRenderedAt != null) return;
         window.__aboutDelivery.shellRenderedAt = performance.now();
-        window.__aboutDelivery.styledAtRender = parseFloat(getComputedStyle(shell).paddingTop) > 0;
+        // Do not call getComputedStyle here: that can synchronously wait for a
+        // pending stylesheet and erase the very FOUC interval being measured.
+        window.__aboutDelivery.styledAtRender = window.__aboutDelivery.cssLoadAt != null;
       }).observe(root, { childList: true, subtree: true });
 
       document.addEventListener('zenabout:ready', () => {
