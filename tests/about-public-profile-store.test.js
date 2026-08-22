@@ -22,13 +22,14 @@ test('published profile mode is selected only when page and module origins diffe
   }), false);
   assert.equal(usesPublishedProfile({
     pageUrl: 'https://cubalahojaderuta.blogspot.com/#zen-about',
-    moduleUrl: 'https://devmod3.github.io/cuba-la-hoja-de-ruta/tools/about/PublishedSiteProfileStore.js'
+    moduleUrl: 'https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@payload/tools/about/PublishedSiteProfileStore.js'
   }), true);
 });
 
-test('published profile store fetches an immutable validated snapshot without credentials', async () => {
+test('published profile store fetches a cache-busted validated public snapshot without credentials', async () => {
   const requests = [];
   const store = await PublishedSiteProfileStore.fromUrl('https://example.test/site-profile.public.json', {
+    now: () => 123456789,
     fetchImpl: async (url, options) => {
       requests.push({ url, options });
       return { ok: true, status: 200, json: async () => profile };
@@ -36,11 +37,29 @@ test('published profile store fetches an immutable validated snapshot without cr
   });
 
   assert.equal(requests.length, 1);
+  assert.equal(new URL(requests[0].url).searchParams.get('zenProfileRead'), '123456789');
   assert.equal(requests[0].options.cache, 'no-store');
   assert.equal(requests[0].options.credentials, 'omit');
   assert.equal(store.load().profile.displayName, 'Perfil publicado');
   assert.equal(store.load().profile.introduction, 'Contenido público');
   assert.equal(typeof store.subscribe(() => {}), 'function');
+});
+
+test('default public profile fetch preserves the native global receiver', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async function receiverSensitiveFetch(url, options = {}) {
+    assert.equal(this, globalThis);
+    assert.equal(new URL(url).searchParams.get('zenProfileRead'), '42');
+    assert.equal(options.credentials, 'omit');
+    return { ok: true, status: 200, json: async () => profile };
+  };
+
+  try {
+    const store = await PublishedSiteProfileStore.fromUrl('https://example.test/site-profile.public.json', { now: () => 42 });
+    assert.equal(store.load().profile.displayName, 'Perfil publicado');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('checked-in public profile artifact satisfies the v1 public contract', async () => {

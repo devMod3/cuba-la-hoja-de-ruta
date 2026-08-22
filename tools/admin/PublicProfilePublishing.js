@@ -1,7 +1,7 @@
 import { validateSiteProfile } from '../about/SiteProfileStore.js';
 
 export const PRODUCTION_BLOGGER_HOST = 'cubalahojaderuta.blogspot.com';
-export const PUBLIC_PROFILE_URL = 'https://devmod3.github.io/cuba-la-hoja-de-ruta/config/site-profile.public.json';
+export const PUBLIC_PROFILE_URL = 'https://raw.githubusercontent.com/devMod3/cuba-la-hoja-de-ruta/main/config/site-profile.public.json';
 export const GITHUB_OWNER = 'devMod3';
 export const GITHUB_REPO = 'cuba-la-hoja-de-ruta';
 export const GITHUB_BRANCH = 'main';
@@ -88,7 +88,7 @@ export class GitHubPublicProfilePublisher {
     publicProfileUrl = PUBLIC_PROFILE_URL,
     delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     pollAttempts = 30,
-    pollIntervalMs = 2000
+    pollIntervalMs = 1000
   } = {}) {
     this.fetchImpl = fetchImpl;
     this.tokenProvider = tokenProvider;
@@ -144,7 +144,7 @@ export class GitHubPublicProfilePublisher {
       } catch {}
       if (attempt < this.pollAttempts - 1) await this.delay(this.pollIntervalMs);
     }
-    throw new Error('GitHub aceptó el cambio, pero el snapshot público todavía no se propagó a GitHub Pages.');
+    throw new Error('GitHub aceptó el cambio, pero el snapshot público de main todavía no devuelve la versión recién guardada.');
   }
 
   async publish(value) {
@@ -195,7 +195,7 @@ export function installPublicProfilePublishing(manager, {
 
       this.status('Borrador local guardado. Publicando en Blogger Real…', 'info');
       const result = await publisher.publish(saved);
-      this.status('Acerca de guardado y publicado. El snapshot público ya está disponible.', 'ok');
+      this.status('Acerca de guardado y publicado. El snapshot público de main ya está disponible.', 'ok');
       document.dispatchEvent(new CustomEvent('zenabout:published', {
         detail: { profile: saved, commitSha: result.commitSha, publicUrl: result.publicUrl }
       }));

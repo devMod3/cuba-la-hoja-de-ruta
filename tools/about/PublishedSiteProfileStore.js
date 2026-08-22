@@ -8,6 +8,16 @@ export function usesPublishedProfile({ pageUrl = globalThis.location?.href, modu
   }
 }
 
+function browserFetch(...args) {
+  return globalThis.fetch(...args);
+}
+
+function cacheBustedUrl(url, stamp = Date.now()) {
+  const requestUrl = new URL(url);
+  requestUrl.searchParams.set('zenProfileRead', String(stamp));
+  return requestUrl.href;
+}
+
 export class PublishedSiteProfileStore {
   constructor({ data = emptySiteProfile() } = {}) {
     const validation = validateSiteProfile(data);
@@ -19,10 +29,10 @@ export class PublishedSiteProfileStore {
     this.data = validation.value;
   }
 
-  static async fromUrl(url, { fetchImpl = globalThis.fetch } = {}) {
+  static async fromUrl(url, { fetchImpl = browserFetch, now = Date.now } = {}) {
     if (typeof fetchImpl !== 'function') throw new Error('Public profile fetch is unavailable');
 
-    const response = await fetchImpl(url, {
+    const response = await fetchImpl(cacheBustedUrl(url, now()), {
       cache: 'no-store',
       credentials: 'omit'
     });
@@ -36,9 +46,8 @@ export class PublishedSiteProfileStore {
   }
 
   subscribe() {
-    // Published profile is an immutable deployment snapshot. A newer snapshot
-    // becomes visible on the next page load/release identity, not through
-    // browser-local mutation events.
+    // Public content is read from the mutable main snapshot on each page load.
+    // Browser-local mutation events never become a public source of truth.
     return () => {};
   }
 }
