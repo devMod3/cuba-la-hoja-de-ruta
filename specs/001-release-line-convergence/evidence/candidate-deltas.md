@@ -1,6 +1,6 @@
 # Candidate Deltas — Spec 001
 
-**State**: M002_DECIDED_T031
+**State**: M002_IMPLEMENTED_T032
 **Rule**: no delta may enter product implementation while `decision=UNRESOLVED`.
 
 ## Comparison baseline
@@ -36,15 +36,18 @@ The `aa372e1.../blogger/theme.xml` repository blob is historical source evidence
 - `ownerFiles`: `src/features/home/home.css`
 - `canonicalBlob`: `238c109d1d45552a559ab3d82962070827e533d3`
 - `productionBlob`: `0c1db69994aecac82d27e362d9736b1194a63701`
+- `implementedProductCommit`: `a462c89a80dc10e0f64c9bc60ce2164ac98d35dd`
+- `postImplementationHarnessCommit`: `4aa2120ec2c5242499001db0c490e24fffc29ebb`
 - `symptomOrBenefit`: production adds short-phone compaction at <=760px width/height, changes mobile title sizing, delays emergency vertical scroll to <=560px, adds overscroll containment, and adds `100svh`; canonical main retains the older <=620px fallback and lacks the dedicated short-phone compaction block.
 - `protectedNeighbors`: PS-002 player boundary; PS-011 reader critical path; PS-015 responsive/safe areas
-- `reproductionEvidence`: E3 — exact Chrome DevTools Protocol device metrics in GitHub Actions. Run #150 (`32588374314`) proved the harness at 320x568, 390x700, 390x560 and 667x375. Canonical main: 320x568 and 390x560 place essential Home elements outside the initial Home box but keep them reachable by vertical scroll; 390x700 fits; landscape remains reachable by scroll; no horizontal overflow. Deployed production: 320x568 and 390x560 keep essential elements inside the Home box; 390x700 remains fitting; landscape remains reachable by scroll; no horizontal overflow. Run #154 (`32588482004`) tested a bounded candidate consisting only of short-height compaction plus moving last-resort scroll from <=620px to <=560px with overscroll containment. That candidate matched the production critical outcomes for all four viewport classes and printed `M-002 minimal candidate: PASS`.
-- `regressionTest`: `tests/home-viewport-characterization.mjs` now proves exact viewport dimensions and the bounded candidate acceptance criteria; `tests/mobile-characterization.test.js` remains the neutral ownership/boundary test. T032 will convert the accepted rules into product CSS and freeze only those behaviors in regression assertions.
-- `accessibilityImpact`: positive for initial visibility at 320x568 and 390x560 while preserving reachable scroll in extreme landscape; no horizontal overflow observed.
+- `reproductionEvidence`: E3 — exact Chrome DevTools Protocol device metrics in GitHub Actions. Run #150 (`32588374314`) proved the harness at 320x568, 390x700, 390x560 and 667x375. Canonical main: 320x568 and 390x560 place essential Home elements outside the initial Home box but keep them reachable by vertical scroll; 390x700 fits; landscape remains reachable by scroll; no horizontal overflow. Deployed production: 320x568 and 390x560 keep essential elements inside the Home box; 390x700 remains fitting; landscape remains reachable by scroll; no horizontal overflow. Run #154 (`32588482004`) proved a bounded candidate consisting only of short-height compaction plus moving last-resort scroll from <=620px to <=560px with overscroll containment. Run #162 (`32588735098`) then validated the actual implementation against immutable canonical `0a45bc...` and deployed production `aa372e1...` using the same exact viewports.
+- `regressionTest`: `tests/mobile-render-contract.test.js` freezes the accepted M-002 CSS contract and explicitly rejects unrelated deployed `100svh` / general mobile sizing. `tests/home-viewport-characterization.mjs` compares immutable canonical, local implementation and immutable deployed production. Run #162: 64/64 unit tests PASS; About browser smoke PASS; `M-002 implementation contract: PASS`; XML parse PASS; architecture invariants PASS.
+- `accessibilityImpact`: positive for initial visibility at 320x568 and 390x560 while preserving reachable scroll in extreme landscape; no horizontal overflow or inaccessible essential content observed.
 - `securityImpact`: none identified
-- `criticalPathImpact`: public Home CSS, but bounded to short-height media queries and fallback-scroll threshold.
+- `criticalPathImpact`: public Home CSS, bounded to short-height media queries and fallback-scroll threshold.
 - `decision`: ADJUST
-- `decisionEvidence`: T029/T030 exact viewport comparison + T031 bounded-candidate proof. Full deployed `home.css` is NOT accepted wholesale. General mobile title-size changes and `100svh` are not required to obtain the observed benefit and therefore remain excluded. Authorized T032 implementation is limited to: (1) the <=760px width + <=760px height compaction rules that preserve the same content/actions, and (2) changing the last-resort scroll threshold from <=620px to <=560px with `overscroll-behavior-y: contain`.
+- `decisionEvidence`: T029/T030 exact viewport comparison + T031 bounded-candidate proof + T032 post-implementation run #162. Full deployed `home.css` was NOT accepted wholesale. General mobile title-size changes and `100svh` remain excluded. Implemented behavior is limited to: (1) the <=760px width + <=760px height compaction rules that preserve the same content/actions, and (2) changing the last-resort scroll threshold from <=620px to <=560px with `overscroll-behavior-y: contain`.
+- `implementationStatus`: COMPLETE_T032 — product CSS implemented and post-implementation browser/CI contract PASS. This is pre-release evidence, not final Blogger candidate QA.
 
 ## M-003 — About stylesheet preload/delivery
 
@@ -125,13 +128,13 @@ The `aa372e1.../blogger/theme.xml` repository blob is historical source evidence
 
 This is not a new product-behavior CandidateDelta. It is the already accepted ADR-002 release-identity debt and must be normalized coherently to `0.9.2` only after functional delta decisions and before PAYLOAD_SHA capture.
 
-## Gate result through T031
+## Gate result through T032
 
 - M-001: MATERIAL / UNRESOLVED — WebKit/Safari safe-area evidence still required
-- M-002: MATERIAL / ADJUST — bounded implementation authorized for T032
+- M-002: MATERIAL / ADJUST / IMPLEMENTED — T032 browser + CI PASS
 - M-003: MATERIAL / UNRESOLVED
 - M-004: MATERIAL / UNRESOLVED
 - M-005: EXACT EQUIVALENCE / KEEP AS NO-OP
 - A-001: NOT DEPLOYED / UNRESOLVED pending realistic reproduction
 
-Only the explicitly bounded M-002 T032 change is now authorized in product source. M-005 remains untouched; all other product deltas remain blocked.
+M-002 is the only functional product delta implemented so far. M-005 remains untouched; all other product deltas remain blocked until their own evidence gates are satisfied.
