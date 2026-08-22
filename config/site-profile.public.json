@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0.0",
+  "updatedAt": null,
+  "profile": {
+    "displayName": "La hoja de ruta",
+    "photoUrl": "",
+    "bloggerProfileUrl": "",
+    "email": "",
+    "website": "",
+    "audioClipUrl": "",
+    "wishlistUrl": "",
+    "randomQuestion": "",
+    "randomAnswer": "",
+    "gender": "",
+    "industry": "",
+    "occupation": "",
+    "location": {
+      "city": "",
+      "region": "",
+      "country": ""
+    },
+    "introduction": "Plataforma editorial y documental para organizar, leer y recuperar conocimiento sobre soberanía, Constitución y Estado.",
+    "interests": [],
+    "favoriteMovies": [],
+    "favoriteMusic": [],
+    "favoriteBooks": []
+  },
+  "social": [],
+  "relatedResources": []
+}
