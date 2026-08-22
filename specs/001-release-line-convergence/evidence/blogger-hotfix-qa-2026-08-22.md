@@ -63,40 +63,43 @@ The credential is not embedded or persisted by the application. Stronger Admin a
 
 ## Real Blogger public-save QA
 
-User evidence at `2026-08-22 18:05 America/New_York` confirms the public-save hotfix is active in Blogger Real and works from both the normal browsing context and a private/incognito context. The private context requests publication authorization again, consistent with operation-local token handling and no cross-context credential persistence.
+At `2026-08-22 18:05 America/New_York` the user reported that the public-save authorization form appears in both a normal browsing context and a private/incognito context.
+
+At `2026-08-22 18:06 America/New_York` the user clarified that **no token was entered in either context**. Therefore no authenticated GitHub write can be inferred from those observations. Any earlier classification of public write/read-back as PASS from that report is withdrawn.
+
+The implementation saves the local draft before requesting the token, so seeing locally saved values after opening the authorization prompt is not evidence of public publication.
 
 | Case | Expected | Result | Evidence |
 |---|---|---|---|
-| QA-PUBSAVE-001 `/admin` regression | Admin still opens normally | PASS | user is editing/saving through the deployed Admin after hotfix |
-| QA-PUBSAVE-002 local save | local draft persists | PASS | previously confirmed and unchanged by the public-save flow |
-| QA-PUBSAVE-003 authorization | publication authorization UI appears for production Save | PASS | user reports token is requested when applying changes |
-| QA-PUBSAVE-004 public write | Save updates shared public profile | PASS | user confirms changes apply publicly |
-| QA-PUBSAVE-005 public read-back | published result is observable after Save | PASS | public behavior confirmed after publication |
-| QA-PUBSAVE-006 separate public context | private/incognito context observes the working public result | PASS | `USER_REPORTED_2026-08-22_18:05_ET: en incognito funciona también` |
-| QA-PUBSAVE-007 credential non-persistence across contexts | incognito must not inherit the normal-context token | PASS | incognito requests token again before applying changes |
-| QA-PUBSAVE-008 failure semantics | cancelled/failed auth leaves local save but reports NOT published | NOT_RUN | — |
+| QA-PUBSAVE-001 `/admin` regression | Admin still opens normally | PASS | deployed Admin is reachable and About Save flow is being exercised |
+| QA-PUBSAVE-002 local save | local draft persists | PASS | previously confirmed; implementation saves local draft before authorization |
+| QA-PUBSAVE-003 authorization UI | production Save requests publication authorization | PASS | token form appears in normal and incognito contexts |
+| QA-PUBSAVE-004 authenticated public write | valid token updates public snapshot | NOT_RUN | user did not enter token |
+| QA-PUBSAVE-005 public read-back | Admin reports success only after public snapshot matches | NOT_RUN | authenticated publication was not executed |
+| QA-PUBSAVE-006 separate public context | incognito/public reader sees newly published data | NOT_RUN | no authenticated publication occurred |
+| QA-PUBSAVE-007 credential non-persistence | a token used in one context is not inherited by another | NOT_RUN | no token was entered in either context |
+| QA-PUBSAVE-008 failure/cancel semantics | cancelled/failed auth leaves local save but reports NOT published | PARTIAL | local save-before-auth is exercised; explicit cancel/error status still not recorded |
 | QA-PUBSAVE-009 player/public neighbors | public navigation and player remain unaffected | NOT_RUN | — |
 
-## Parity result
+## Current parity result
 
 ```text
 LOCAL SAVE: PASS
-PUBLIC WRITE: PASS
-SEPARATE PUBLIC/INCOGNITO CONTEXT: PASS
-CREDENTIAL CROSS-CONTEXT PERSISTENCE: NO
-PARIDAD LOCAL -> PÚBLICO: PASS
+AUTHORIZATION UI: PASS
+AUTHENTICATED PUBLIC WRITE: NOT RUN
+SEPARATE PUBLIC READ-BACK: NOT RUN
+PARIDAD LOCAL -> PÚBLICO: PENDING
 ```
 
 ## Release state
 
 ```text
 ENTORNO: BLOGGER REAL / PRODUCCIÓN
-PUBLIC-SAVE HOTFIX: ACTIVE IN BLOGGER REAL — USER BEHAVIORAL EVIDENCE
+PUBLIC-SAVE HOTFIX: ACTIVE IN BLOGGER REAL — AUTH UI OBSERVED
 CI: PASS
-CORE PUBLIC-SAVE QA: PASS
-PARIDAD LOCAL -> PÚBLICO: PASS
-REMAINING REGRESSION QA: IN PROGRESS
+PUBLIC-SAVE QA: IN PROGRESS
+PARIDAD LOCAL -> PÚBLICO: PENDING AUTHENTICATED WRITE + SEPARATE READ-BACK
 FREEZE: NO
 ```
 
-Do not mark the complete release `FROZEN` until the remaining required regression/failure cases are either tested or explicitly accepted by the Product Owner.
+Do not mark the complete release `FROZEN` until authenticated publication and separate-context public read-back are proven and the remaining required regression/failure cases are either tested or explicitly accepted by the Product Owner.
