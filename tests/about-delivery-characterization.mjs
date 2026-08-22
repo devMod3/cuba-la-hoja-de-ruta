@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, stat, mkdtemp, rm } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
-import { extname, resolve, sep } from 'node:path';
+import { extname, resolve, sep, join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const ROOT = resolve(process.cwd());
 const FIXTURE = resolve(ROOT, 'tests/fixtures/about-delivery.html');
@@ -39,6 +40,130 @@ function safePath(urlPath) {
   return candidate;
 }
 
+function waitForChildExit(child, timeoutMs = 5000) {
+  if (child.exitCode !== null || child.signalCode !== null) return Promise.resolve();
+  return Promise.race([
+    new Promise((done) => child.once('exit', done)),
+    new Promise((done) => setTimeout(done, timeoutMs))
+  ]);
+}
+
+class CdpClient {
+  constructor(url) {
+    assert.equal(typeof WebSocket, 'function', 'Node WebSocket API unavailable; run with --experimental-websocket on Node 20');
+    this.ws = new WebSocket(url);
+    this.nextId = 0;
+    this.pending = new Map();
+    this.waiters = new Map();
+    this.ready = new Promise((resolveReady, rejectReady) => {
+      this.ws.addEventListener('open', resolveReady, { once: true });
+      this.ws.addEventListener('error', rejectReady, { once: true });
+    });
+    this.ws.addEventListener('message', (event) => {
+      const message = JSON.parse(event.data);
+      if (message.id) {
+        const pending = this.pending.get(message.id);
+        if (!pending) return;
+        this.pending.delete(message.id);
+        if (message.error) pending.reject(new Error(`${pending.method}: ${message.error.message}`));
+        else pending.resolve(message.result);
+        return;
+      }
+      const listeners = this.waiters.get(message.method);
+      if (!listeners?.length) return;
+      this.waiters.delete(message.method);
+      for (const listener of listeners) listener.resolve(message.params);
+    });
+  }
+
+  async send(method, params = {}) {
+    await this.ready;
+    const id = ++this.nextId;
+    return new Promise((resolveSend, rejectSend) => {
+      this.pending.set(id, { resolve: resolveSend, reject: rejectSend, method });
+      this.ws.send(JSON.stringify({ id, method, params }));
+    });
+  }
+
+  waitFor(method, timeoutMs = 15000) {
+    return new Promise((resolveWait, rejectWait) => {
+      const timer = setTimeout(() => rejectWait(new Error(`timeout waiting for ${method}`)), timeoutMs);
+      const entry = {
+        resolve: (value) => {
+          clearTimeout(timer);
+          resolveWait(value);
+        }
+      };
+      const list = this.waiters.get(method) ?? [];
+      list.push(entry);
+      this.waiters.set(method, list);
+    });
+  }
+
+  close() {
+    this.ws.close();
+  }
+}
+
+async function launchBrowser(browser) {
+  const profileDir = await mkdtemp(join(tmpdir(), 'zenblog-about-delivery-'));
+  let stderr = '';
+  const child = spawn(browser, [
+    '--headless=new',
+    '--no-sandbox',
+    '--disable-gpu',
+    '--disable-dev-shm-usage',
+    '--remote-debugging-port=0',
+    '--remote-allow-origins=*',
+    `--user-data-dir=${profileDir}`,
+    'about:blank'
+  ], { stdio: ['ignore', 'ignore', 'pipe'] });
+
+  const port = await new Promise((resolvePort, rejectPort) => {
+    const timer = setTimeout(() => rejectPort(new Error(`Chrome DevTools endpoint timeout: ${stderr.slice(-1200)}`)), 10000);
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+      const match = stderr.match(/DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)\//);
+      if (!match) return;
+      clearTimeout(timer);
+      resolvePort(Number(match[1]));
+    });
+    child.on('error', rejectPort);
+    child.on('exit', (code) => {
+      if (code && !/DevTools listening/.test(stderr)) {
+        clearTimeout(timer);
+        rejectPort(new Error(`Chrome exited ${code}: ${stderr.slice(-1200)}`));
+      }
+    });
+  });
+
+  const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+  const page = targets.find((target) => target.type === 'page');
+  assert.ok(page?.webSocketDebuggerUrl, 'Chrome page target missing');
+  const cdp = new CdpClient(page.webSocketDebuggerUrl);
+  await cdp.ready;
+  await cdp.send('Page.enable');
+  await cdp.send('Runtime.enable');
+  await cdp.send('Network.enable');
+  await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
+
+  return {
+    cdp,
+    child,
+    profileDir,
+    async close() {
+      cdp.close();
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+      await waitForChildExit(child);
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+        await waitForChildExit(child, 2000);
+      }
+      await rm(profileDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    }
+  };
+}
+
 const server = createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url || '/', 'http://localhost');
@@ -47,7 +172,7 @@ const server = createServer(async (req, res) => {
       const mode = requestUrl.searchParams.get('mode') || 'lazy';
       let html = await readFile(FIXTURE, 'utf8');
       const globalCss = mode === 'global'
-        ? `<link id="zen-about-css" rel="stylesheet" href="${ABOUT_CSS_PATH}?ownership=global" onload="window.__markAboutCssLoaded()">`
+        ? `<link id="zen-about-css" rel="stylesheet" href="${ABOUT_CSS_PATH}?ownership=global&t=${Date.now()}" onload="window.__markAboutCssLoaded()">`
         : '';
       html = html.replace('<!-- ABOUT_DELIVERY_GLOBAL_CSS -->', globalCss);
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
@@ -78,37 +203,45 @@ await new Promise((done) => server.listen(0, '127.0.0.1', done));
 const address = server.address();
 const port = typeof address === 'object' && address ? address.port : 0;
 const browser = await findBrowser();
+const browserSession = await launchBrowser(browser);
+const { cdp } = browserSession;
 
-function attr(html, name) {
-  const match = html.match(new RegExp(`data-${name}="([^"]*)"`));
-  assert.ok(match, `missing data-${name}`);
-  return match[1];
+async function evaluateValue(expression) {
+  const result = await cdp.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+  if (result.exceptionDetails) throw new Error(result.exceptionDetails.text || 'Runtime.evaluate failed');
+  return result.result.value;
 }
 
-async function dumpDom({ mode, view, delay }) {
+async function waitUntil(expression, timeoutMs = 10000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (await evaluateValue(expression)) return;
+    await new Promise((done) => setTimeout(done, 25));
+  }
+  throw new Error(`timeout waiting for browser condition: ${expression}`);
+}
+
+async function characterize({ mode, view, delay }) {
   activeCssDelay = delay;
+  const loaded = cdp.waitFor('Page.loadEventFired', 15000);
   const url = `http://127.0.0.1:${port}/tests/fixtures/about-delivery.html?mode=${mode}&view=${view}&delay=${delay}&t=${Date.now()}`;
-  return new Promise((resolveRun, rejectRun) => {
-    const child = spawn(browser, [
-      '--headless=new',
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-dev-shm-usage',
-      '--virtual-time-budget=5000',
-      '--dump-dom',
-      url
-    ]);
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.on('error', rejectRun);
-    child.on('exit', (code) => {
-      activeCssDelay = 0;
-      if (code === 0) resolveRun(stdout);
-      else rejectRun(new Error(`${browser} exited ${code}: ${stderr.slice(-1600)}`));
-    });
-  });
+  const wallStart = Date.now();
+  await cdp.send('Page.navigate', { url });
+  await loaded;
+  const wallLoadMs = Date.now() - wallStart;
+  await waitUntil(`document.body?.dataset.deliveryReady === 'true'`, Math.max(10000, delay * 3 + 4000));
+
+  const metrics = await evaluateValue(`(() => ({
+    cssRequests: Number(document.body.dataset.cssRequests),
+    domContentLoadedAt: Number(document.body.dataset.domContentLoadedAt),
+    cssLoadAt: Number(document.body.dataset.cssLoadAt),
+    shellRenderedAt: Number(document.body.dataset.shellRenderedAt),
+    aboutReadyAt: Number(document.body.dataset.aboutReadyAt),
+    styledAtRender: document.body.dataset.styledAtRender === 'true',
+    foucMs: Number(document.body.dataset.foucMs)
+  }))()`);
+  activeCssDelay = 0;
+  return { mode, view, delay, wallLoadMs, ...metrics };
 }
 
 const scenarios = [];
@@ -120,20 +253,7 @@ for (const delay of [0, 1200]) {
 
 const results = [];
 try {
-  for (const scenario of scenarios) {
-    const html = await dumpDom(scenario);
-    assert.equal(attr(html, 'delivery-ready'), 'true', `metrics not ready: ${JSON.stringify(scenario)}`);
-    results.push({
-      ...scenario,
-      cssRequests: Number(attr(html, 'css-requests')),
-      domContentLoadedAt: Number(attr(html, 'dom-content-loaded-at')),
-      cssLoadAt: Number(attr(html, 'css-load-at')),
-      shellRenderedAt: Number(attr(html, 'shell-rendered-at')),
-      aboutReadyAt: Number(attr(html, 'about-ready-at')),
-      styledAtRender: attr(html, 'styled-at-render') === 'true',
-      foucMs: Number(attr(html, 'fouc-ms'))
-    });
-  }
+  for (const scenario of scenarios) results.push(await characterize(scenario));
 
   const find = (mode, view, delay) => results.find((row) => row.mode === mode && row.view === view && row.delay === delay);
   for (const delay of [0, 1200]) {
@@ -153,13 +273,14 @@ try {
   assert.equal(slowGlobalAbout.styledAtRender, true, 'global stylesheet ownership should style About before first render');
   assert.equal(slowGlobalAbout.foucMs, 0, 'global stylesheet ownership should avoid About FOUC');
   assert.ok(
-    slowGlobalReader.domContentLoadedAt - slowLazyReader.domContentLoadedAt >= 800,
-    `global slow About CSS should materially delay reader DOMContentLoaded; lazy=${slowLazyReader.domContentLoadedAt}, global=${slowGlobalReader.domContentLoadedAt}`
+    slowGlobalReader.wallLoadMs - slowLazyReader.wallLoadMs >= 800,
+    `global slow About CSS should materially delay reader load; lazy=${slowLazyReader.wallLoadMs}ms, global=${slowGlobalReader.wallLoadMs}ms`
   );
 
-  console.log(JSON.stringify({ browser, delayMs: 1200, results }, null, 2));
+  console.log(JSON.stringify({ browser, protocol: 'CDP real-time delivery characterization', delayMs: 1200, results }, null, 2));
   console.log('M-003 delivery characterization: PASS');
 } finally {
   activeCssDelay = 0;
+  await browserSession.close();
   await new Promise((done) => server.close(done));
 }
