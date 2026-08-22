@@ -27,7 +27,7 @@ test('public publishing is production-host specific', () => {
   assert.equal(isProductionBloggerLocation({ hostname: 'evil.example' }), false);
 });
 
-test('publisher authenticates owner, updates only public profile and verifies public propagation', async () => {
+test('publisher authenticates owner, updates only public profile and verifies direct main propagation', async () => {
   const requests = [];
   const fetchImpl = async (url, options = {}) => {
     requests.push({ url: String(url), options });
@@ -52,7 +52,7 @@ test('publisher authenticates owner, updates only public profile and verifies pu
   assert.match(requests[0].url, /api\.github\.com\/user$/);
   assert.match(requests[1].url, /config\/site-profile\.public\.json\?ref=main$/);
   assert.equal(requests[2].options.method, 'PUT');
-  assert.match(requests[3].url, /^https:\/\/devmod3\.github\.io\/cuba-la-hoja-de-ruta\/config\/site-profile\.public\.json\?/);
+  assert.match(requests[3].url, /^https:\/\/raw\.githubusercontent\.com\/devMod3\/cuba-la-hoja-de-ruta\/main\/config\/site-profile\.public\.json\?/);
   assert.equal(requests[3].options.credentials, 'omit');
 
   const putBody = JSON.parse(requests[2].options.body);
@@ -127,13 +127,14 @@ test('Admin save keeps local-only semantics outside Blogger Real', async () => {
   assert.match(statuses.at(-1).message, /LOCAL \/ PRUEBAS/);
 });
 
-test('production integration is wired without persisting publication credentials', async () => {
+test('production integration reads mutable profile directly from main without persisting credentials', async () => {
   const source = await readFile(new URL('../tools/admin/PublicProfilePublishing.js', import.meta.url), 'utf8');
   const adminBootstrap = await readFile(new URL('../tools/admin/bootstrap.js', import.meta.url), 'utf8');
   const aboutBootstrap = await readFile(new URL('../tools/about/bootstrap.js', import.meta.url), 'utf8');
 
   assert.match(adminBootstrap, /installPublicProfilePublishing/);
-  assert.match(aboutBootstrap, /https:\/\/devmod3\.github\.io\/cuba-la-hoja-de-ruta\/config\/site-profile\.public\.json/);
+  assert.match(aboutBootstrap, /https:\/\/raw\.githubusercontent\.com\/devMod3\/cuba-la-hoja-de-ruta\/main\/config\/site-profile\.public\.json/);
+  assert.doesNotMatch(aboutBootstrap, /devmod3\.github\.io\/cuba-la-hoja-de-ruta\/config\/site-profile\.public\.json/);
   assert.match(aboutBootstrap, /resolvePublicProfileUrl/);
   assert.doesNotMatch(source, /localStorage\.setItem\([^\n]*token|sessionStorage\.setItem\([^\n]*token/i);
   assert.match(source, /Contents: write/);
