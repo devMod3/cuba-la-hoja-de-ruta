@@ -22,16 +22,22 @@
 
 | Case | Expected | Result | Evidence |
 |---|---|---|---|
-| QA-HF-001 `/admin` | Admin shell opens and URL remains/canonicalizes to `/admin` | NOT_RUN | — |
+| QA-HF-001 `/admin` | Admin shell opens and URL remains/canonicalizes to `/admin` | PASS | `USER_REPORTED_2026-08-22_17:19_ET: /admin = PASS` |
 | QA-HF-002 deep path + `/admin` | Admin shell opens and canonicalizes to `/admin` without reload loop | NOT_RUN | — |
 | QA-HF-003 Admin Metadata tab | Metadata UI mounts and remains usable | NOT_RUN | — |
 | QA-HF-004 Admin Search tab | Search Lab mounts and remains usable | NOT_RUN | — |
-| QA-HF-005 Admin About tab | About Manager mounts; existing browser-local profile is readable/editable | NOT_RUN | — |
+| QA-HF-005 Admin About tab | About Manager mounts; browser-local profile is editable and Save persists to localStorage | PASS | `USER_REPORTED_2026-08-22_17:19_ET: Guardar Acerca de sí guarda localmente` |
 | QA-HF-006 Admin Inspector tab | Inspector tab mounts without affecting public route | NOT_RUN | — |
 | QA-HF-007 Leave Admin | Site link returns to public blog without stale Admin overlay | NOT_RUN | — |
-| QA-HF-008 Public About | Public About continues reading published snapshot, not Admin localStorage | NOT_RUN | — |
+| QA-HF-008 Public About | Public About continues reading published snapshot, not Admin localStorage | PASS_WITH_EXPECTED_SEPARATION | User observed local Save does not publish globally; current architecture intentionally reads `config/site-profile.public.json` publicly. This confirms separation, but publication UX remains unresolved. |
 | QA-HF-009 Player boundary | Zen Radio Player remains independent and usable | NOT_RUN | — |
 | QA-HF-010 refresh `/admin` | Refresh does not produce a boot loop or broken shell | NOT_RUN | — |
+
+## QA observation — Save vs Publish
+
+Real Blogger observation confirms that `Guardar Acerca de` persists the Admin draft locally. The public About does not change from that action because public runtime reads the published snapshot rather than browser-local storage.
+
+This is not a storage failure. It is a product-contract / publication-workflow gap: the current button copy/status can imply that public content has been updated even though only the local draft changed. Do not classify this as `save FAIL`; classify local persistence as PASS and public publication as a separate unresolved capability/UX contract.
 
 ## Release state
 
