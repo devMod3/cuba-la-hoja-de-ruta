@@ -1,6 +1,7 @@
 const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
 const RELEASE = '0.9.1';
 const ABOUT_STYLESHEET_ID = 'zen-about-css';
+const PUBLIC_PROFILE_PATH = '../../config/site-profile.public.json';
 const stylesheetReadiness = new WeakMap();
 
 function isAdminPath(pathname = location.pathname) {
@@ -63,15 +64,37 @@ function loadStylesheet() {
   return readiness;
 }
 
+async function createProfileStore({ SiteProfileStore, PublishedSiteProfileStore, usesPublishedProfile }) {
+  if (!usesPublishedProfile()) return { store: new SiteProfileStore(), source: 'local' };
+
+  try {
+    const store = await PublishedSiteProfileStore.fromUrl(releaseUrl(PUBLIC_PROFILE_PATH));
+    return { store, source: 'published' };
+  } catch (error) {
+    console.warn('[ZenBlog/About] No se pudo cargar el perfil público publicado; se conservará el fallback.', error);
+    return { store: new PublishedSiteProfileStore(), source: 'published-fallback' };
+  }
+}
+
 async function bootAbout() {
   if (isAdminPath()) return;
 
-  const [{ AboutFeature, syncProfileFavicon }, { SiteProfileStore }] = await Promise.all([
+  const [
+    { AboutFeature, syncProfileFavicon },
+    { SiteProfileStore },
+    { PublishedSiteProfileStore, usesPublishedProfile }
+  ] = await Promise.all([
     import(releaseUrl('./AboutFeature.js')),
-    import(releaseUrl('./SiteProfileStore.js'))
+    import(releaseUrl('./SiteProfileStore.js')),
+    import(releaseUrl('./PublishedSiteProfileStore.js'))
   ]);
 
-  const store = new SiteProfileStore();
+  const { store, source } = await createProfileStore({
+    SiteProfileStore,
+    PublishedSiteProfileStore,
+    usesPublishedProfile
+  });
+
   const syncFavicon = (data) => syncProfileFavicon(data?.profile?.photoUrl || '');
   syncFavicon(store.load());
   const unsubscribeFavicon = store.subscribe(syncFavicon);
@@ -95,7 +118,10 @@ async function bootAbout() {
   const feature = new AboutFeature({ store }).mount();
   if (feature) {
     window.ZenAboutFeature = feature;
-    document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: RELEASE } }));
+    document.documentElement.dataset.zenAboutProfileSource = source;
+    document.dispatchEvent(new CustomEvent('zenabout:ready', {
+      detail: { version: RELEASE, profileSource: source }
+    }));
   }
 }
 
