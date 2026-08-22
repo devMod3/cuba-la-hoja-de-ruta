@@ -24,12 +24,15 @@
       window.__aboutDelivery.domContentLoadedAt = performance.now();
     }, { once: true });
 
-    new MutationObserver(() => {
-      const link = document.getElementById('zen-about-css');
-      if (!link || link.dataset.deliveryObserved === 'true') return;
-      link.dataset.deliveryObserved = 'true';
-      link.addEventListener('load', window.__markAboutCssLoaded, { once: true });
-    }).observe(document.head, { childList: true, subtree: true });
+    // Observe stylesheet readiness independently from the product bootstrap.
+    // Capture runs before the link target listener, so the measurement cannot
+    // lose the load event or report a false FOUC because of listener ordering.
+    document.addEventListener('load', (event) => {
+      const target = event.target;
+      if (target instanceof HTMLLinkElement && target.id === 'zen-about-css') {
+        window.__markAboutCssLoaded();
+      }
+    }, true);
   </script>
   <!-- ABOUT_DELIVERY_GLOBAL_CSS -->
 </head>
