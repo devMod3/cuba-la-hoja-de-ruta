@@ -5,33 +5,40 @@
   <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport">
   <title>About delivery characterization</title>
   <script>
-    window.__zenTimes = { start: performance.now() };
-    window.__markCssLoaded = () => {
-      if (window.__zenTimes.cssLoadedAt == null) window.__zenTimes.cssLoadedAt = performance.now();
+    window.__aboutDelivery = {
+      startAt: performance.now(),
+      cssLoadAt: null,
+      domContentLoadedAt: null,
+      shellRenderedAt: null,
+      aboutReadyAt: null,
+      styledAtRender: null
     };
-    new MutationObserver((records) => {
-      for (const record of records) {
-        for (const node of record.addedNodes) {
-          if (node?.id === 'zen-about-css') node.addEventListener('load', window.__markCssLoaded, { once: true });
-        }
+
+    window.__markAboutCssLoaded = () => {
+      if (window.__aboutDelivery.cssLoadAt == null) {
+        window.__aboutDelivery.cssLoadAt = performance.now();
       }
-    }).observe(document.head, { childList: true });
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
-      window.__zenTimes.domContentLoadedAt = performance.now();
+      window.__aboutDelivery.domContentLoadedAt = performance.now();
     }, { once: true });
 
-    const params = new URLSearchParams(location.search);
-    if (params.get('source') === 'production') {
-      const link = document.createElement('link');
-      link.id = 'zen-about-css';
-      link.rel = 'stylesheet';
-      link.href = '/__evidence__/production-about.css';
-      link.addEventListener('load', window.__markCssLoaded, { once: true });
-      document.head.appendChild(link);
-    }
+    new MutationObserver(() => {
+      const link = document.getElementById('zen-about-css');
+      if (!link || link.dataset.deliveryObserved === 'true') return;
+      link.dataset.deliveryObserved = 'true';
+      link.addEventListener('load', window.__markAboutCssLoaded, { once: true });
+    }).observe(document.head, { childList: true, subtree: true });
   </script>
+  <!-- ABOUT_DELIVERY_GLOBAL_CSS -->
 </head>
 <body>
+  <main id="reader-view">
+    <h1>Documento de lectura</h1>
+    <p>Critical path de una vista que no necesita About.</p>
+  </main>
+
   <section aria-hidden="false" class="zen-view" data-zen-view="about" id="zen-about">
     <div class="zen-reading" data-about-fallback="true">
       <h1>La hoja de ruta</h1>
@@ -40,47 +47,48 @@
   </section>
 
   <script>
-    localStorage.setItem('zenSiteProfile.v1', JSON.stringify({
-      schemaVersion: '1.0.0',
-      profile: {
-        displayName: 'La hoja de ruta',
-        photoUrl: '',
-        occupation: 'Proyecto editorial',
-        introduction: 'Seguir el origen, los límites y el ejercicio del poder.',
-        location: { city: '', region: '', country: '' }
-      },
-      social: [
-        { id: 'x', platform: 'x', label: 'X', username: '@prueba', url: 'https://x.com/example', visible: true, order: 0 }
-      ],
-      relatedResources: [
-        { id: 'r1', title: 'Recurso', url: 'https://example.com/', description: 'Referencia', type: 'source', visible: true, order: 0 }
-      ]
-    }));
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view') || 'about';
 
-    const root = document.getElementById('zen-about');
-    const renderObserver = new MutationObserver(() => {
-      const shell = root.querySelector('.zen-about-shell');
-      if (!shell || window.__zenTimes.shellRenderedAt != null) return;
-      window.__zenTimes.shellRenderedAt = performance.now();
-      window.__zenTimes.shellBeforeCss = window.__zenTimes.cssLoadedAt == null;
-      window.__zenTimes.shellPaddingAtRender = getComputedStyle(shell).paddingTop;
-    });
-    renderObserver.observe(root, { childList: true, subtree: true });
+    if (view === 'reader') {
+      document.getElementById('zen-about').remove();
+    } else {
+      document.getElementById('reader-view').remove();
+      localStorage.setItem('zenSiteProfile.v1', JSON.stringify({
+        schemaVersion: '1.0.0',
+        profile: {
+          displayName: 'La hoja de ruta',
+          photoUrl: '',
+          occupation: 'Proyecto editorial',
+          introduction: 'Seguir el origen, los límites y el ejercicio del poder.',
+          location: { city: '', region: '', country: '' }
+        },
+        social: [
+          { id: 'x', platform: 'x', label: 'X', username: '@prueba', url: 'https://x.com/example', visible: true, order: 0 }
+        ],
+        relatedResources: [
+          { id: 'r1', title: 'Recurso', url: 'https://example.com/', description: 'Referencia', type: 'source', visible: true, order: 0 }
+        ]
+      }));
 
-    document.addEventListener('zenabout:ready', () => {
-      window.__zenTimes.readyAt = performance.now();
-    }, { once: true });
-    document.addEventListener('zenabout:error', (event) => {
-      window.__zenTimes.error = event.detail?.message || 'unknown';
-    }, { once: true });
+      const root = document.getElementById('zen-about');
+      new MutationObserver(() => {
+        const shell = root.querySelector('.zen-about-shell');
+        if (!shell || window.__aboutDelivery.shellRenderedAt != null) return;
+        window.__aboutDelivery.shellRenderedAt = performance.now();
+        window.__aboutDelivery.styledAtRender = parseFloat(getComputedStyle(shell).paddingTop) > 0;
+      }).observe(root, { childList: true, subtree: true });
 
-    const source = new URLSearchParams(location.search).get('source');
-    const script = document.createElement('script');
-    script.type = 'module';
-    script.src = source === 'production'
-      ? 'https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/tools/about/bootstrap.js'
-      : '/tools/about/bootstrap.js';
-    document.body.appendChild(script);
+      document.addEventListener('zenabout:ready', () => {
+        window.__aboutDelivery.aboutReadyAt = performance.now();
+      }, { once: true });
+    }
+  </script>
+
+  <script type="module">
+    if ((new URLSearchParams(location.search).get('view') || 'about') === 'about') {
+      await import('/tools/about/bootstrap.js');
+    }
   </script>
 </body>
 </html>
