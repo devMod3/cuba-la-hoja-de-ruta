@@ -2,7 +2,7 @@ const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
 const RELEASE = '0.9.2';
 const ABOUT_STYLESHEET_ID = 'zen-about-css';
 const PUBLIC_PROFILE_PATH = '../../config/site-profile.public.json';
-const PUBLIC_PROFILE_URL = 'https://devmod3.github.io/cuba-la-hoja-de-ruta/config/site-profile.public.json';
+const PUBLIC_PROFILE_URL = 'https://raw.githubusercontent.com/devMod3/cuba-la-hoja-de-ruta/main/config/site-profile.public.json';
 const PRODUCTION_BLOGGER_HOST = 'cubalahojaderuta.blogspot.com';
 const stylesheetReadiness = new WeakMap();
 
@@ -28,10 +28,6 @@ function waitForStylesheet(link, { allowExistingSheet = false } = {}) {
   if (link.dataset.zenAboutStylesheet === 'ready') return Promise.resolve(true);
   if (link.dataset.zenAboutStylesheet === 'failed') return Promise.resolve(false);
 
-  // A stylesheet that predates this bootstrap may already have completed
-  // before we can subscribe to its load event. This shortcut is intentionally
-  // forbidden for links we create ourselves because `link.sheet` may become
-  // non-null before the external resource has finished loading.
   if (allowExistingSheet && link.sheet) {
     link.dataset.zenAboutStylesheet = 'ready';
     return Promise.resolve(true);
@@ -66,8 +62,6 @@ function loadStylesheet() {
   link.rel = 'stylesheet';
   link.href = releaseUrl('./about.css');
 
-  // Subscribe before insertion so a fast cache/local response cannot outrun
-  // the readiness listener.
   const readiness = waitForStylesheet(link);
   document.head.appendChild(link);
   return readiness;
@@ -78,9 +72,9 @@ async function createProfileStore({ SiteProfileStore, PublishedSiteProfileStore,
 
   try {
     const store = await PublishedSiteProfileStore.fromUrl(resolvePublicProfileUrl());
-    return { store, source: 'published' };
+    return { store, source: 'published-main' };
   } catch (error) {
-    console.warn('[ZenBlog/About] No se pudo cargar el perfil público publicado; se conservará el fallback.', error);
+    console.warn('[ZenBlog/About] No se pudo cargar el perfil público de main; se conservará el fallback.', error);
     return { store: new PublishedSiteProfileStore(), source: 'published-fallback' };
   }
 }
@@ -111,10 +105,6 @@ async function bootAbout() {
 
   if (!document.getElementById('zen-about')) return;
 
-  // About is auxiliary: keep its CSS off the reader critical path, but do not
-  // replace the server-visible fallback until the on-demand stylesheet is
-  // ready. If CSS fails, the fallback remains intact instead of exposing an
-  // unstyled custom shell.
   const stylesheetReady = await loadStylesheet();
   if (!stylesheetReady) {
     console.warn('[ZenBlog/About] No se pudo cargar la hoja de estilos; se conserva el fallback.');
