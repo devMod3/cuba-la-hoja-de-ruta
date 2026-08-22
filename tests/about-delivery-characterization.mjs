@@ -268,17 +268,18 @@ try {
   const slowLazyReader = find('lazy', 'reader', 1200);
   const slowGlobalReader = find('global', 'reader', 1200);
 
-  assert.equal(slowLazyAbout.styledAtRender, false, 'slow lazy About should expose an unstyled first render');
-  assert.ok(slowLazyAbout.foucMs >= 800, `expected measurable slow-load FOUC, got ${slowLazyAbout.foucMs}ms`);
-  assert.equal(slowGlobalAbout.styledAtRender, true, 'global stylesheet ownership should style About before first render');
-  assert.equal(slowGlobalAbout.foucMs, 0, 'global stylesheet ownership should avoid About FOUC');
+  assert.equal(slowLazyAbout.styledAtRender, true, 'implemented lazy About must wait for CSS before shell render');
+  assert.equal(slowLazyAbout.foucMs, 0, 'implemented lazy About must eliminate slow-load FOUC');
+  assert.ok(slowLazyAbout.aboutReadyAt >= slowLazyAbout.cssLoadAt, 'About ready must not precede lazy CSS readiness');
+  assert.equal(slowGlobalAbout.styledAtRender, true, 'global control should remain styled before first render');
+  assert.equal(slowGlobalAbout.foucMs, 0, 'global control should avoid About FOUC');
   assert.ok(
     slowGlobalReader.wallLoadMs - slowLazyReader.wallLoadMs >= 800,
     `global slow About CSS should materially delay reader load; lazy=${slowLazyReader.wallLoadMs}ms, global=${slowGlobalReader.wallLoadMs}ms`
   );
 
-  console.log(JSON.stringify({ browser, protocol: 'CDP real-time delivery characterization', delayMs: 1200, results }, null, 2));
-  console.log('M-003 delivery characterization: PASS');
+  console.log(JSON.stringify({ browser, protocol: 'CDP real-time delivery verification', delayMs: 1200, results }, null, 2));
+  console.log('M-003 implementation contract: PASS');
 } finally {
   activeCssDelay = 0;
   await browserSession.close();
