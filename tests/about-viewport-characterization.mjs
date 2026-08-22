@@ -233,7 +233,7 @@ async function characterize(source, state, testCase) {
 
 const results = [];
 try {
-  for (const source of ['canonical', 'production']) {
+  for (const source of ['implementation', 'production']) {
     for (const state of ['empty', 'populated']) {
       for (const testCase of cases) results.push(await characterize(source, state, testCase));
     }
@@ -256,8 +256,15 @@ try {
     }
   }
 
+  const byKey = new Map(results.map((row) => [`${row.source}:${row.state}:${row.case}`, row]));
+  const impl390 = byKey.get('implementation:populated:390');
+  assert.match(impl390.gridColumns, /\s/, 'implementation/populated/390 must keep portrait and identity side by side');
+  assert.equal(impl390.rootPaddingBottom, '56px', 'implementation/populated/390 must reserve the player-safe token');
+  const impl320 = byKey.get('implementation:populated:320');
+  assert.doesNotMatch(impl320.gridColumns, /\s/, 'implementation/populated/320 must stack on genuinely narrow screens');
+
   console.log(JSON.stringify({ browser, protocol: 'CDP exact About viewport characterization', results }, null, 2));
-  console.log('M-004 baseline characterization: PASS');
+  console.log('M-004 implementation characterization: PASS');
 } finally {
   await session.close();
   await new Promise((done) => server.close(done));
