@@ -15,6 +15,7 @@ const MIME = new Map([
   ['.svg', 'image/svg+xml'],
   ['.json', 'application/json; charset=utf-8']
 ]);
+let activeCssDelay = 0;
 
 async function executableExists(name) {
   return new Promise((done) => {
@@ -38,14 +39,6 @@ function safePath(urlPath) {
   return candidate;
 }
 
-function delayFromReferer(req) {
-  try {
-    return Number(new URL(req.headers.referer || 'http://localhost').searchParams.get('delay') || 0);
-  } catch {
-    return 0;
-  }
-}
-
 const server = createServer(async (req, res) => {
   try {
     const requestUrl = new URL(req.url || '/', 'http://localhost');
@@ -62,9 +55,8 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    if (requestUrl.pathname === ABOUT_CSS_PATH) {
-      const delay = delayFromReferer(req);
-      if (delay > 0) await new Promise((done) => setTimeout(done, delay));
+    if (requestUrl.pathname === ABOUT_CSS_PATH && activeCssDelay > 0) {
+      await new Promise((done) => setTimeout(done, activeCssDelay));
     }
 
     let path = safePath(req.url || '/');
@@ -94,6 +86,7 @@ function attr(html, name) {
 }
 
 async function dumpDom({ mode, view, delay }) {
+  activeCssDelay = delay;
   const url = `http://127.0.0.1:${port}/tests/fixtures/about-delivery.html?mode=${mode}&view=${view}&delay=${delay}&t=${Date.now()}`;
   return new Promise((resolveRun, rejectRun) => {
     const child = spawn(browser, [
@@ -111,6 +104,7 @@ async function dumpDom({ mode, view, delay }) {
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.on('error', rejectRun);
     child.on('exit', (code) => {
+      activeCssDelay = 0;
       if (code === 0) resolveRun(stdout);
       else rejectRun(new Error(`${browser} exited ${code}: ${stderr.slice(-1600)}`));
     });
@@ -166,5 +160,6 @@ try {
   console.log(JSON.stringify({ browser, delayMs: 1200, results }, null, 2));
   console.log('M-003 delivery characterization: PASS');
 } finally {
+  activeCssDelay = 0;
   await new Promise((done) => server.close(done));
 }
