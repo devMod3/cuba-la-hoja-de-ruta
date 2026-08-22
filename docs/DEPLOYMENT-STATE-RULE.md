@@ -72,6 +72,55 @@ Si cualquiera de esos pasos falla, el caso de producción es `FAIL` y el release
 
 La paridad funcional no autoriza atajos de seguridad. Toda escritura pública debe tener una frontera de autenticación/autorización; nunca se incrustarán tokens, secretos o credenciales privadas en JavaScript público.
 
+## Regla obligatoria de acción explícita del usuario
+
+Toda operación que dependa de una acción manual del usuario debe explicar esa acción antes de que el flujo dependa de ella. No se asumirá que el usuario conoce un paso implícito, ni se declarará un flujo completo si falta una intervención humana requerida.
+
+Cada instrucción manual debe declarar, como mínimo:
+
+```text
+ACCIÓN DEL USUARIO:
+<qué debe hacer exactamente>
+
+POR QUÉ:
+<qué parte del flujo habilita o verifica>
+
+SI SE OMITE O SE HACE MAL:
+<qué puede fallar, quedar incompleto o poner en riesgo el proyecto>
+
+RESULTADO ESPERADO:
+<evidencia concreta que confirma que el paso terminó correctamente>
+```
+
+Cuando intervengan credenciales, despliegues, publicación, rollback, edición de Blogger, permisos de GitHub o cualquier operación con impacto real, la instrucción debe añadir explícitamente las restricciones de seguridad relevantes y lo que el usuario NO debe hacer.
+
+Ejemplo de publicación autenticada:
+
+```text
+ACCIÓN DEL USUARIO:
+Introducir el token fine-grained únicamente en el diálogo de autorización de ZenBlog Admin y confirmar la publicación.
+
+POR QUÉ:
+El navegador necesita autorización temporal para escribir el snapshot público en GitHub. Sin esta acción sólo existe el guardado local.
+
+SI SE OMITE:
+La publicación pública NO se ejecuta y el caso permanece pendiente; no puede declararse PASS.
+
+NO HACER:
+No pegar el token en chats, código, XML, URLs, commits ni almacenamiento persistente.
+
+RESULTADO ESPERADO:
+Admin informa publicación completada y el cambio puede verificarse desde un contexto público independiente.
+```
+
+Principio rector:
+
+```text
+PROTEGER EL PROYECTO > ACELERAR EL FLUJO
+```
+
+Si una acción manual es ambigua, irreversible, riesgosa o puede afectar producción, el flujo debe detener la promoción de estado hasta que esa acción esté descrita y su resultado sea verificable.
+
 ## Regla de promoción
 
 Un cambio puede recorrer:
@@ -123,6 +172,15 @@ Antes de cambiar código:
 ```text
 ¿ENTORNO? LOCAL / PRUEBAS | BLOGGER REAL
 ¿SE DESPLIEGA EN ESTA INTERVENCIÓN? SÍ | NO
+```
+
+Antes de pedir una acción manual:
+
+```text
+¿QUÉ DEBE HACER EL USUARIO?
+¿POR QUÉ ES NECESARIO?
+¿QUÉ RIESGO EVITA?
+¿QUÉ RESULTADO CONFIRMA ÉXITO?
 ```
 
 Después de cambiar código:
