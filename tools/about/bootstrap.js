@@ -2,6 +2,8 @@ const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
 const RELEASE = '0.9.2';
 const ABOUT_STYLESHEET_ID = 'zen-about-css';
 const PUBLIC_PROFILE_PATH = '../../config/site-profile.public.json';
+const PUBLIC_PROFILE_URL = 'https://devmod3.github.io/cuba-la-hoja-de-ruta/config/site-profile.public.json';
+const PRODUCTION_BLOGGER_HOST = 'cubalahojaderuta.blogspot.com';
 const stylesheetReadiness = new WeakMap();
 
 function isAdminPath(pathname = location.pathname) {
@@ -13,6 +15,13 @@ function releaseUrl(path) {
   const url = new URL(path, import.meta.url);
   url.searchParams.set('v', RELEASE);
   return url.href;
+}
+
+export function resolvePublicProfileUrl({ pageUrl = globalThis.location?.href, moduleUrl = import.meta.url } = {}) {
+  try {
+    if (new URL(pageUrl).hostname.toLowerCase() === PRODUCTION_BLOGGER_HOST) return PUBLIC_PROFILE_URL;
+  } catch {}
+  return new URL(PUBLIC_PROFILE_PATH, moduleUrl).href;
 }
 
 function waitForStylesheet(link, { allowExistingSheet = false } = {}) {
@@ -68,7 +77,7 @@ async function createProfileStore({ SiteProfileStore, PublishedSiteProfileStore,
   if (!usesPublishedProfile()) return { store: new SiteProfileStore(), source: 'local' };
 
   try {
-    const store = await PublishedSiteProfileStore.fromUrl(releaseUrl(PUBLIC_PROFILE_PATH));
+    const store = await PublishedSiteProfileStore.fromUrl(resolvePublicProfileUrl());
     return { store, source: 'published' };
   } catch (error) {
     console.warn('[ZenBlog/About] No se pudo cargar el perfil público publicado; se conservará el fallback.', error);
