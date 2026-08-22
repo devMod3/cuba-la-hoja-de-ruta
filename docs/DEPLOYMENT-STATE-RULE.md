@@ -47,6 +47,31 @@ BLOQUEO: <causa concreta>
 
 Nunca usar `DESPLEGADO` si sólo se actualizó GitHub, GitHub Pages, una rama, un PR, un XML candidato o un entorno local.
 
+## Regla obligatoria de paridad LOCAL -> PÚBLICO
+
+Una funcionalidad que pasa en local no se considera desplegada correctamente si, una vez promovida a Blogger Real, no produce el mismo resultado funcional observable en el entorno público.
+
+```text
+LOCAL = PASS
++ DESPLIEGUE A BLOGGER REAL
+=> BLOGGER REAL DEBE ENTREGAR EL MISMO RESULTADO FUNCIONAL
+```
+
+Si la función depende de persistencia o datos, la paridad incluye el alcance de la persistencia. Un guardado que sólo escribe `localStorage` no satisface un requisito de guardado público/compartido.
+
+Para acciones de Admin con intención pública:
+
+```text
+Guardar / Publicar
+  -> persistencia local segura cuando corresponda
+  -> persistencia pública compartida
+  -> verificación en la superficie pública real
+```
+
+Si cualquiera de esos pasos falla, el caso de producción es `FAIL` y el release no puede declararse `FROZEN` aunque CI y local sean `PASS`.
+
+La paridad funcional no autoriza atajos de seguridad. Toda escritura pública debe tener una frontera de autenticación/autorización; nunca se incrustarán tokens, secretos o credenciales privadas en JavaScript público.
+
 ## Regla de promoción
 
 Un cambio puede recorrer:
@@ -107,6 +132,7 @@ CÓDIGO: CAMBIADO / NO CAMBIADO
 CI: PASS / FAIL / NO EJECUTADO
 GITHUB PAGES: DESPLEGADO / NO DESPLEGADO
 BLOGGER REAL: DESPLEGADO Y VERIFICADO / DESPLEGADO-QA-PENDIENTE / NO DESPLEGADO
+PARIDAD LOCAL -> PÚBLICO: PASS / FAIL / NO APLICA
 ```
 
 Regla de lenguaje: nunca confundir "funciona local", "CI PASS", "publicado en GitHub Pages" y "desplegado en Blogger Real".
