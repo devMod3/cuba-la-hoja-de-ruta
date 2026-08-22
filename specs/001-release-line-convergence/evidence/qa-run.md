@@ -70,26 +70,54 @@ Workflow run #154 (`32588482004`) tested a candidate built from canonical main p
 2. moving emergency vertical scroll from `max-height:620px` to `max-height:560px`;
 3. `overscroll-behavior-y: contain` on that last-resort scroll.
 
-Explicitly excluded:
+Explicitly excluded from this candidate:
 - general deployed mobile title sizing changes outside short-height mode;
 - deployed `100svh` override;
 - safe-area token changes (M-001).
 
+Observed critical results:
+- 320x568: essentials inside Home, no horizontal overflow, no inaccessible content;
+- 390x700: existing passing behavior preserved;
+- 390x560: essentials inside Home, vertical fallback still reachable, no horizontal overflow;
+- 667x375: reachable scroll preserved, no horizontal overflow;
+- harness assertion: `M-002 minimal candidate: PASS`;
+- full run: JavaScript checks PASS; 61/61 unit tests PASS; About browser smoke PASS; exact viewport characterization PASS; Blogger XML parse PASS; architecture invariants PASS.
+
 ### T032 implemented product verification
 
+Product implementation:
 - Home CSS commit: `a462c89a80dc10e0f64c9bc60ce2164ac98d35dd`
-- post-implementation harness: `4aa2120ec2c5242499001db0c490e24fffc29ebb`
-- workflow run #162: `32588735098`
-- job: `97069058114`
-- JavaScript checks PASS
-- unit tests 64/64 PASS
-- M-002 contract PASS
-- About browser smoke PASS
-- exact viewport characterization PASS
-- Blogger XML PASS
-- architecture invariants PASS
+- exact post-implementation characterization harness head: `4aa2120ec2c5242499001db0c490e24fffc29ebb`
+- CI-only execution workflow commit: `71c6876de2a5d88c84e665be93bff5e091144687`
+- Workflow run #162: `32588735098`
+- Job: `97069058114`
 
-T032 result: `PASS — IMPLEMENTED`. Final Blogger Q-PUB-003/Q-PUB-004 remain `NOT_RUN` until a release candidate exists.
+The post-implementation harness used three explicit identities:
+- canonical = immutable `0a45bc523f0129d83307f1c6f3a972056b219ae0`;
+- implementation = local implementation branch content;
+- production = immutable `aa372e1cc7982d1f8335d0d21760869c396b32c3`.
+
+Implemented critical results:
+- 320x568: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, no Home scroll required;
+- 390x700: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, existing normal-phone fit preserved;
+- 390x560: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, reachable vertical fallback preserved;
+- 667x375: `essentialOutside=true`, `essentialInaccessible=false`, `horizontalOverflow=false`, `scrollable=true`.
+
+These three critical outcomes (`essentialOutside`, `essentialInaccessible`, `horizontalOverflow`) match deployed production for all four tested viewport classes. The implementation deliberately retains canonical M-001 tokens (`101px` / `56px`) because safe-area accounting remains a separate unresolved delta.
+
+Run #162 full gate:
+- JavaScript checks: PASS
+- unit tests: 64/64 PASS
+- M-002 contract tests: 3/3 PASS
+- About browser smoke: PASS
+- exact viewport characterization: PASS
+- browser assertion: `M-002 implementation contract: PASS`
+- Blogger XML parse: PASS
+- architecture invariants: PASS
+
+T032 result: `PASS — IMPLEMENTED`. This remains pre-release engineering evidence; Blogger real and final-candidate Q-PUB-003/Q-PUB-004 remain `NOT_RUN` until the final candidate exists.
+
+Decision reference: `specs/001-release-line-convergence/evidence/candidate-deltas.md` — M-002 `ADJUST / COMPLETE_T032`.
 
 ## Pre-candidate characterization — M-003 About stylesheet delivery
 
@@ -101,129 +129,83 @@ Environment:
 - Google Chrome `151.0.7922.137`
 - Chrome DevTools Protocol real-time navigation; browser cache disabled
 - deliberate About CSS server delay: `1200ms`
+- baseline workflow run #178: `32589253689`
+- final implementation workflow run #190: `32595190420`
 
-### T033 baseline
+Decision: `M-003 = ADJUST`.
 
-Workflow run #178 (`32589253689`), job `97070337147`, compared lazy vs global stylesheet ownership.
+Accepted implementation:
+- About CSS remains lazy and off the unrelated reader path;
+- the custom About shell waits for stylesheet readiness;
+- only one `#zen-about-css` owner exists;
+- stylesheet failure preserves the server fallback.
 
-| Scenario | CSS requests | Observation | FOUC |
-|---|---:|---|---:|
-| lazy reader, 1200ms | 0 | wall load ~18ms | n/a |
-| global reader, 1200ms | 1 | wall load ~1216ms | n/a |
-| lazy About, 1200ms | 1 | shell ~27.4ms; CSS ~1229.5ms | ~1202.1ms |
-| global About, 1200ms | 1 | CSS before shell | 0ms |
-| lazy About, normal | 1 | shell ~29.6ms; CSS ~33.7ms | ~4.1ms |
-| global About, normal | 1 | CSS before shell | 0ms |
-
-T034 decision: `ADJUST` — preserve lazy ownership but make stylesheet readiness a prerequisite for replacing the fallback.
-
-### T035 implemented product verification
-
-Product implementation:
-- bounded About bootstrap implementation: `eca58b21d879650f05ffb1cfe0a9f8fd0ac9ee55`
-- measurement-race correction: `d419657f304224a4d3f66cbb4b9fcbb768121f6d`
-- CI-only equivalent harness commit: `26b5bcaa0c2bad7beed11e727ec19ec798fe065e`
-- workflow run #190: `32595190420`
-- job: `97084892928`
-
-The failed intermediate characterization was traced to the fixture observing the stylesheet target listener after product bootstrap had already registered its own listener. The corrected fixture observes `load` from `document` capture phase; no product change was introduced to satisfy the faulty measurement.
-
-Final slow-delivery observations:
-- lazy reader: 0 About CSS requests; wall load ~16ms;
-- global reader control: approximately 1215ms wall load;
-- lazy About: CSS ready ~1227.2ms; shell/About ready ~1227.9ms;
+Final slow-load evidence in run #190:
+- lazy reader: zero About CSS requests;
+- lazy About: CSS ready ~1227.2ms; shell/ready ~1227.9ms;
 - `styledAtRender=true`;
-- `FOUC=0`.
+- FOUC = 0.
 
-Run #190 full gate:
-- JavaScript checks PASS
-- unit tests 67/67 PASS
-- About browser smoke PASS
-- M-003 delivery characterization PASS
-- Blogger XML PASS
-- architecture invariants PASS
-
-T035 result: `PASS — IMPLEMENTED`. About CSS remains lazy and off unrelated reader paths; stylesheet failure preserves the server-visible fallback. Final Q-PUB-012 remains `NOT_RUN` until the exact release candidate is installed in Blogger.
+Run #190 repository gates: 67/67 unit tests PASS, About browser smoke PASS, delivery contract PASS, Blogger XML PASS and architecture invariants PASS.
 
 ## Pre-candidate characterization — M-004 About mobile / populated profile
 
 This section is T036–T039 engineering evidence. It is NOT final-candidate Q-PUB-010/Q-PUB-011 and does not change the release matrix above.
 
-Environment:
-- GitHub Actions `ubuntu-24.04`
-- Node `v20.20.2`
-- Google Chrome `151.0.7922.137`
-- exact CSS viewport dimensions established through CDP `Emulation.setDeviceMetricsOverride`
-- test states: empty and populated `zenSiteProfile.v1`
-- exact viewports: 320x568, 390x700, 768x1024
+Baseline workflow run #195 (`32595381075`) compared canonical About v0.1.4 and deployed v0.1.5 at exact 320x568, 390x700 and 768x1024 viewports with empty and populated profiles.
 
-### T036/T037 baseline characterization
+Decision: `M-004 = ADJUST`.
 
-Workflow run #195 (`32595381075`), job `97085338911`, compared canonical About CSS v0.1.4 with the exact deployed v0.1.5 CSS snapshot preserved as a test-only fixture.
+Accepted implementation:
+- portrait + identity stay side-by-side on normal phones;
+- stack only at <=340px;
+- root respects `--zen-player-safe`;
+- long text/resource wrapping is defensive;
+- overscroll is contained;
+- `100dvh` / `100svh` were not imported.
 
-Semantic contract in every baseline case:
-- title `La hoja de ruta` present;
-- expected lead present;
-- populated state contains profile, photo, 2 social links and 1 related resource;
-- empty state preserves fallback;
-- no horizontal overflow;
-- no inaccessible content.
+Post-implementation run #200 (`32595520760`) PASS:
+- 70/70 unit tests;
+- About browser smoke;
+- exact viewport characterization;
+- Blogger XML;
+- architecture invariants.
 
-Material layout difference for populated profile:
-- 320x568: canonical and production both stack; canonical root paddingBottom `0px`, production `56px`;
-- 390x700: canonical grid `358px` (one column), scrollHeight ~755px, paddingBottom `0px`; production grid `96px 247px` (two columns), scrollHeight ~602px, paddingBottom `56px`;
-- 768x1024: both use `124px 567px` two-column layout.
+Populated 390px evidence: grid `96px 247px`, player-safe `56px`, full profile semantics present, no horizontal overflow and no inaccessible content.
 
-T038 decision: `ADJUST`.
+## Pre-candidate defect correction — About local draft vs public Blogger profile
 
-Accepted from the deployed behavior:
-- portrait + identity remain side-by-side on normal phones;
-- stack only on genuinely narrow screens <=340px;
-- About owns mobile player-safe padding through the shared token;
-- wrapping for long identity/resource text;
-- resource row wrapping;
-- root overscroll containment.
+This section records a user-observed deployment-boundary defect discovered after M-004. It is pre-candidate engineering evidence and does NOT mark Q-PUB-011 as executed on real Blogger.
 
-Explicitly excluded:
-- `100dvh`;
-- `100svh`;
-- wholesale copy of deployed v0.1.5 CSS.
+### Root cause
 
-### T039 implemented product verification
+`AboutManager.save()` writes through `SiteProfileStore`, whose default backing store is browser `localStorage` under key `zenSiteProfile.v1`. Local Admin and local preview share one origin, so the workflow works locally. Blogger and the local Admin origin do not share browser storage; therefore public About could not use local Admin state as a publication mechanism.
 
-Implementation lineage:
-- product CSS: `ed35ad4173cd615d67e1c2be558e19e69a60baf1`
-- static long-term contract: `57f3f810cd65493be61c621afe69fc49004e4f92`
-- post-implementation viewport harness: `4ec66f6055b23b36292885ca1224787fad904fc8`
-- CI-only execution workflow commit: `76037550850c9fa27b8f51b3d7868c70691eedea`
-- workflow run #200: `32595520760`
-- job: `97085680622`
+### Corrected ownership model
 
-Implemented Case B results:
-- 320x568 populated: title/lead/profile/photo/social/resources all present; one-column stack; root player-safe padding `56px`; scrollable/reachable; no horizontal overflow;
-- 390x700 populated: title/lead/profile/photo/social/resources all present; grid `96px 247px`; root player-safe padding `56px`; scrollHeight ~654px; no inaccessible content; no horizontal overflow;
-- 768x1024 populated: grid `124px 567px`; no horizontal overflow/inaccessible content.
+- Local draft: `SiteProfileStore` / `localStorage`.
+- Public artifact: `config/site-profile.public.json`.
+- Public reader: `PublishedSiteProfileStore`.
+- Source decision: same page/module origin => local draft; different page/module origins => published artifact.
+- `AboutFeature` remains a renderer of the store interface and does not own publication.
 
-Empty-profile fallback also remained correct at all three viewports.
+### Browser contract
 
-Maintainability gate:
-- unit test count increased to 70/70 PASS;
-- `tests/about-mobile-contract.test.js` rejects reintroduction of the old <=500px one-column rule;
-- stack is required only at <=340px;
-- player-safe ownership, overflow wrapping and overscroll containment are asserted;
-- `100dvh`/`100svh` are explicitly rejected;
-- the production characterization fixture is prohibited from runtime/theme delivery.
+`tests/about-public-profile-browser.mjs` uses two HTTP origins to simulate Blogger and GitHub Pages. The simulated Blogger origin intentionally contains a conflicting `zenSiteProfile.v1` value in localStorage. The simulated asset origin serves a different published snapshot. The contract passes only when rendered `#zen-about` identifies `profileSource="published"` and renders the published profile instead of the conflicting browser-local profile.
 
-Run #200 full gate:
-- JavaScript checks PASS
-- unit tests 70/70 PASS
-- About browser smoke PASS
-- exact About viewport characterization PASS
-- browser assertion: `M-004 implementation characterization: PASS`
-- Blogger XML PASS
-- architecture invariants PASS
+First run #208 (`32596716567`) proved the product behavior but exposed an over-broad test assertion: the word LOCAL remained in the fixture `<script>` source even though rendered `#zen-about` was correct. The assertion was corrected to inspect the About DOM only; no product code was changed for that test failure.
 
-T039 result: `PASS — IMPLEMENTED`. This is E3 pre-candidate evidence. Final Blogger Q-PUB-010/Q-PUB-011 remain `NOT_RUN` until the immutable candidate exists.
+Final run #209 (`32596764967`) SUCCESS:
+- JavaScript checks PASS;
+- unit tests PASS;
+- existing same-origin About browser smoke PASS;
+- cross-origin public-profile browser contract PASS;
+- Blogger XML PASS;
+- architecture invariants PASS.
+
+Architecture reference: `docs/architecture/about-profile-publication.md`.
+
+Final real Blogger/mobile acceptance remains `NOT_RUN` until this code is part of the release candidate and installed on Blogger.
 
 ## Per-case evidence template
 
