@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import { PublishedSiteProfileStore, usesPublishedProfile } from '../tools/about/PublishedSiteProfileStore.js';
 
@@ -40,6 +41,12 @@ test('published profile store fetches an immutable validated snapshot without cr
   assert.equal(store.load().profile.displayName, 'Perfil publicado');
   assert.equal(store.load().profile.introduction, 'Contenido público');
   assert.equal(typeof store.subscribe(() => {}), 'function');
+});
+
+test('checked-in public profile artifact satisfies the v1 public contract', async () => {
+  const raw = await readFile(new URL('../config/site-profile.public.json', import.meta.url), 'utf8');
+  const store = new PublishedSiteProfileStore({ data: JSON.parse(raw) });
+  assert.equal(store.load().schemaVersion, '1.0.0');
 });
 
 test('published profile store rejects an invalid public snapshot', async () => {
