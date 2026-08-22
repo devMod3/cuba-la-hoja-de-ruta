@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>About smoke</title>
+</head>
+<body>
+  <section id="zen-about">
+    <div class="zen-reading" data-about-fallback="true">
+      <h1>La hoja de ruta</h1>
+      <p>Fallback visible.</p>
+    </div>
+  </section>
+
+  <script>
+    localStorage.setItem('zenSiteProfile.v1', JSON.stringify({
+      schemaVersion: '1.0.0',
+      profile: {
+        displayName: 'La hoja de ruta',
+        photoUrl: '',
+        occupation: 'Proyecto editorial',
+        introduction: 'Seguir el origen, los límites y el ejercicio del poder.',
+        location: { city: '', region: '', country: '' }
+      },
+      social: [
+        { id: 'x', platform: 'x', label: 'X', username: '@prueba', url: 'https://x.com/example', visible: true, order: 0 }
+      ],
+      relatedResources: [
+        { id: 'r1', title: 'Recurso', url: 'https://example.com/', description: 'Referencia', type: 'source', visible: true, order: 0 }
+      ]
+    }));
+    document.addEventListener('zenabout:ready', () => {
+      document.body.dataset.aboutReady = 'true';
+    });
+    document.addEventListener('zenabout:error', (event) => {
+      document.body.dataset.aboutError = event.detail?.message || 'unknown';
+    });
+  </script>
+  <script type="module" src="/tools/about/bootstrap.js"></script>
+</body>
+</html>

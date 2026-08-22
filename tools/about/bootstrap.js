@@ -1,5 +1,8 @@
 const ADMIN_PATHS = new Set(['/admin', '/p/admin.html']);
-const RELEASE = '0.9.1';
+const RELEASE = '0.9.2';
+const ABOUT_STYLESHEET_ID = 'zen-about-css';
+const PUBLIC_PROFILE_PATH = '../../config/site-profile.public.json';
+const stylesheetReadiness = new WeakMap();
 
 function isAdminPath(pathname = location.pathname) {
   const normalized = pathname.replace(/\/+$/, '') || '/';
@@ -12,35 +15,113 @@ function releaseUrl(path) {
   return url.href;
 }
 
+function waitForStylesheet(link, { allowExistingSheet = false } = {}) {
+  if (link.dataset.zenAboutStylesheet === 'ready') return Promise.resolve(true);
+  if (link.dataset.zenAboutStylesheet === 'failed') return Promise.resolve(false);
+
+  // A stylesheet that predates this bootstrap may already have completed
+  // before we can subscribe to its load event. This shortcut is intentionally
+  // forbidden for links we create ourselves because `link.sheet` may become
+  // non-null before the external resource has finished loading.
+  if (allowExistingSheet && link.sheet) {
+    link.dataset.zenAboutStylesheet = 'ready';
+    return Promise.resolve(true);
+  }
+
+  if (stylesheetReadiness.has(link)) return stylesheetReadiness.get(link);
+
+  const readiness = new Promise((resolve) => {
+    const finish = (ready) => {
+      link.dataset.zenAboutStylesheet = ready ? 'ready' : 'failed';
+      link.removeEventListener('load', onLoad);
+      link.removeEventListener('error', onError);
+      resolve(ready);
+    };
+    const onLoad = () => finish(true);
+    const onError = () => finish(false);
+
+    link.addEventListener('load', onLoad, { once: true });
+    link.addEventListener('error', onError, { once: true });
+  });
+
+  stylesheetReadiness.set(link, readiness);
+  return readiness;
+}
+
 function loadStylesheet() {
-  if (document.getElementById('zen-about-css')) return;
+  const existing = document.getElementById(ABOUT_STYLESHEET_ID);
+  if (existing) return waitForStylesheet(existing, { allowExistingSheet: true });
+
   const link = document.createElement('link');
-  link.id = 'zen-about-css';
+  link.id = ABOUT_STYLESHEET_ID;
   link.rel = 'stylesheet';
   link.href = releaseUrl('./about.css');
+
+  // Subscribe before insertion so a fast cache/local response cannot outrun
+  // the readiness listener.
+  const readiness = waitForStylesheet(link);
   document.head.appendChild(link);
+  return readiness;
+}
+
+async function createProfileStore({ SiteProfileStore, PublishedSiteProfileStore, usesPublishedProfile }) {
+  if (!usesPublishedProfile()) return { store: new SiteProfileStore(), source: 'local' };
+
+  try {
+    const store = await PublishedSiteProfileStore.fromUrl(releaseUrl(PUBLIC_PROFILE_PATH));
+    return { store, source: 'published' };
+  } catch (error) {
+    console.warn('[ZenBlog/About] No se pudo cargar el perfil público publicado; se conservará el fallback.', error);
+    return { store: new PublishedSiteProfileStore(), source: 'published-fallback' };
+  }
 }
 
 async function bootAbout() {
   if (isAdminPath()) return;
 
-  const [{ AboutFeature, syncProfileFavicon }, { SiteProfileStore }] = await Promise.all([
+  const [
+    { AboutFeature, syncProfileFavicon },
+    { SiteProfileStore },
+    { PublishedSiteProfileStore, usesPublishedProfile }
+  ] = await Promise.all([
     import(releaseUrl('./AboutFeature.js')),
-    import(releaseUrl('./SiteProfileStore.js'))
+    import(releaseUrl('./SiteProfileStore.js')),
+    import(releaseUrl('./PublishedSiteProfileStore.js'))
   ]);
 
-  const store = new SiteProfileStore();
+  const { store, source } = await createProfileStore({
+    SiteProfileStore,
+    PublishedSiteProfileStore,
+    usesPublishedProfile
+  });
+
   const syncFavicon = (data) => syncProfileFavicon(data?.profile?.photoUrl || '');
   syncFavicon(store.load());
   const unsubscribeFavicon = store.subscribe(syncFavicon);
   window.addEventListener('pagehide', unsubscribeFavicon, { once: true });
 
   if (!document.getElementById('zen-about')) return;
-  loadStylesheet();
+
+  // About is auxiliary: keep its CSS off the reader critical path, but do not
+  // replace the server-visible fallback until the on-demand stylesheet is
+  // ready. If CSS fails, the fallback remains intact instead of exposing an
+  // unstyled custom shell.
+  const stylesheetReady = await loadStylesheet();
+  if (!stylesheetReady) {
+    console.warn('[ZenBlog/About] No se pudo cargar la hoja de estilos; se conserva el fallback.');
+    document.dispatchEvent(new CustomEvent('zenabout:error', {
+      detail: { version: RELEASE, message: 'About stylesheet failed to load' }
+    }));
+    return;
+  }
+
   const feature = new AboutFeature({ store }).mount();
   if (feature) {
     window.ZenAboutFeature = feature;
-    document.dispatchEvent(new CustomEvent('zenabout:ready', { detail: { version: RELEASE } }));
+    document.documentElement.dataset.zenAboutProfileSource = source;
+    document.dispatchEvent(new CustomEvent('zenabout:ready', {
+      detail: { version: RELEASE, profileSource: source }
+    }));
   }
 }
 

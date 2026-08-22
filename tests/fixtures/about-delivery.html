@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport">
+  <title>About delivery characterization</title>
+  <script>
+    window.__aboutDelivery = {
+      startAt: performance.now(),
+      cssLoadAt: null,
+      domContentLoadedAt: null,
+      shellRenderedAt: null,
+      aboutReadyAt: null,
+      styledAtRender: null
+    };
+
+    window.__markAboutCssLoaded = () => {
+      if (window.__aboutDelivery.cssLoadAt == null) {
+        window.__aboutDelivery.cssLoadAt = performance.now();
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      window.__aboutDelivery.domContentLoadedAt = performance.now();
+    }, { once: true });
+
+    // Observe stylesheet readiness independently from the product bootstrap.
+    // Capture runs before the link target listener, so the measurement cannot
+    // lose the load event or report a false FOUC because of listener ordering.
+    document.addEventListener('load', (event) => {
+      const target = event.target;
+      if (target instanceof HTMLLinkElement && target.id === 'zen-about-css') {
+        window.__markAboutCssLoaded();
+      }
+    }, true);
+  </script>
+  <!-- ABOUT_DELIVERY_GLOBAL_CSS -->
+</head>
+<body>
+  <main id="reader-view">
+    <h1>Documento de lectura</h1>
+    <p>Critical path de una vista que no necesita About.</p>
+  </main>
+
+  <section aria-hidden="false" class="zen-view" data-zen-view="about" id="zen-about">
+    <div class="zen-reading" data-about-fallback="true">
+      <h1>La hoja de ruta</h1>
+      <p>Fallback visible.</p>
+    </div>
+  </section>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view') || 'about';
+    const delay = Number(params.get('delay') || 0);
+
+    if (view === 'reader') {
+      document.getElementById('zen-about').remove();
+    } else {
+      document.getElementById('reader-view').remove();
+      localStorage.setItem('zenSiteProfile.v1', JSON.stringify({
+        schemaVersion: '1.0.0',
+        profile: {
+          displayName: 'La hoja de ruta',
+          photoUrl: '',
+          occupation: 'Proyecto editorial',
+          introduction: 'Seguir el origen, los límites y el ejercicio del poder.',
+          location: { city: '', region: '', country: '' }
+        },
+        social: [
+          { id: 'x', platform: 'x', label: 'X', username: '@prueba', url: 'https://x.com/example', visible: true, order: 0 }
+        ],
+        relatedResources: [
+          { id: 'r1', title: 'Recurso', url: 'https://example.com/', description: 'Referencia', type: 'source', visible: true, order: 0 }
+        ]
+      }));
+
+      const root = document.getElementById('zen-about');
+      new MutationObserver(() => {
+        const shell = root.querySelector('.zen-about-shell');
+        if (!shell || window.__aboutDelivery.shellRenderedAt != null) return;
+        window.__aboutDelivery.shellRenderedAt = performance.now();
+        // Do not call getComputedStyle here: that can synchronously wait for a
+        // pending stylesheet and erase the very FOUC interval being measured.
+        window.__aboutDelivery.styledAtRender = window.__aboutDelivery.cssLoadAt != null;
+      }).observe(root, { childList: true, subtree: true });
+
+      document.addEventListener('zenabout:ready', () => {
+        window.__aboutDelivery.aboutReadyAt = performance.now();
+      }, { once: true });
+    }
+
+    const finalize = () => {
+      const metrics = window.__aboutDelivery;
+      const cssEntries = performance.getEntriesByType('resource')
+        .filter((entry) => entry.name.includes('/tools/about/about.css'));
+      document.body.dataset.deliveryReady = 'true';
+      document.body.dataset.cssRequests = String(cssEntries.length);
+      document.body.dataset.domContentLoadedAt = String(metrics.domContentLoadedAt ?? -1);
+      document.body.dataset.cssLoadAt = String(metrics.cssLoadAt ?? -1);
+      document.body.dataset.shellRenderedAt = String(metrics.shellRenderedAt ?? -1);
+      document.body.dataset.aboutReadyAt = String(metrics.aboutReadyAt ?? -1);
+      document.body.dataset.styledAtRender = String(metrics.styledAtRender ?? false);
+      const foucMs = metrics.shellRenderedAt != null && metrics.cssLoadAt != null && metrics.shellRenderedAt < metrics.cssLoadAt
+        ? metrics.cssLoadAt - metrics.shellRenderedAt
+        : 0;
+      document.body.dataset.foucMs = String(Math.max(0, foucMs));
+    };
+
+    window.addEventListener('load', () => {
+      setTimeout(finalize, Math.max(250, delay + 250));
+    }, { once: true });
+  </script>
+
+  <script type="module">
+    if ((new URLSearchParams(location.search).get('view') || 'about') === 'about') {
+      await import('/tools/about/bootstrap.js');
+    }
+  </script>
+</body>
+</html>

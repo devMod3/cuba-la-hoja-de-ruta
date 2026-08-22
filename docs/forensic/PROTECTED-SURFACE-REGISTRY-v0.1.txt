@@ -1,0 +1,238 @@
+ZENBLOG — PROTECTED SURFACE REGISTRY v0.1
+Fecha: 2026-08-22
+Proyecto: La hoja de ruta / ZenBlog
+Repositorio: devMod3/cuba-la-hoja-de-ruta
+
+OBJETIVO
+=======
+Definir las superficies cuyo comportamiento se considera contrato del producto o frontera arquitectónica.
+Una superficie protegida NO es intocable para siempre. Significa que cualquier cambio requiere alcance explícito, evidencia, owner, regresiones, rollback y validación proporcional al riesgo.
+
+ESCALA DE EVIDENCIA
+===================
+E0 = afirmación no verificada.
+E1 = intención/documentación histórica.
+E2 = código o test estático actual.
+E3 = QA automatizado de comportamiento/navegador.
+E4 = QA manual documentado en Blogger real.
+E5 = release aceptada/congelada con SHA/XML/rollback identificables.
+
+PS-001 — ANATOMÍA BLOGGER
+=========================
+Estado: PROTECCIÓN MÁXIMA
+Nivel: E2 actual + E3 histórico
+Contrato:
+- exactamente un #page_body;
+- exactamente un Blog1 bajo #page_body;
+- no zen_main como raíz sustituta;
+- Blogger conserva documento, URLs y CMS.
+Gates: XML well-formed, invariantes CI, Blogger real, rollback XML.
+
+PS-002 — ZEN RADIO PLAYER
+=========================
+Estado: CONGELADO / REPOSITORIO INDEPENDIENTE
+Contrato:
+- loader independiente;
+- versión protegida documentada 1.0.3;
+- ZenBlog no cierra, oculta ni restiliza internals;
+- sólo puede reservar espacio mediante contrato de layout.
+
+PS-003 — EXPLORE
+================
+Estado: CONGELADO
+Nivel: E3 histórico + E2 actual
+Contrato:
+- simple = título solamente;
+- accent-insensitive;
+- recent-first cuando query vacía;
+- advanced = filtros estructurados;
+- simple no ejecuta motor avanzado;
+- filas = Tipo · Fecha · Título;
+- sin resumen;
+- año documental != fecha Blogger;
+- no popularidad inventada.
+
+PS-004 — ARTICLE / URLS
+=======================
+Estado: PROTEGIDO
+Contrato:
+- URLs reales Blogger;
+- lectura larga especializada;
+- Article -> Portada funciona;
+- TOC/rail/progress/print son comportamiento especializado;
+- Article excluido de swipe global.
+
+PS-005 — METADATA MANAGER v0.5 CORE
+===================================
+Estado: CONGELADO
+Nivel: E3 histórico + E2 actual
+Contrato:
+- zenMetadataRegistry.v2 canónico;
+- zenMetadataRegistry.v1 legado preservado durante migración;
+- contractVersion 1.0.0;
+- vocabularyVersion 1.0.0;
+- clasificación explícita;
+- unknown != inferred;
+- metadata ausente permanece incompleta;
+- migrationIssues conserva problemas;
+- import/export y guardado canónico.
+Confirmación main:
+- LEGACY_KEY/STORAGE_KEY intactos;
+- resolveVocabulary devuelve null para desconocidos;
+- emptyRecord deja clasificación en null;
+- migrateLegacyV04 registra issues y no inventa conceptos/normas.
+
+PS-006 — ADAPTIVE METADATA UI v0.6
+==================================
+Estado: PROTEGIDO
+Contrato:
+- presentation/decorator sobre v0.5;
+- no sustituye engine;
+- Pilar principal + Tipo prioritarios;
+- reordenar/ocultar nunca borra metadata poblada.
+
+PS-007 — SEARCH CORE v1 / SEARCH LAB
+====================================
+Estado: PROTEGIDO CON DEUDA DE MANTENIBILIDAD
+Nivel: E3 histórico + E2 actual
+Principio: METADATA CLASIFICA. SEARCH LAB VERIFICA.
+Contrato:
+- Search es retrieval, no inference engine;
+- missing metadata permanece missing;
+- Search Lab no escribe metadata;
+- reconstruye índice ante zenmetadata:changed;
+- score + reasons diagnósticos;
+- aliases/keywords, normas/artículos y rangos de año.
+Deuda:
+- el archivo forense conserva paquete modular fuente completo;
+- main conserva principalmente distribución browser fragmentada;
+- recuperar fuente mantenible sin cambiar runtime.
+
+PS-008 — ABOUT / zenSiteProfile.v1
+==================================
+Estado: CONTRATO PROTEGIDO; RENDER EN INVESTIGACIÓN
+Nivel: E2 actual; E3 parcial fuera de main
+Contrato:
+- zenSiteProfile.v1 separado de metadata documental;
+- perfil + sociales + recursos;
+- sólo campos poblados renderizan;
+- portrait circular;
+- URLs inseguras rechazadas;
+- SVG sociales locales;
+- detalles extensos/flechas decorativas eliminados.
+Favicon:
+- foto local puede sincronizar UX/exportarse;
+- favicon público/crawler autoritativo = Blogger Settings.
+Pendiente:
+- determinar si fix transaccional About sigue siendo necesario;
+- evaluar browser smoke para main.
+
+PS-009 — INSPECTOR
+==================
+Estado: PROTEGIDO
+Contrato:
+- exact DOM node;
+- owner lógico como contexto;
+- click -> modal;
+- foco/select inicial;
+- cursor flecha;
+- href neutralizado sólo mientras ON y restaurado exactamente al OFF;
+- OFF equivale funcionalmente a ausencia del Inspector;
+- Alt+I según contrato.
+
+PS-010 — ADMIN SHELL
+====================
+Estado: PROTEGIDO
+Contrato: Metadata | Search Lab | Acerca de | Inspector.
+Tools authoring/debug fuera del critical path lector.
+Launcher flotante histórico sólo compatibilidad de boot.
+
+PS-011 — CRITICAL PATH PÚBLICO
+==============================
+Estado: PROTEGIDO
+Contrato:
+- mínimo JS global;
+- Admin/About/Inspector lazy/contextuales;
+- MobileGestureNavigation lazy;
+- CSS product modules en paralelo;
+- theme activo no usa dist/zenblog.css @import.
+Dependencia global nueva requiere problema medido, coste/beneficio, peso, licencia y security review.
+
+PS-012 — RELEASE CACHE CONSISTENCY
+==================================
+Estado: INVARIANTE DE PRODUCCIÓN
+Contrato:
+- una release key cruza theme, entry, composition root, runtime, lazy modules y assets críticos;
+- no mezclar XML LAB con assets main;
+- no mezclar releases ESM.
+Motivo histórico: mezcla de shell nuevo + assets viejos produjo render inconsistente.
+
+PS-013 — SEO / OPEN GRAPH / X
+=============================
+Estado: PROTEGIDO
+Contrato:
+- crawler metadata server-rendered en theme.xml;
+- all-head-content permanece;
+- no forzar index contra Blogger;
+- OG/X asset público;
+- structured data trazable;
+- no inventar Article schema.
+
+PS-014 — MOBILE GESTURES
+========================
+Estado: PROTEGIDO
+Contrato:
+- coarse pointer <=900px;
+- Portada <-> Explorar <-> Acerca de;
+- nunca sustituye navegación visible;
+- excluye links/buttons/forms/contenteditable/player/article/results scroll;
+- reserva bordes OS;
+- requiere dominancia horizontal.
+
+PS-015 — RESPONSIVE / SAFE AREAS
+================================
+Estado: PROTEGIDO, CON INVESTIGACIÓN v0.9.2
+Contrato:
+- tokens compartidos para header/player/safe inline/reading width;
+- no dispersar offsets duros si existe token;
+- touch targets >=44px donde aplique;
+- contener media/tables/pre/code;
+- probar short-height/landscape/safe-area.
+PR #13 = delta experimental, no release.
+
+PS-016 — DEPLOYMENT BOUNDARY
+============================
+Estado: RESTRICCIÓN OPERACIONAL
+Contrato:
+- GitHub Pages y Blogger son despliegues separados;
+- merge a main NO instala theme.xml;
+- release Blogger requiere XML completo, SHA y rollback;
+- QA real en sitio instalado;
+- CI verde no equivale E5.
+
+PS-017 — STORAGE BOUNDARIES
+===========================
+Estado: PROTEGIDO COMO INTERFAZ; IMPLEMENTACIÓN LAB ES DEUDA
+Keys:
+- zenMetadataRegistry.v2
+- zenSiteProfile.v1
+- zenInspector.enabled
+Regla:
+- localStorage es implementación actual, no arquitectura futura;
+- shared persistence/auth entra detrás de adapters/repositorios.
+
+PROTOCOLO UNIVERSAL DE CAMBIO
+=============================
+A. reproducir problema/necesidad;
+B. definir spec;
+C. declarar protected surfaces vecinas;
+D. identificar owner;
+E. escribir/actualizar regresión;
+F. mínimo cambio coherente;
+G. CI;
+H. browser/Blogger según riesgo;
+I. registrar SHA/evidencia/rollback;
+J. converge;
+K. freeze después de aceptación.
+
+FIN

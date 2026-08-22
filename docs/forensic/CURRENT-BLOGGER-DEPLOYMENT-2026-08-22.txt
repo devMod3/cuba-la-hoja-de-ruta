@@ -1,0 +1,120 @@
+ZENBLOG — CURRENT BLOGGER DEPLOYMENT EVIDENCE
+============================================
+Date captured: 2026-08-22
+Source: Blogger theme export supplied by Product Owner
+Purpose: establish the exact deployment baseline before Spec 001 convergence work.
+
+ARTIFACT IDENTITY
+-----------------
+Artifact description: current installed Blogger theme XML export
+SHA-256: 42b439df1c96915a2568fce9b0a243f26196281d2c9f8afca0bb7f786df114d8
+Bytes: 26408
+Rendered text lines: 588
+XML parse: PASS
+
+BLOGGER / PRODUCT INVARIANTS OBSERVED
+-------------------------------------
+#page_body occurrences: 1
+Blog1 occurrences: 1
+zen_main occurrences: 0
+Zen Radio Player loader: v1.0.3
+Crawler metadata: server-rendered in theme
+About stylesheet: preloaded in head
+
+ACTIVE ASSET PIN
+----------------
+Every ZenBlog repository asset referenced by the exported theme is loaded through jsDelivr and pinned to:
+
+aa372e1cc7982d1f8335d0d21760869c396b32c3
+
+This includes favicon fallback, social card, product CSS, About CSS, dist/zenblog.js, composition root and runtime bootstrap.
+
+PROVENANCE
+----------
+Commit aa372e1cc7982d1f8335d0d21760869c396b32c3:
+  fix(about): preload public stylesheet to prevent mobile layout flash
+
+The repository theme at aa372e1 still referenced the earlier feaa8f asset pin.
+The next commit:
+
+ad43ac63c12a666534e03cf9d5436184b985d1d1
+  chore(release): pin mobile render assets to validated commit
+
+changed the theme asset references from feaa8f... to aa372e1... across favicon, social image, CSS, module preload, product entry and runtime loader.
+
+The supplied Blogger export has those aa372e1 pins and is therefore classified as a Blogger-serialized deployment derived from the ad43ac63 release shell.
+
+BRANCH / LINEAGE
+----------------
+aa372e1 is an ancestor of the historical branch:
+  lab-v0.9-production-hardening
+
+It is not part of the canonical main ancestry after the v0.9 production-hardening squash/merge. Comparing main to aa372e1 reports divergent history. Therefore the active Blogger deployment is not the canonical main/v0.9.1 deployment even though much of its functionality is semantically related to the same hardening work.
+
+CLASSIFICATION
+--------------
+Deployment classification:
+  DERIVED — ACTIVE NON-CANONICAL DEPLOYMENT
+
+DERIVED means:
+- the exported XML is Blogger's serialized/expanded representation of a repository release shell rather than a byte-for-byte copy of repository blogger/theme.xml;
+- its asset pin provenance can nevertheless be identified unambiguously.
+
+NON-CANONICAL means:
+- canonical main currently uses GitHub Pages assets with the v0.9.1 release/cache key;
+- current Blogger instead loads immutable jsDelivr assets from aa372e1.
+
+IMPORTANT DEPLOYED DELTAS VS MAIN
+---------------------------------
+1. Mobile tokens / safe-area
+   Active aa372e1 tokens include safe-area-inset-top and safe-area-inset-bottom accounting.
+   Main still uses fixed mobile header/player-safe values.
+
+2. Home short-height/mobile density
+   Active aa372e1 Home CSS includes short-phone compaction, a lower last-resort scroll threshold, overscroll containment and 100svh handling.
+   Main does not contain that full delta.
+
+3. About CSS
+   Active aa372e1 serves About CSS v0.1.5 with mobile layout refinements, overscroll containment, 100svh handling and side-by-side identity on ordinary phones.
+   Main serves the earlier About CSS v0.1.4.
+
+4. About JavaScript
+   AboutFeature.js at aa372e1 has the same blob SHA as current main (9ec3aed5c283eefba23b649b6a191925f7459dce).
+   Therefore the current deployment does NOT contain the later transactional About render fix from PR #14.
+
+5. Public composition version label/cache graph
+   aa372e1 createZenBlog.js still labels/imports the internal public graph as 0.4.0, while main was later normalized to 0.9.1 by the cache-consistency hotfix. Because the active outer URL is commit-pinned, this is primarily a release/version provenance discrepancy rather than evidence by itself of a functional difference.
+
+ROLLBACK STATUS
+---------------
+For any new work performed after 2026-08-22, the supplied current Blogger export is the immediate operational rollback artifact.
+
+Operational rollback identity:
+  SHA-256 42b439df1c96915a2568fce9b0a243f26196281d2c9f8afca0bb7f786df114d8
+
+This does NOT promote the historical release to E5. It means only that the exact pre-change deployment state is recoverable.
+
+Older historical rollback reference remains:
+  ZenBlog-ABOUT-FAVICON-SIMPLIFIED-v0.1.xml
+  SHA-256 58cd7d098245cb739ac60550e52a4375627ec5af51ec7f5e117dbb6ca39211da
+  LAB SHA 92054d7e5589635925adbb3efd4a356883fcd687
+
+EVIDENCE LEVEL
+--------------
+Current XML export proves deployed theme configuration/provenance.
+It does NOT by itself prove browser behavior, Product Owner acceptance or historical Blogger QA.
+Those remain separate E4/E5 gates.
+
+SPEC 001 CONSEQUENCE
+--------------------
+Release convergence must not simply replace production with main or merge PR #13.
+The plan must:
+1. treat current Blogger deployment as the production baseline;
+2. identify each deployed delta relative to main;
+3. validate whether each deployed delta is required/accepted;
+4. recreate only accepted deltas on the canonical line;
+5. produce a new candidate theme from one canonical SHA/release key;
+6. validate it in Blogger;
+7. retain this 2026-08-22 export as rollback until the new candidate is accepted and frozen.
+
+END

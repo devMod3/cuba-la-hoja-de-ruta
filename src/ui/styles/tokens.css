@@ -21,7 +21,10 @@
 
 @media (max-width: 700px) {
   :root {
-    --zen-header-h: 101px;
-    --zen-player-safe: 56px;
+    /* Preserve the safe-area accounting already active in Blogger Real.
+       Final overlap/lost-space acceptance is verified on the real Safari/iPhone
+       deployment; Chrome CI only protects the declared token contract. */
+    --zen-header-h: calc(92px + max(.55rem, env(safe-area-inset-top, 0px)));
+    --zen-player-safe: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 }

@@ -1,13 +1,13 @@
-import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js?v=0.9.1';
-import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js?v=0.9.1';
-import { SearchService } from '../search/SearchService.js?v=0.9.1';
-import { NavigationFeature } from '../features/navigation/NavigationFeature.js?v=0.9.1';
-import { HomeFeature } from '../features/home/HomeFeature.js?v=0.9.1';
-import { ExploreFeature } from '../features/explore/ExploreFeature.js?v=0.9.1';
-import { ExploreQueryService } from '../features/explore/ExploreQueryService.js?v=0.9.1';
-import { ArticleFeature } from '../features/article/ArticleFeature.js?v=0.9.1';
+import { BloggerFeedSource } from '../adapters/blogger/BloggerFeedSource.js?v=0.9.2';
+import { LocalMetadataSource } from '../adapters/metadata/LocalMetadataSource.js?v=0.9.2';
+import { SearchService } from '../search/SearchService.js?v=0.9.2';
+import { NavigationFeature } from '../features/navigation/NavigationFeature.js?v=0.9.2';
+import { HomeFeature } from '../features/home/HomeFeature.js?v=0.9.2';
+import { ExploreFeature } from '../features/explore/ExploreFeature.js?v=0.9.2';
+import { ExploreQueryService } from '../features/explore/ExploreQueryService.js?v=0.9.2';
+import { ArticleFeature } from '../features/article/ArticleFeature.js?v=0.9.2';
 
-const VERSION = '0.9.1';
+const VERSION = '0.9.2';
 const MOBILE_GESTURE_QUERY = '(max-width: 900px) and (pointer: coarse)';
 
 export function createZenBlog({ root = document } = {}) {
@@ -25,7 +25,7 @@ export function createZenBlog({ root = document } = {}) {
 
   async function bootOptionalGestures() {
     if (destroyed || !globalThis.matchMedia?.(MOBILE_GESTURE_QUERY).matches) return null;
-    const { MobileGestureNavigation } = await import('../features/navigation/MobileGestureNavigation.js?v=0.9.1');
+    const { MobileGestureNavigation } = await import('../features/navigation/MobileGestureNavigation.js?v=0.9.2');
     if (destroyed) return null;
     gestures = new MobileGestureNavigation({ root, navigation }).boot();
     if (window.ZenBlog) window.ZenBlog.gestures = gestures;
