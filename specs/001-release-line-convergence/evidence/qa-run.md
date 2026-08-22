@@ -70,58 +70,30 @@ Workflow run #154 (`32588482004`) tested a candidate built from canonical main p
 2. moving emergency vertical scroll from `max-height:620px` to `max-height:560px`;
 3. `overscroll-behavior-y: contain` on that last-resort scroll.
 
-Explicitly excluded from this candidate:
+Explicitly excluded:
 - general deployed mobile title sizing changes outside short-height mode;
 - deployed `100svh` override;
 - safe-area token changes (M-001).
 
-Observed critical results:
-- 320x568: essentials inside Home, no horizontal overflow, no inaccessible content;
-- 390x700: existing passing behavior preserved;
-- 390x560: essentials inside Home, vertical fallback still reachable, no horizontal overflow;
-- 667x375: reachable scroll preserved, no horizontal overflow;
-- harness assertion: `M-002 minimal candidate: PASS`;
-- full run: JavaScript checks PASS; 61/61 unit tests PASS; About browser smoke PASS; exact viewport characterization PASS; Blogger XML parse PASS; architecture invariants PASS.
-
 ### T032 implemented product verification
 
-Product implementation:
 - Home CSS commit: `a462c89a80dc10e0f64c9bc60ce2164ac98d35dd`
-- exact post-implementation characterization harness head: `4aa2120ec2c5242499001db0c490e24fffc29ebb`
-- CI-only execution workflow commit: `71c6876de2a5d88c84e665be93bff5e091144687`
-- Workflow run #162: `32588735098`
-- Job: `97069058114`
+- post-implementation harness: `4aa2120ec2c5242499001db0c490e24fffc29ebb`
+- workflow run #162: `32588735098`
+- job: `97069058114`
+- JavaScript checks PASS
+- unit tests 64/64 PASS
+- M-002 contract PASS
+- About browser smoke PASS
+- exact viewport characterization PASS
+- Blogger XML PASS
+- architecture invariants PASS
 
-The post-implementation harness used three explicit identities:
-- canonical = immutable `0a45bc523f0129d83307f1c6f3a972056b219ae0`;
-- implementation = local implementation branch content;
-- production = immutable `aa372e1cc7982d1f8335d0d21760869c396b32c3`.
-
-Implemented critical results:
-- 320x568: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, no Home scroll required;
-- 390x700: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, existing normal-phone fit preserved;
-- 390x560: `essentialOutside=false`, `essentialInaccessible=false`, `horizontalOverflow=false`, reachable vertical fallback preserved;
-- 667x375: `essentialOutside=true`, `essentialInaccessible=false`, `horizontalOverflow=false`, `scrollable=true`.
-
-These three critical outcomes (`essentialOutside`, `essentialInaccessible`, `horizontalOverflow`) match deployed production for all four tested viewport classes. The implementation deliberately retains canonical M-001 tokens (`101px` / `56px`) because safe-area accounting remains a separate unresolved delta.
-
-Run #162 full gate:
-- JavaScript checks: PASS
-- unit tests: 64/64 PASS
-- M-002 contract tests: 3/3 PASS
-- About browser smoke: PASS
-- exact viewport characterization: PASS
-- browser assertion: `M-002 implementation contract: PASS`
-- Blogger XML parse: PASS
-- architecture invariants: PASS
-
-T032 result: `PASS — IMPLEMENTED`. This remains pre-release engineering evidence; Blogger real and final-candidate Q-PUB-003/Q-PUB-004 remain `NOT_RUN` until the final candidate exists.
-
-Decision reference: `specs/001-release-line-convergence/evidence/candidate-deltas.md` — M-002 `ADJUST / COMPLETE_T032`.
+T032 result: `PASS — IMPLEMENTED`. Final Blogger Q-PUB-003/Q-PUB-004 remain `NOT_RUN` until a release candidate exists.
 
 ## Pre-candidate characterization — M-003 About stylesheet delivery
 
-This section is T033–T034 engineering evidence. It is NOT final-candidate Q-PUB-012 and does not change the release matrix above.
+This section is T033–T035 engineering evidence. It is NOT final-candidate Q-PUB-012 and does not change the release matrix above.
 
 Environment:
 - GitHub Actions `ubuntu-24.04`
@@ -129,49 +101,129 @@ Environment:
 - Google Chrome `151.0.7922.137`
 - Chrome DevTools Protocol real-time navigation; browser cache disabled
 - deliberate About CSS server delay: `1200ms`
-- workflow run #178: `32589253689`
-- job: `97070337147`
 
-The experiment compared two ownership models without changing product delivery:
-- `lazy`: canonical behavior — reader does not own About CSS; About bootstrap creates it on demand;
-- `global`: deployed-style behavior — a parser-discovered `#zen-about-css` exists in `<head>` before body/route work.
+### T033 baseline
 
-### Key observations
+Workflow run #178 (`32589253689`), job `97070337147`, compared lazy vs global stylesheet ownership.
 
-| Scenario | CSS requests | Load / render observation | FOUC |
+| Scenario | CSS requests | Observation | FOUC |
 |---|---:|---|---:|
 | lazy reader, 1200ms | 0 | wall load ~18ms | n/a |
-| global reader, 1200ms | 1 | wall load ~1216ms; DCL ~1212.4ms | n/a |
-| lazy About, 1200ms | 1 | shell ~27.4ms; About ready ~27.3ms; CSS ~1229.5ms | ~1202.1ms |
-| global About, 1200ms | 1 | CSS ~1212.3ms; shell/About ready ~1224.8ms | 0ms |
+| global reader, 1200ms | 1 | wall load ~1216ms | n/a |
+| lazy About, 1200ms | 1 | shell ~27.4ms; CSS ~1229.5ms | ~1202.1ms |
+| global About, 1200ms | 1 | CSS before shell | 0ms |
 | lazy About, normal | 1 | shell ~29.6ms; CSS ~33.7ms | ~4.1ms |
-| global About, normal | 1 | CSS ~10.8ms before shell ~28.2ms | 0ms |
+| global About, normal | 1 | CSS before shell | 0ms |
 
-Run #178 assertion: `M-003 delivery characterization: PASS`.
+T034 decision: `ADJUST` — preserve lazy ownership but make stylesheet readiness a prerequisite for replacing the fallback.
 
-Repository gates in the same run:
-- JavaScript checks PASS;
-- unit tests 64/64 PASS;
-- About browser smoke PASS;
-- Blogger XML parse PASS;
-- architecture invariants PASS.
+### T035 implemented product verification
 
-### T034 decision
+Product implementation:
+- bounded About bootstrap implementation: `eca58b21d879650f05ffb1cfe0a9f8fd0ac9ee55`
+- measurement-race correction: `d419657f304224a4d3f66cbb4b9fcbb768121f6d`
+- CI-only equivalent harness commit: `26b5bcaa0c2bad7beed11e727ec19ec798fe065e`
+- workflow run #190: `32595190420`
+- job: `97084892928`
 
-`M-003 = ADJUST`.
+The failed intermediate characterization was traced to the fixture observing the stylesheet target listener after product bootstrap had already registered its own listener. The corrected fixture observes `load` from `document` capture phase; no product change was introduced to satisfy the faulty measurement.
 
-Rejected endpoints:
-- KEEP deployed global preload: rejected because an About-only stylesheet can add approximately its full network latency to unrelated reader loading under the controlled slow condition; this conflicts with the protected reader critical path.
-- KEEP canonical lazy behavior unchanged: rejected because About mounts its custom shell before CSS readiness, yielding a material first-open FOUC under slow delivery.
+Final slow-delivery observations:
+- lazy reader: 0 About CSS requests; wall load ~16ms;
+- global reader control: approximately 1215ms wall load;
+- lazy About: CSS ready ~1227.2ms; shell/About ready ~1227.9ms;
+- `styledAtRender=true`;
+- `FOUC=0`.
 
-Authorized T035 direction:
-- keep `blogger/theme.xml` free of global About stylesheet ownership;
-- retain lazy/on-demand About CSS;
-- make the single lazy stylesheet readiness a prerequisite for replacing the existing fallback with `AboutFeature`;
-- prevent duplicate `#zen-about-css` ownership;
-- on stylesheet failure, preserve fallback rather than commit an unstyled custom shell.
+Run #190 full gate:
+- JavaScript checks PASS
+- unit tests 67/67 PASS
+- About browser smoke PASS
+- M-003 delivery characterization PASS
+- Blogger XML PASS
+- architecture invariants PASS
 
-Decision reference: `specs/001-release-line-convergence/evidence/candidate-deltas.md` — M-003 `ADJUST / AUTHORIZED_T035`.
+T035 result: `PASS — IMPLEMENTED`. About CSS remains lazy and off unrelated reader paths; stylesheet failure preserves the server-visible fallback. Final Q-PUB-012 remains `NOT_RUN` until the exact release candidate is installed in Blogger.
+
+## Pre-candidate characterization — M-004 About mobile / populated profile
+
+This section is T036–T039 engineering evidence. It is NOT final-candidate Q-PUB-010/Q-PUB-011 and does not change the release matrix above.
+
+Environment:
+- GitHub Actions `ubuntu-24.04`
+- Node `v20.20.2`
+- Google Chrome `151.0.7922.137`
+- exact CSS viewport dimensions established through CDP `Emulation.setDeviceMetricsOverride`
+- test states: empty and populated `zenSiteProfile.v1`
+- exact viewports: 320x568, 390x700, 768x1024
+
+### T036/T037 baseline characterization
+
+Workflow run #195 (`32595381075`), job `97085338911`, compared canonical About CSS v0.1.4 with the exact deployed v0.1.5 CSS snapshot preserved as a test-only fixture.
+
+Semantic contract in every baseline case:
+- title `La hoja de ruta` present;
+- expected lead present;
+- populated state contains profile, photo, 2 social links and 1 related resource;
+- empty state preserves fallback;
+- no horizontal overflow;
+- no inaccessible content.
+
+Material layout difference for populated profile:
+- 320x568: canonical and production both stack; canonical root paddingBottom `0px`, production `56px`;
+- 390x700: canonical grid `358px` (one column), scrollHeight ~755px, paddingBottom `0px`; production grid `96px 247px` (two columns), scrollHeight ~602px, paddingBottom `56px`;
+- 768x1024: both use `124px 567px` two-column layout.
+
+T038 decision: `ADJUST`.
+
+Accepted from the deployed behavior:
+- portrait + identity remain side-by-side on normal phones;
+- stack only on genuinely narrow screens <=340px;
+- About owns mobile player-safe padding through the shared token;
+- wrapping for long identity/resource text;
+- resource row wrapping;
+- root overscroll containment.
+
+Explicitly excluded:
+- `100dvh`;
+- `100svh`;
+- wholesale copy of deployed v0.1.5 CSS.
+
+### T039 implemented product verification
+
+Implementation lineage:
+- product CSS: `ed35ad4173cd615d67e1c2be558e19e69a60baf1`
+- static long-term contract: `57f3f810cd65493be61c621afe69fc49004e4f92`
+- post-implementation viewport harness: `4ec66f6055b23b36292885ca1224787fad904fc8`
+- CI-only execution workflow commit: `76037550850c9fa27b8f51b3d7868c70691eedea`
+- workflow run #200: `32595520760`
+- job: `97085680622`
+
+Implemented Case B results:
+- 320x568 populated: title/lead/profile/photo/social/resources all present; one-column stack; root player-safe padding `56px`; scrollable/reachable; no horizontal overflow;
+- 390x700 populated: title/lead/profile/photo/social/resources all present; grid `96px 247px`; root player-safe padding `56px`; scrollHeight ~654px; no inaccessible content; no horizontal overflow;
+- 768x1024 populated: grid `124px 567px`; no horizontal overflow/inaccessible content.
+
+Empty-profile fallback also remained correct at all three viewports.
+
+Maintainability gate:
+- unit test count increased to 70/70 PASS;
+- `tests/about-mobile-contract.test.js` rejects reintroduction of the old <=500px one-column rule;
+- stack is required only at <=340px;
+- player-safe ownership, overflow wrapping and overscroll containment are asserted;
+- `100dvh`/`100svh` are explicitly rejected;
+- the production characterization fixture is prohibited from runtime/theme delivery.
+
+Run #200 full gate:
+- JavaScript checks PASS
+- unit tests 70/70 PASS
+- About browser smoke PASS
+- exact About viewport characterization PASS
+- browser assertion: `M-004 implementation characterization: PASS`
+- Blogger XML PASS
+- architecture invariants PASS
+
+T039 result: `PASS — IMPLEMENTED`. This is E3 pre-candidate evidence. Final Blogger Q-PUB-010/Q-PUB-011 remain `NOT_RUN` until the immutable candidate exists.
 
 ## Per-case evidence template
 
