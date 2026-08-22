@@ -32,6 +32,16 @@ function joinedLocation(location = {}) {
   return [location.city, location.region, location.country].filter(Boolean).join(', ');
 }
 
+function profileListSection(title, items = []) {
+  if (!items.length) return null;
+  const section = node('section', 'zen-about-profile-list');
+  section.appendChild(node('h3', '', title));
+  const list = node('ul', '');
+  items.forEach((item) => list.appendChild(node('li', '', item)));
+  section.appendChild(list);
+  return section;
+}
+
 export function syncProfileFavicon(source) {
   let favicon = document.head.querySelector(`link[${FAVICON_ATTR}]`);
   if (!source || !isSafeImageSource(source)) {
@@ -62,7 +72,7 @@ export class AboutFeature {
   mount() {
     this.root = this.root ?? document.getElementById('zen-about');
     if (!this.root) return null;
-    this.root.dataset.zenAboutFeature = '0.1.4';
+    this.root.dataset.zenAboutFeature = '0.1.5';
     this.render(this.store.load());
     this.unsubscribe = this.store.subscribe((profile) => this.render(profile));
     return this;
@@ -85,6 +95,14 @@ export class AboutFeature {
     const social = (data?.social ?? []).filter((item) => item.visible && item.url).sort((a, b) => a.order - b.order);
     const resources = (data?.relatedResources ?? []).filter((item) => item.visible && item.title && item.url).sort((a, b) => a.order - b.order);
     const location = joinedLocation(profile.location);
+    const profileLists = [
+      ['Intereses', profile.interests ?? []],
+      ['Películas favoritas', profile.favoriteMovies ?? []],
+      ['Música favorita', profile.favoriteMusic ?? []],
+      ['Libros favoritos', profile.favoriteBooks ?? []]
+    ].filter(([, items]) => items.length);
+    const hasQuestion = Boolean(profile.randomQuestion || profile.randomAnswer);
+    const hasExtendedProfile = Boolean(profileLists.length || hasQuestion);
     const hasProfile = Boolean(
       profile.displayName || profile.photoUrl || profile.introduction || profile.occupation || profile.industry || profile.gender ||
       location || profile.email || profile.website || profile.audioClipUrl || profile.wishlistUrl || profile.randomQuestion ||
@@ -119,8 +137,9 @@ export class AboutFeature {
     identity.appendChild(node('h1', '', profile.displayName || 'La hoja de ruta'));
 
     const professional = [profile.occupation, profile.industry].filter(Boolean).join(' · ');
-    if (professional || location) {
-      identity.appendChild(node('p', 'zen-about-meta-line', [professional, location].filter(Boolean).join(' · ')));
+    const identityMeta = [profile.gender, professional, location].filter(Boolean);
+    if (identityMeta.length) {
+      identity.appendChild(node('p', 'zen-about-meta-line', identityMeta.join(' · ')));
     }
     if (profile.introduction) identity.appendChild(node('p', 'zen-about-lead', profile.introduction));
 
@@ -128,6 +147,8 @@ export class AboutFeature {
     [
       externalLink('Blogger ↗', profile.bloggerProfileUrl, 'zen-about-link'),
       externalLink('Sitio web ↗', profile.website, 'zen-about-link'),
+      externalLink('Audio Clip ↗', profile.audioClipUrl, 'zen-about-link'),
+      externalLink('Wishlist ↗', profile.wishlistUrl, 'zen-about-link'),
       emailLink(profile.email)
     ].filter(Boolean).forEach((link) => quickLinks.appendChild(link));
     if (quickLinks.childElementCount) identity.appendChild(quickLinks);
@@ -136,10 +157,34 @@ export class AboutFeature {
     intro.appendChild(profileTop);
     shell.appendChild(intro);
 
-    if (hasProfile && (social.length || resources.length)) {
+    if (hasExtendedProfile || social.length || resources.length) {
       const divider = node('div', 'zen-about-divider');
       divider.setAttribute('aria-hidden', 'true');
       shell.appendChild(divider);
+    }
+
+    if (profileLists.length) {
+      const section = node('section', 'zen-about-section zen-about-details-section');
+      const heading = node('div', 'zen-about-section-head');
+      heading.appendChild(node('h2', '', 'Perfil'));
+      section.appendChild(heading);
+      const grid = node('div', 'zen-about-profile-lists');
+      profileLists.forEach(([title, items]) => {
+        const listSection = profileListSection(title, items);
+        if (listSection) grid.appendChild(listSection);
+      });
+      section.appendChild(grid);
+      shell.appendChild(section);
+    }
+
+    if (hasQuestion) {
+      const section = node('section', 'zen-about-section zen-about-question-section');
+      const heading = node('div', 'zen-about-section-head');
+      heading.appendChild(node('h2', '', 'Pregunta y respuesta'));
+      section.appendChild(heading);
+      if (profile.randomQuestion) section.appendChild(node('h3', 'zen-about-question', profile.randomQuestion));
+      if (profile.randomAnswer) section.appendChild(node('p', 'zen-about-answer', profile.randomAnswer));
+      shell.appendChild(section);
     }
 
     if (social.length) {
