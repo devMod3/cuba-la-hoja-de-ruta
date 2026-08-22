@@ -49,6 +49,7 @@
   <script>
     const params = new URLSearchParams(location.search);
     const view = params.get('view') || 'about';
+    const delay = Number(params.get('delay') || 0);
 
     if (view === 'reader') {
       document.getElementById('zen-about').remove();
@@ -83,6 +84,27 @@
         window.__aboutDelivery.aboutReadyAt = performance.now();
       }, { once: true });
     }
+
+    const finalize = () => {
+      const metrics = window.__aboutDelivery;
+      const cssEntries = performance.getEntriesByType('resource')
+        .filter((entry) => entry.name.includes('/tools/about/about.css'));
+      document.body.dataset.deliveryReady = 'true';
+      document.body.dataset.cssRequests = String(cssEntries.length);
+      document.body.dataset.domContentLoadedAt = String(metrics.domContentLoadedAt ?? -1);
+      document.body.dataset.cssLoadAt = String(metrics.cssLoadAt ?? -1);
+      document.body.dataset.shellRenderedAt = String(metrics.shellRenderedAt ?? -1);
+      document.body.dataset.aboutReadyAt = String(metrics.aboutReadyAt ?? -1);
+      document.body.dataset.styledAtRender = String(metrics.styledAtRender ?? false);
+      const foucMs = metrics.shellRenderedAt != null && metrics.cssLoadAt != null && metrics.shellRenderedAt < metrics.cssLoadAt
+        ? metrics.cssLoadAt - metrics.shellRenderedAt
+        : 0;
+      document.body.dataset.foucMs = String(Math.max(0, foucMs));
+    };
+
+    window.addEventListener('load', () => {
+      setTimeout(finalize, Math.max(250, delay + 250));
+    }, { once: true });
   </script>
 
   <script type="module">
