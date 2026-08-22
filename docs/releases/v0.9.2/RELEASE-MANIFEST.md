@@ -1,124 +1,123 @@
 # ZenBlog v0.9.2 — Release Manifest
 
-**Status**: `BLOGGER-REAL-HOTFIX-INSTALLED-QA-IN-PROGRESS`
+**Status**: `PUBLIC-ABOUT-SAVE-HOTFIX-READY-FOR-BLOGGER-INSTALL`
 
 ## Baseline context
 
 - Canonical baseline `main`: `0a45bc523f0129d83307f1c6f3a972056b219ae0`
 - Active Blogger payload pin at implementation start: `aa372e1cc7982d1f8335d0d21760869c396b32c3`
-- Active Blogger release-shell provenance at implementation start: `ad43ac63c12a666534e03cf9d5436184b985d1d1`
 - Original rollback Blogger XML SHA-256: `42b439df1c96915a2568fce9b0a243f26196281d2c9f8afca0bb7f786df114d8`
 
-## Previously installed v0.9.2 candidate
+## Installed Admin-routing hotfix
 
-The owner reported successful installation in Blogger Real on 2026-08-22 at approximately 17:02 America/New_York. This records installation evidence only; full real QA was not completed before the Admin routing hotfix was requested.
-
-- Payload SHA: `cefd0adc07e5405ddbeb51e0c53082c8f089c5b0`
-- Release-shell SHA: `dba55ba2ac845c02071fe5236322cab97254c17a`
-- Blogger XML SHA-256: `88dee9bc301058a6762aec1f726943b7e109795c1dab3f26bd5e1d75ac04dadb`
-- Blogger XML bytes: `8380`
-- Installation evidence: `USER_CONFIRMED_INSTALLED`
-- Real QA status before hotfix: `INCOMPLETE`
-
-This previous candidate remains the immediate rollback point for the Admin routing hotfix.
-
-## Current installed Admin hotfix identity
-
-- Release label: `ZenBlog v0.9.2`
-- Hotfix PR: `#23` — `MERGED`
+- PR `#23`: `MERGED`
 - Main promotion merge SHA: `9336ad83a9da2ddc78b7c34c43ac5c5dbbc0b5b0`
 - Payload SHA: `405de645153930d82ea82d488bd7e68869560aa5`
 - Release-shell SHA: `d72ec668bbc8363d5b56a08306a7ccbbb46bcaf5`
-- Asset delivery identity: `https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@405de645153930d82ea82d488bd7e68869560aa5/...`
+- Blogger XML SHA-256: `5ab097112b3e5addce6937dadad4fb33be5e4a5e79d2cc8b29f0adfa233cf416`
+- Installation: `2026-08-22 17:12 America/New_York — USER_CONFIRMED_INSTALLED_HOTFIX`
+- Real QA: `/admin = PASS`; About local save = `PASS`.
+
+Real QA then exposed a release-blocking parity gap: `Guardar Acerca de` persisted browser-local state but did not publish the same profile to the public About surface.
+
+## Current public-save hotfix identity
+
+- Release label: `ZenBlog v0.9.2`
+- Hotfix PR: `#24` — `MERGED`
+- Main promotion merge SHA: `797a787a985f72fdef7ef9af90ed1ffea19654f9`
+- Payload SHA: `a88a5f4bbb285c3c6b36a90395c90c85200859f5`
+- Release-shell SHA: `6f86487b9fd4617804ec9f14ea002266db1b679a`
+- Asset identity: `https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@a88a5f4bbb285c3c6b36a90395c90c85200859f5/...`
 - Application/cache release: `0.9.2`
-- Blogger hotfix XML SHA-256: `5ab097112b3e5addce6937dadad4fb33be5e4a5e79d2cc8b29f0adfa233cf416`
-- Blogger hotfix XML bytes: `8380`
-- Blogger hotfix installation date/time: `2026-08-22 17:12 America/New_York`
-- Installation evidence: `USER_CONFIRMED_INSTALLED_HOTFIX`
-- Real Blogger QA status: `IN_PROGRESS`
+- Blogger installation: `NOT_INSTALLED`
 
-## Admin routing contract
+## Required LOCAL -> PUBLIC parity
 
-The hotfix makes the runtime Admin route suffix-based instead of exact-path-only:
+`docs/DEPLOYMENT-STATE-RULE.md` now requires that functionality which passes locally and is deployed to Blogger Real produce the same functional result publicly. Persistence scope is part of the result: a localStorage-only save cannot satisfy a public/shared-save contract.
+
+For About:
 
 ```text
-/admin                       -> Admin
-/p/admin.html                -> Admin
-/cualquier/ruta/admin        -> Admin
-#admin                       -> Admin
-#cualquier-ruta/admin        -> Admin
+LOCAL / PRUEBAS
+Guardar -> localStorage
+
+BLOGGER REAL
+Guardar -> localStorage -> authenticated publication -> config/site-profile.public.json -> public About
 ```
 
-After Admin boot, non-canonical variants are normalized with `history.replaceState` to `/admin` without a reload.
+If the public publication fails, Admin must report `Guardado localmente, pero NO publicado`; the release case is not PASS.
 
-This routing change does not alter the persistence model: Admin remains browser-local authoring unless an explicit publication workflow writes a public artifact. Public About continues to use the published snapshot rather than per-browser localStorage.
+## Publication implementation
+
+- Admin production host detection is limited to `cubalahojaderuta.blogspot.com`.
+- `Guardar Acerca de` first preserves the existing local draft behavior.
+- On Blogger Real it then requests operation-local GitHub authorization and updates only `config/site-profile.public.json` on `main` through the GitHub Contents API.
+- The public About reader on Blogger reads the mutable GitHub Pages snapshot `https://devmod3.github.io/cuba-la-hoja-de-ruta/config/site-profile.public.json` with no credentials.
+- Code/CSS/assets remain pinned to the immutable payload SHA; only the editorial profile snapshot is mutable.
+- Publication is not reported as success until the updated `updatedAt` can be read back from the public snapshot URL.
+
+## Security boundary for this hotfix
+
+- No static Admin password is embedded in public JavaScript.
+- No GitHub token is embedded in code.
+- No publication token is written to localStorage/sessionStorage/global application state.
+- The publication prompt requires a fine-grained GitHub token for the owner account and repository with `Contents: write`.
+- A stronger passkey/OAuth/server-side Admin gateway remains a future hardening step; it is not required to validate the functional parity hotfix.
 
 ## Verification
 
-- Hotfix payload CI: run #228 (`32598626964`) — `SUCCESS`
-- Hotfix release-shell CI: run #229 (`32598683988`) — `SUCCESS`
+Public-save payload CI run #235 (`32599648151`) — `SUCCESS`:
 - JavaScript checks: `PASS`
-- Unit tests: `PASS`
+- Unit tests: `84/84 PASS`
 - About same-origin browser smoke: `PASS`
 - About cross-origin public-profile browser contract: `PASS`
-- Admin deep-path/hash `/admin` browser contract: `PASS`
+- Admin `/admin` route browser contract: `PASS`
 - Blogger XML parsing: `PASS`
 - Architecture/player invariants: `PASS`
-- Real Blogger installation: `PASS — USER_CONFIRMED_INSTALLED_HOTFIX`
-- Real Blogger behavioral QA: `IN_PROGRESS`
-- Remote assistant HTTP/DNS observation: `BLOCKED BY EXECUTION-ENVIRONMENT DNS; not counted as PASS or FAIL`
+- publishing contract validates owner, file update, public read-back and credential non-persistence: `PASS`
 
-## Public About publication boundary
+Public-save release-shell CI run #236 (`32599728267`) — `SUCCESS`:
+- JavaScript checks: `PASS`
+- Unit tests: `PASS`
+- browser contracts: `PASS`
+- Blogger XML parsing: `PASS`
+- architecture invariants: `PASS`
 
-- Mutable authoring draft: `SiteProfileStore` / browser-local Admin storage.
-- Public runtime snapshot: `config/site-profile.public.json` through `PublishedSiteProfileStore`.
-- Public Blogger must not treat browser-local Admin storage as authoritative shared content.
-- The checked-in snapshot contains only profile values committed to the repository; unexported local Admin values are not implicitly public.
+Real Blogger public-save QA remains `NOT_RUN` until the shell `6f86487b9fd4617804ec9f14ea002266db1b679a` XML is installed.
 
 ## Rollback
 
-### Immediate hotfix rollback
+Immediate rollback is the currently installed Admin-routing hotfix:
+- Payload: `405de645153930d82ea82d488bd7e68869560aa5`
+- Shell: `d72ec668bbc8363d5b56a08306a7ccbbb46bcaf5`
+- XML SHA-256: `5ab097112b3e5addce6937dadad4fb33be5e4a5e79d2cc8b29f0adfa233cf416`
 
-- Previously installed v0.9.2 shell: `dba55ba2ac845c02071fe5236322cab97254c17a`
-- Previously installed XML SHA-256: `88dee9bc301058a6762aec1f726943b7e109795c1dab3f26bd5e1d75ac04dadb`
+Original pre-v0.9.2 rollback remains:
+- XML SHA-256: `42b439df1c96915a2568fce9b0a243f26196281d2c9f8afca0bb7f786df114d8`
+- Source: `docs/forensic/artifacts/blogger-theme-current-2026-08-22.xml`
 
-### Original pre-v0.9.2 rollback
-
-- Rollback XML SHA-256: `42b439df1c96915a2568fce9b0a243f26196281d2c9f8afca0bb7f786df114d8`
-- Rollback source/reference: `docs/forensic/artifacts/blogger-theme-current-2026-08-22.xml`
-- Captured active asset pin: `aa372e1cc7982d1f8335d0d21760869c396b32c3`
-- Captured release-shell provenance: `ad43ac63c12a666534e03cf9d5436184b985d1d1`
-
-## Deployment-state rule
-
-`docs/DEPLOYMENT-STATE-RULE.md` is mandatory for code/runtime changes. `LOCAL / PRUEBAS`, `CI`, `GITHUB PAGES` and `BLOGGER REAL` are separate states and must never be conflated.
-
-Current state:
+## Deployment state
 
 ```text
 ENTORNO: BLOGGER REAL / PRODUCCIÓN
-ADMIN HOTFIX CODE: MERGED TO MAIN
-ADMIN HOTFIX CI: PASS
-ADMIN HOTFIX XML: INSTALLED — USER CONFIRMED
-BLOGGER REAL: DESPLEGADO / QA EN CURSO
+CURRENT BLOGGER: ADMIN-ROUTING HOTFIX INSTALLED / QA IN PROGRESS
+PUBLIC-SAVE HOTFIX CODE: MERGED TO MAIN
+PUBLIC-SAVE HOTFIX CI: PASS
+PUBLIC-SAVE XML: READY FOR INSTALL
+PUBLIC-SAVE BLOGGER REAL: NOT INSTALLED
+PARIDAD LOCAL -> PÚBLICO: FAIL ON CURRENT INSTALLED SHELL / PENDING QA ON NEW SHELL
+FREEZE: NO
 ```
-
-## Known debt
-
-- Automated authenticated publication from Admin to the public profile snapshot is not implemented; current publication is explicit export/change/release.
-- Admin has no server-side authentication boundary. The current Admin tools operate on browser-local state; any future shared/server write capability must add authentication before exposure.
-- Search Core v1 source-provenance recovery remains a dedicated future Spec.
-- Metadata source-of-truth/reproducibility review remains beyond Spec 001.
-- Performance baseline and hosting/domain evolution remain outside Spec 001.
 
 ## Historical PR dispositions
 
-- PR #13: `EXPERIMENT/REFERENCE — no wholesale merge`.
-- PR #14: `EXPERIMENT/REFERENCE — no wholesale merge; A-001 deferred without importing it`.
-- PR #18: `CLOSED WITHOUT MERGE / SUPERSEDED BY PR #22`.
-- PR #22: `MERGED / initial v0.9.2 production promotion`.
-- PR #23: `MERGED / Admin routing hotfix promotion`.
+- PR #13: experiment/reference — no wholesale merge.
+- PR #14: experiment/reference — no wholesale merge.
+- PR #18: closed without merge / superseded.
+- PR #22: merged / initial v0.9.2 production promotion.
+- PR #23: merged / Admin routing hotfix.
+- PR #24: merged / public About save parity hotfix.
 
 ## Freeze rule
 
-This manifest MUST NOT advance to `FROZEN` unless all required real Blogger QA is attributable to the exact installed candidate and Product Owner acceptance is recorded.
+This manifest MUST NOT advance to `FROZEN` until real Blogger QA proves that the installed public-save hotfix preserves `/admin`, successfully publishes an edited About profile, and that the changed profile is observable from a separate public-reading context.
