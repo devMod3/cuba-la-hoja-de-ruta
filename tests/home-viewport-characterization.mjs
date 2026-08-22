@@ -259,12 +259,24 @@ async function characterize(source, testCase) {
 }
 
 try {
-  for (const source of ['main', 'production']) {
+  for (const source of ['main', 'candidate', 'production']) {
     for (const testCase of cases) {
       results.push({ source, case: testCase.id, ...await characterize(source, testCase) });
     }
   }
+
+  const candidate = new Map(results.filter((row) => row.source === 'candidate').map((row) => [row.case, row]));
+  for (const row of candidate.values()) {
+    assert.equal(row.horizontalOverflow, false, `candidate/${row.case}: horizontal overflow`);
+    assert.equal(row.essentialInaccessible, false, `candidate/${row.case}: essential content inaccessible`);
+  }
+  assert.equal(candidate.get('narrow-phone').essentialOutside, false, 'candidate/narrow-phone should keep essentials inside Home');
+  assert.equal(candidate.get('normal-phone').essentialOutside, false, 'candidate/normal-phone should preserve current passing behavior');
+  assert.equal(candidate.get('short-phone').essentialOutside, false, 'candidate/short-phone should keep essentials inside Home');
+  assert.equal(candidate.get('phone-landscape').scrollable, true, 'candidate/phone-landscape must keep a reachable scroll fallback');
+
   console.log(JSON.stringify({ browser, protocol: 'CDP exact device metrics', results }, null, 2));
+  console.log('M-002 minimal candidate: PASS');
 } finally {
   await browserSession.close();
   await new Promise((done) => server.close(done));
