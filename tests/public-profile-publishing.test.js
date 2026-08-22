@@ -66,6 +66,34 @@ test('publisher authenticates owner, updates only public profile and verifies pu
   assert.doesNotMatch(requests[2].options.body, /ephemeral-secret/);
 });
 
+test('default publisher preserves the native global fetch receiver', async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  globalThis.fetch = async function receiverSensitiveFetch(url, options = {}) {
+    assert.equal(this, globalThis, 'native fetch must be invoked through the global object');
+    requests.push({ url: String(url), options });
+    const index = requests.length;
+    if (index === 1) return { ok: true, status: 200, json: async () => ({ login: 'devMod3' }) };
+    if (index === 2) return { ok: true, status: 200, json: async () => ({ sha: 'old-profile-blob' }) };
+    if (index === 3) return { ok: true, status: 200, json: async () => ({ commit: { sha: 'public-profile-commit' } }) };
+    if (index === 4) return { ok: true, status: 200, json: async () => savedProfile };
+    throw new Error(`unexpected request ${index}`);
+  };
+
+  try {
+    const publisher = new GitHubPublicProfilePublisher({
+      tokenProvider: async () => 'ephemeral-secret',
+      delay: async () => {},
+      pollAttempts: 1
+    });
+    const result = await publisher.publish(savedProfile);
+    assert.equal(result.commitSha, 'public-profile-commit');
+    assert.equal(requests.length, 4);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('publisher rejects a GitHub identity that is not the repository owner', async () => {
   const publisher = new GitHubPublicProfilePublisher({
     fetchImpl: async () => ({ ok: true, status: 200, json: async () => ({ login: 'otra-cuenta' }) }),
