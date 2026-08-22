@@ -120,42 +120,59 @@ This preserves the browser-global receiver for native `fetch` while leaving expl
 
 A regression test replaces `globalThis.fetch` with a receiver-sensitive implementation and requires `this === globalThis` for all four network stages: owner verification, current-file read, PUT, and public read-back.
 
+## Local retest of PR #25
+
+At `2026-08-22 18:18 America/New_York` the user reported that the replacement candidate no longer produced the `Illegal invocation` error when exercised from the local environment, but the public About did not change.
+
+This is the **expected LOCAL / PRUEBAS contract**, not a production-publication failure. `isProductionBloggerLocation()` authorizes shared publication only when `location.hostname === cubalahojaderuta.blogspot.com`; outside that host, Save remains local-only and returns before the authenticated publisher runs.
+
+Therefore this observation proves only:
+
+```text
+PR #25 LOCAL SAVE / NO ILLEGAL INVOCATION: PASS
+PR #25 PUBLIC WRITE FROM LOCAL: NOT APPLICABLE BY DESIGN
+PR #25 BLOGGER REAL AUTHENTICATED WRITE: NOT YET TESTED
+```
+
 ## User action gate for replacement candidate
 
-Do not ask the owner to re-enter the token on the failed PR #24 shell. The required next action is to install the PR #25 XML first, because repeating the old candidate cannot change the defective fetch binding and only causes unnecessary credential exposure.
+The next valid publication test must be performed from the **real Blogger host**, not the local environment.
 
-After replacement XML installation, the owner must:
+1. Ensure the PR #25 XML is installed in Blogger Real.
+2. Open `https://cubalahojaderuta.blogspot.com/admin` (or the working Blogger Admin suffix route that canonicalizes to `/admin`).
+3. Edit one clearly verifiable About field.
+4. Press `Guardar Acerca de`.
+5. Enter the fine-grained token only in the ZenBlog publication authorization dialog.
+6. Confirm `Autorizar y publicar`.
+7. Record the exact Admin status.
+8. If success is reported, open the public About in a separate incognito/private context and verify the changed value.
 
-1. Open Blogger Real `/admin`.
-2. Edit one clearly verifiable About field.
-3. Press `Guardar Acerca de`.
-4. Enter the fine-grained token only in the ZenBlog publication authorization dialog.
-5. Confirm `Autorizar y publicar`.
-6. Record the exact Admin status.
-7. If success is reported, open the public About in a separate incognito/private context and verify the changed value.
+Why: production publication is intentionally host-gated to prevent a local/preview copy from writing shared public state accidentally.
+
+If omitted: no public GitHub write occurs, so public About remains unchanged and parity cannot be classified PASS.
 
 ## Current parity result
 
 ```text
 LOCAL SAVE: PASS
-AUTHORIZATION UI: PASS
-PR #24 AUTHENTICATED PUBLIC WRITE: FAIL — FETCH ILLEGAL INVOCATION
-PR #25 FIX: CI PASS / READY FOR BLOGGER INSTALL
-SEPARATE PUBLIC READ-BACK: PENDING PR #25 REAL QA
-PARIDAD LOCAL -> PÚBLICO: PENDING
+PR #25 LOCAL FETCH REGRESSION: PASS — NO ILLEGAL INVOCATION REPORTED
+LOCAL -> PUBLIC WRITE: NOT APPLICABLE BY DESIGN
+BLOGGER REAL AUTHENTICATED WRITE: PENDING
+SEPARATE PUBLIC READ-BACK: PENDING
+PARIDAD LOCAL -> PÚBLICO: PENDING REAL BLOGGER TEST
 ```
 
 ## Release state
 
 ```text
 ENTORNO: BLOGGER REAL / PRODUCCIÓN
-CURRENT BLOGGER PUBLIC-SAVE SHELL: INSTALLED / REAL QA FAIL ON AUTHENTICATED WRITE
 REPLACEMENT HOTFIX PR #25: MERGED
 REPLACEMENT HOTFIX CI: PASS
-REPLACEMENT BLOGGER XML: READY FOR INSTALL
-BLOGGER REAL REPLACEMENT: NOT YET INSTALLED
-PARIDAD LOCAL -> PÚBLICO: PENDING REPLACEMENT INSTALL + AUTHENTICATED WRITE + SEPARATE READ-BACK
+PR #25 LOCAL RETEST: PASS FOR LOCAL CONTRACT
+BLOGGER REAL PR #25 INSTALLATION: REQUIRES CONFIRMATION
+BLOGGER REAL AUTHENTICATED PUBLICATION: NOT YET TESTED
+PARIDAD LOCAL -> PÚBLICO: PENDING
 FREEZE: NO
 ```
 
-Do not mark the complete release `FROZEN` until the PR #25 replacement XML is installed, authenticated publication succeeds, the result is visible from a separate public-reading context, and remaining required regression cases are tested or explicitly accepted by the Product Owner.
+Do not mark the complete release `FROZEN` until the PR #25 replacement XML is confirmed installed, authenticated publication succeeds from Blogger Real, the result is visible from a separate public-reading context, and remaining required regression cases are tested or explicitly accepted by the Product Owner.
