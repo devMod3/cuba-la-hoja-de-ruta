@@ -5,47 +5,19 @@
   <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport">
   <title>Home viewport characterization</title>
   <script>
-    const source = new URLSearchParams(location.search).get('source') || 'main';
-    const prod = source === 'production';
-    const base = prod
-      ? 'https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/'
-      : '/';
+    const source = new URLSearchParams(location.search).get('source') || 'implementation';
+    const bases = {
+      canonical: 'https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@0a45bc523f0129d83307f1c6f3a972056b219ae0/',
+      implementation: '/',
+      production: 'https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@aa372e1cc7982d1f8335d0d21760869c396b32c3/'
+    };
+    const base = bases[source];
+    if (!base) throw new Error(`Unknown Home characterization source: ${source}`);
     for (const path of ['src/ui/styles/tokens.css', 'src/features/home/home.css']) {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = `${base}${path}`;
       document.head.appendChild(link);
-    }
-
-    // Candidate M-002 is deliberately narrower than the deployed stylesheet:
-    // only short-height compaction + a later last-resort scroll threshold.
-    if (source === 'candidate') {
-      const style = document.createElement('style');
-      style.dataset.m002Candidate = 'true';
-      style.textContent = `
-        @media (max-width: 760px) and (max-height: 760px) {
-          .zen-home-panel-overview { gap:.65rem; padding:.65rem 0; }
-          .zen-home-question { margin-bottom:.35rem; font-size:.68rem; }
-          .zen-home-statement h1 { max-width:18ch; margin-bottom:.45rem; font-size:clamp(1.95rem,8.3vw,2.75rem); line-height:.96; }
-          .zen-home-statement > p:not(.zen-kicker):not(.zen-home-question) { font-size:.84rem; line-height:1.4; }
-          .zen-home-quick-actions { margin-top:.5rem; }
-          .zen-feature { padding:.78rem .85rem; }
-          .zen-feature-title { margin:.35rem 0; font-size:clamp(1.35rem,5.8vw,1.8rem); }
-          .zen-feature-snippet { font-size:.72rem; line-height:1.4; -webkit-line-clamp:1; }
-          .zen-feature-actions { margin-top:.55rem; }
-        }
-        @media (min-height: 561px) and (max-height: 620px) and (max-width: 899px) {
-          #zen-home[data-home-enhanced="true"] { overflow-y:hidden; }
-          #zen-home[data-home-enhanced="true"] .zen-home-surface,
-          #zen-home[data-home-enhanced="true"] .zen-home-workspace-single { height:100%; min-height:0; }
-        }
-        @media (max-height: 560px) and (max-width: 899px) {
-          #zen-home[data-home-enhanced="true"] { overflow-y:auto; overscroll-behavior-y:contain; }
-          #zen-home[data-home-enhanced="true"] .zen-home-surface,
-          #zen-home[data-home-enhanced="true"] .zen-home-workspace-single { height:auto; min-height:100%; }
-        }
-      `;
-      document.head.appendChild(style);
     }
   </script>
   <style>
