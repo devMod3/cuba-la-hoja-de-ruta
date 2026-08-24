@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { MetadataRegistrySchema, type Article } from '@zenblog/domain';
-import { normalizeSearchText, searchArticles, type SearchFilters, type SearchSort } from './src/index';
+import {
+  normalizeSearchText,
+  searchArticles,
+  type SearchFilters,
+  type SearchSort
+} from './src/index';
 // @ts-expect-error The frozen legacy JavaScript module intentionally has no TypeScript declaration.
 import { SearchService } from '../../../src/search/SearchService.js';
 // @ts-expect-error The frozen legacy JavaScript module intentionally has no TypeScript declaration.
@@ -92,13 +97,15 @@ const registry = MetadataRegistrySchema.parse({
 const legacy = new SearchService();
 const legacyNormalizer = new TextNormalizer();
 
-function legacyProjection(input: {
-  query?: string;
-  filters?: SearchFilters;
-  sort?: SearchSort;
-}) {
+function legacyProjection(input: { query?: string; filters?: SearchFilters; sort?: SearchSort }) {
   return legacy
-    .search({ posts: articles, registry, query: input.query, filters: input.filters, sort: input.sort })
+    .search({
+      posts: articles,
+      registry,
+      query: input.query,
+      filters: input.filters,
+      sort: input.sort
+    })
     .map((result: { post: Article; score: number; year: number | null }) => ({
       id: result.post.id,
       score: result.score,
@@ -106,11 +113,7 @@ function legacyProjection(input: {
     }));
 }
 
-function nextProjection(input: {
-  query?: string;
-  filters?: SearchFilters;
-  sort?: SearchSort;
-}) {
+function nextProjection(input: { query?: string; filters?: SearchFilters; sort?: SearchSort }) {
   return searchArticles({ articles, registry, ...input }).map((result) => ({
     id: result.article.id,
     score: result.score,
@@ -119,7 +122,7 @@ function nextProjection(input: {
 }
 
 describe('legacy SearchService parity', () => {
-  it.each(['Constitución_de-1940', ' Soberanía   POPULAR ', 'Código/Electoral']) (
+  it.each(['Constitución_de-1940', ' Soberanía   POPULAR ', 'Código/Electoral'])(
     'normalizes %s exactly like the frozen legacy normalizer',
     (value) => {
       expect(normalizeSearchText(value)).toBe(legacyNormalizer.normalize(value));
