@@ -44,7 +44,10 @@ export function parseSearchQuery(value: unknown): ParsedQuery {
   return { text: normalized, article };
 }
 
-function metadataFor(article: Article, registry: MetadataRegistry | undefined): MetadataRecord | null {
+function metadataFor(
+  article: Article,
+  registry: MetadataRegistry | undefined
+): MetadataRecord | null {
   return registry?.records[String(article.id)] ?? null;
 }
 
