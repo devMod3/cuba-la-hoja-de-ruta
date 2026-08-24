@@ -2,26 +2,34 @@ name: Validate ZenBlog
 
 on:
   push:
-    branches: [main, lab-v0.1-architecture]
+    branches: [main, lab-v0.1-architecture, next-v1-foundation]
   pull_request:
-    branches: [main, 001-release-line-convergence]
+    branches: [main, 001-release-line-convergence, next-v1-foundation]
 
 permissions:
   contents: read
 
+concurrency:
+  group: legacy-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 20
+          node-version: 24.19.0
+          package-manager-cache: false
 
-      - name: JavaScript checks
+      - name: JavaScript and project standards checks
         run: npm run check
 
       - name: Unit tests

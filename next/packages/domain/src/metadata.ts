@@ -13,14 +13,14 @@ export const MetadataClassificationSchema = z
     relatedPillars: z.array(z.string()).default([]),
     type: z.string().nullable().default(null)
   })
-  .passthrough();
+  .loose();
 
 export const MetadataNormReferenceSchema = z
   .object({
     normId: z.string().default(''),
     articles: z.array(StringOrNumberSchema).default([])
   })
-  .passthrough();
+  .loose();
 
 export const MetadataIndexingSchema = z
   .object({
@@ -29,13 +29,13 @@ export const MetadataIndexingSchema = z
     keywords: z.array(z.string()).default([]),
     norms: z.array(MetadataNormReferenceSchema).default([])
   })
-  .passthrough();
+  .loose();
 
 export const MetadataEditorialSchema = z
   .object({
     status: z.string().nullable().default(null)
   })
-  .passthrough();
+  .loose();
 
 export const MetadataRecordSchema = z
   .object({
@@ -48,7 +48,7 @@ export const MetadataRecordSchema = z
       .object({
         documentYear: DocumentYearSchema
       })
-      .passthrough()
+      .loose()
       .default({ documentYear: null }),
     indexing: MetadataIndexingSchema.default({
       concepts: [],
@@ -58,14 +58,14 @@ export const MetadataRecordSchema = z
     }),
     editorial: MetadataEditorialSchema.default({ status: null })
   })
-  .passthrough()
+  .loose()
   .readonly();
 
 export const MetadataRegistrySchema = z
   .object({
     records: z.record(z.string(), MetadataRecordSchema).default({})
   })
-  .passthrough()
+  .loose()
   .readonly();
 
 export type MetadataRecord = z.infer<typeof MetadataRecordSchema>;

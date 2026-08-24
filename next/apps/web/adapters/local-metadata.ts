@@ -38,7 +38,9 @@ export class LocalMetadataSource {
     storage = globalThis.localStorage,
     documentTarget = globalThis.document,
     windowTarget = globalThis.window,
-    warn = (message, error) => globalThis.console.warn(message, error)
+    warn = (message, error) => {
+      globalThis.console.warn(message, error);
+    }
   }: LocalMetadataSourceOptions = {}) {
     this.#storageKey = storageKey;
     this.#storage = storage;
@@ -61,7 +63,9 @@ export class LocalMetadataSource {
   }
 
   subscribe(listener: (registry: MetadataRegistry) => void): () => void {
-    const onMetadataChanged: EventListener = () => listener(this.getRegistry());
+    const onMetadataChanged: EventListener = () => {
+      listener(this.getRegistry());
+    };
     const onStorage: EventListener = (event) => {
       const key = (event as Event & { key?: string | null }).key;
       if (key === this.#storageKey) listener(this.getRegistry());

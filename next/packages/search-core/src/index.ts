@@ -21,8 +21,8 @@ interface ParsedQuery {
   readonly article: string | null;
 }
 
-export function normalizeSearchText(value: unknown): string {
-  return String(value ?? '')
+export function normalizeSearchText(value: string | null | undefined): string {
+  return (value ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('es')
@@ -31,7 +31,7 @@ export function normalizeSearchText(value: unknown): string {
     .trim();
 }
 
-export function parseSearchQuery(value: unknown): ParsedQuery {
+export function parseSearchQuery(value: string | null | undefined): ParsedQuery {
   let normalized = normalizeSearchText(value);
   let article: string | null = null;
 
@@ -48,7 +48,7 @@ function metadataFor(
   article: Article,
   registry: MetadataRegistry | undefined
 ): MetadataRecord | null {
-  return registry?.records[String(article.id)] ?? null;
+  return registry?.records[article.id] ?? null;
 }
 
 function documentYear(record: MetadataRecord | null): number | null {
@@ -65,9 +65,7 @@ function pillars(record: MetadataRecord | null): string[] {
 
 function hasArticleReference(record: MetadataRecord | null, article: string | null): boolean {
   if (!article) return true;
-  return (record?.indexing.norms ?? []).some((reference) =>
-    reference.articles.map(String).includes(String(article))
-  );
+  return (record?.indexing.norms ?? []).some((reference) => reference.articles.includes(article));
 }
 
 function haystack(article: Article, record: MetadataRecord | null): string {
@@ -86,7 +84,7 @@ function haystack(article: Article, record: MetadataRecord | null): string {
   ];
 
   for (const reference of indexing?.norms ?? []) terms.push(reference.normId);
-  return normalizeSearchText(terms.filter(Boolean).join(' '));
+  return normalizeSearchText(terms.filter((value): value is string => Boolean(value)).join(' '));
 }
 
 function score(article: Article, record: MetadataRecord | null, parsedQuery: ParsedQuery): number {

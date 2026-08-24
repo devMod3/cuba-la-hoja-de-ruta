@@ -7,11 +7,8 @@ import {
   type SearchFilters,
   type SearchSort
 } from './src/index';
-// @ts-expect-error The frozen legacy JavaScript module intentionally has no TypeScript declaration.
 import { ExploreQueryService } from '../../../src/features/explore/ExploreQueryService.js';
-// @ts-expect-error The frozen legacy JavaScript module intentionally has no TypeScript declaration.
 import { SearchService } from '../../../src/search/SearchService.js';
-// @ts-expect-error The frozen legacy JavaScript module intentionally has no TypeScript declaration.
 import { TextNormalizer } from '../../../src/search/TextNormalizer.js';
 
 const articles: Article[] = [
