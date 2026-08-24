@@ -1,7 +1,7 @@
+import { sanitizeBloggerArticleHtml } from '@zenblog/content-renderer';
 import { bloggerSnapshotArticles, getBloggerSnapshotArticleById } from '@zenblog/content-snapshot';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { bloggerHtmlToPlainText } from '../../../adapters/blogger-html-to-text';
 
 type ArticlePageProps = Readonly<{ params: Promise<{ id: string }> }>;
 
@@ -43,9 +43,7 @@ export default async function ArticlePreviewPage({ params }: ArticlePageProps) {
   const article = getBloggerSnapshotArticleById(id);
   if (!article) notFound();
 
-  const paragraphs = bloggerHtmlToPlainText(article.content)
-    .split(/\n{2,}/)
-    .filter(Boolean);
+  const sanitizedContent = sanitizeBloggerArticleHtml(article.content);
 
   return (
     <main data-component="Article.Preview">
@@ -60,11 +58,11 @@ export default async function ArticlePreviewPage({ params }: ArticlePageProps) {
           ) : null}
         </header>
 
-        <div className="article-preview-copy">
-          {paragraphs.map((paragraph, index) => (
-            <p key={`${article.id}-${index}`}>{paragraph}</p>
-          ))}
-        </div>
+        <div
+          className="article-preview-copy"
+          data-sanitized-html="true"
+          dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+        />
 
         {article.labels.length ? (
           <ul className="article-preview-labels" aria-label="Etiquetas">
