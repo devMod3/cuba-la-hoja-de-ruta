@@ -39,15 +39,24 @@ export const MetadataEditorialSchema = z
 
 export const MetadataRecordSchema = z
   .object({
-    classification: MetadataClassificationSchema.default({}),
+    classification: MetadataClassificationSchema.default({
+      primaryPillar: null,
+      relatedPillars: [],
+      type: null
+    }),
     temporal: z
       .object({
         documentYear: DocumentYearSchema
       })
       .passthrough()
-      .default({}),
-    indexing: MetadataIndexingSchema.default({}),
-    editorial: MetadataEditorialSchema.default({})
+      .default({ documentYear: null }),
+    indexing: MetadataIndexingSchema.default({
+      concepts: [],
+      aliases: [],
+      keywords: [],
+      norms: []
+    }),
+    editorial: MetadataEditorialSchema.default({ status: null })
   })
   .passthrough()
   .readonly();
