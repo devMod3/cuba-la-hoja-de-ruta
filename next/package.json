@@ -24,6 +24,7 @@
     "check": "pnpm format:check && pnpm lint && pnpm architecture:check && pnpm security:check && pnpm typecheck && pnpm test && pnpm build && pnpm performance:budget"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@eslint/js": "10.0.1",
     "@next/eslint-plugin-next": "16.2.12",
     "@playwright/test": "1.62.1",
