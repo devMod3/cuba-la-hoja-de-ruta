@@ -156,10 +156,10 @@ for (const boundary of boundaries) {
 }
 
 if (errors.length) {
-  console.error('ARCHITECTURE_BOUNDARY_CHECK=FAIL');
-  for (const error of errors) console.error(`- ${error}`);
-  process.exit(1);
+  globalThis.console.error('ARCHITECTURE_BOUNDARY_CHECK=FAIL');
+  for (const error of errors) globalThis.console.error(`- ${error}`);
+  globalThis.process.exit(1);
 }
 
-console.log('ARCHITECTURE_BOUNDARY_CHECK=PASS');
-console.log(`BOUNDARIES=${boundaries.length}`);
+globalThis.console.log('ARCHITECTURE_BOUNDARY_CHECK=PASS');
+globalThis.console.log(`BOUNDARIES=${boundaries.length}`);
