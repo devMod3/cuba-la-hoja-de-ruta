@@ -47,6 +47,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@zenblog/cms-blogger':
+        specifier: workspace:*
+        version: link:../../packages/cms-blogger
       '@zenblog/domain':
         specifier: workspace:*
         version: link:../../packages/domain
