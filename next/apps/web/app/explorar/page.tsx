@@ -1,5 +1,5 @@
+import { bloggerSnapshotArticles } from '@zenblog/content-snapshot';
 import type { Metadata } from 'next';
-import { bloggerSnapshotArticles } from '../../adapters/blogger-snapshot';
 import { ExploreClient } from '../../components/explore-client';
 
 export const metadata: Metadata = {

@@ -15,6 +15,14 @@ const boundaries = [
     forbidNodeBuiltins: true
   },
   {
+    name: '@zenblog/content-snapshot',
+    root: 'packages/content-snapshot',
+    sourceRoots: ['src'],
+    allowedInternal: ['@zenblog/domain'],
+    forbiddenExternal: ['next', 'react', 'react-dom'],
+    forbidNodeBuiltins: true
+  },
+  {
     name: '@zenblog/search-core',
     root: 'packages/search-core',
     sourceRoots: ['src'],
@@ -42,7 +50,12 @@ const boundaries = [
     name: '@zenblog/web',
     root: 'apps/web',
     sourceRoots: ['app', 'components', 'adapters'],
-    allowedInternal: ['@zenblog/domain', '@zenblog/search-core', '@zenblog/zrp-adapter'],
+    allowedInternal: [
+      '@zenblog/content-snapshot',
+      '@zenblog/domain',
+      '@zenblog/search-core',
+      '@zenblog/zrp-adapter'
+    ],
     forbiddenExternal: [],
     forbidNodeBuiltins: false
   }
