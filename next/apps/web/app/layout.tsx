@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import type { ReactNode } from 'react';
 import { ZRP_SCRIPT_URL } from '@zenblog/zrp-adapter';
 import { GlobalHeader } from '../components/global-header';
@@ -15,7 +16,12 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body>
         <GlobalHeader />
         {children}
-        <script type="module" src={ZRP_SCRIPT_URL} data-component="ZRP.Loader" />
+        <Script
+          type="module"
+          src={ZRP_SCRIPT_URL}
+          strategy="afterInteractive"
+          data-component="ZRP.Loader"
+        />
       </body>
     </html>
   );
