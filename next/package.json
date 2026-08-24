@@ -1,0 +1,31 @@
+{
+  "name": "zenblog-next-platform",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": "24.19.x",
+    "pnpm": "11.22.x"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @zenblog/web dev",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.2.11",
+    "eslint-config-prettier": "^10.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "6.0.0",
+    "vitest": "4.1.11"
+  }
+}
