@@ -21,7 +21,9 @@ const actualIds = routeEntries
   .sort();
 
 if (JSON.stringify(actualIds) !== JSON.stringify(expectedIds)) {
-  errors.push(`static article IDs mismatch: expected ${expectedIds.join(',')}; got ${actualIds.join(',')}`);
+  errors.push(
+    `static article IDs mismatch: expected ${expectedIds.join(',')}; got ${actualIds.join(',')}`
+  );
 }
 
 for (const id of expectedIds) {
