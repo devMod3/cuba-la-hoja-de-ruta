@@ -1,12 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const isCi = Boolean(process.env['CI']);
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: true,
   retries: 0,
-  workers: process.env.CI ? 2 : undefined,
-  reporter: process.env.CI ? 'line' : 'list',
+  ...(isCi ? { workers: 2 } : {}),
+  reporter: isCi ? 'line' : 'list',
   use: {
     baseURL: 'http://127.0.0.1:3000',
     trace: 'retain-on-failure'
@@ -14,7 +16,7 @@ export default defineConfig({
   webServer: {
     command: 'pnpm --filter @zenblog/web dev',
     url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: !isCi,
     timeout: 120000
   },
   projects: [
