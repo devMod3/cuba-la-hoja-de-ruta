@@ -1,5 +1,5 @@
 pnpm-lock.yaml
-content/blogger.snapshot.json
+packages/content-snapshot/content/blogger.snapshot.json
 .next/
 out/
 coverage/
