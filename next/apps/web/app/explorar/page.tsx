@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { bloggerSnapshotArticles } from '../../adapters/blogger-snapshot';
 import { ExploreClient } from '../../components/explore-client';
 
 export const metadata: Metadata = {
@@ -10,7 +11,7 @@ export default function ExplorePage() {
   return (
     <main data-component="Explore">
       <h1>Explorar</h1>
-      <ExploreClient />
+      <ExploreClient articles={bloggerSnapshotArticles} />
     </main>
   );
 }
