@@ -111,6 +111,18 @@ function assertValidUrl(value: string): void {
   }
 }
 
+function browserBaseUrl(): string | undefined {
+  const documentValue: unknown = Reflect.get(globalThis, 'document');
+  if (!isObject(documentValue)) return undefined;
+  const baseUri = documentValue['baseURI'];
+  return typeof baseUri === 'string' ? baseUri : undefined;
+}
+
+function runtimeFetch(): typeof fetch | undefined {
+  const fetchValue: unknown = Reflect.get(globalThis, 'fetch');
+  return typeof fetchValue === 'function' ? (fetchValue as typeof fetch) : undefined;
+}
+
 export function mapBloggerEntry(input: unknown): Article {
   const entry = parseBloggerEntry(input);
   const atomId = entry.id ?? '';
@@ -163,17 +175,14 @@ export class BloggerFeedSource {
   readonly #baseUrl: string;
   readonly #fetcher: typeof fetch;
 
-  constructor({
-    pageSize = 150,
-    baseUrl,
-    fetcher = globalThis.fetch
-  }: BloggerFeedSourceOptions = {}) {
-    const resolvedBaseUrl = baseUrl ?? globalThis.document?.baseURI;
+  constructor({ pageSize = 150, baseUrl, fetcher }: BloggerFeedSourceOptions = {}) {
+    const resolvedBaseUrl = baseUrl ?? browserBaseUrl();
+    const resolvedFetcher = fetcher ?? runtimeFetch();
     if (!resolvedBaseUrl) throw new Error('BloggerFeedSource requires baseUrl outside a browser');
-    if (!fetcher) throw new Error('BloggerFeedSource requires fetch');
+    if (!resolvedFetcher) throw new Error('BloggerFeedSource requires fetch');
     this.#pageSize = pageSize;
     this.#baseUrl = resolvedBaseUrl;
-    this.#fetcher = fetcher;
+    this.#fetcher = resolvedFetcher;
   }
 
   async #fetchPage(startIndex: number): Promise<BloggerFeedPage> {
@@ -186,7 +195,7 @@ export class BloggerFeedSource {
       credentials: 'same-origin',
       cache: 'no-store'
     });
-    if (!response.ok) throw new Error(`Blogger feed HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`Blogger feed HTTP ${String(response.status)}`);
     return parseBloggerFeed(await response.json());
   }
 
