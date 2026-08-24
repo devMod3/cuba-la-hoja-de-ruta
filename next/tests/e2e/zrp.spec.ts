@@ -12,6 +12,7 @@ test('ZRP loader is mounted once and launcher survives App Router navigation', a
   await page.route(zrpUrl, async (route) => {
     await route.fulfill({
       contentType: 'application/javascript',
+      headers: { 'access-control-allow-origin': '*' },
       body: `
         document.documentElement.dataset.zrpOpenCount = '0';
         window.addEventListener('zen-radio-player:open', () => {
@@ -27,6 +28,7 @@ test('ZRP loader is mounted once and launcher survives App Router navigation', a
   const loader = page.locator('script[data-component="ZRP.Loader"]');
   await expect(loader).toHaveCount(1);
   await expect(loader).toHaveAttribute('src', zrpUrl);
+  await expect(page.locator('html')).toHaveAttribute('data-zrp-open-count', '0');
 
   const launcher = page.getByRole('button', { name: 'Reproductor' });
   await launcher.click();
