@@ -75,5 +75,5 @@ test('protected Blogger and player invariants remain intact', () => {
   assert.equal((theme.match(/id='Blog1'/g) || []).length, 1);
   assert.equal((theme.match(/id='page_body'/g) || []).length, 1);
   assert.doesNotMatch(theme, /zen_main/);
-  assert.match(theme, /zen-radio-player\.js\?v=1\.0\.3/);
+  assert.match(theme, /zen-radio-player\.js\?v=1\.0\.4/);
 });
