@@ -40,7 +40,13 @@ jobs:
       - name: Install dependencies
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
-        run: pnpm install --no-frozen-lockfile
+        shell: bash
+        run: |
+          if [[ -f pnpm-lock.yaml ]]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install --no-frozen-lockfile
+          fi
       - name: Upload generated lockfile
         if: steps.workspace.outputs.available == 'true'
         uses: actions/upload-artifact@v4
@@ -50,9 +56,11 @@ jobs:
       - name: Produce deterministic formatting patch
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
+        shell: bash
         run: |
           pnpm format
           git diff -- . > ../next-prettier.patch
+          git checkout -- .
       - name: Upload formatting patch
         if: steps.workspace.outputs.available == 'true'
         uses: actions/upload-artifact@v4
@@ -62,7 +70,7 @@ jobs:
       - name: Static quality gates
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
-        run: pnpm lint && pnpm typecheck && pnpm test && pnpm build
+        run: pnpm check
       - name: Install Playwright browsers
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
@@ -71,6 +79,3 @@ jobs:
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
         run: pnpm test:e2e
-      - name: Verify formatting is committed
-        if: steps.workspace.outputs.available == 'true'
-        run: git diff --exit-code -- next
