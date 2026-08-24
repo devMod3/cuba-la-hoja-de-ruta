@@ -19,7 +19,7 @@
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
-    "@eslint/js": "10.9.0",
+    "@eslint/js": "10.0.1",
     "@next/eslint-plugin-next": "16.2.12",
     "@playwright/test": "1.62.1",
     "@types/node": "^24.0.0",
