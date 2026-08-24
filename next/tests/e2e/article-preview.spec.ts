@@ -17,8 +17,12 @@ test('article preview is sanitized, noindex and canonically owned by Blogger', a
 
   const copy = page.locator('[data-sanitized-html="true"]');
   await expect(copy.getByRole('heading', { level: 2 }).first()).toContainText('Por qué');
-  await expect(copy.locator('script, style, iframe, svg, math, form, input, button, textarea, xmp')).toHaveCount(0);
-  await expect(copy.locator('[style], [onclick], [onerror], [onload], [onmouseover]')).toHaveCount(0);
+  await expect(
+    copy.locator('script, style, iframe, svg, math, form, input, button, textarea, xmp')
+  ).toHaveCount(0);
+  await expect(copy.locator('[style], [onclick], [onerror], [onload], [onmouseover]')).toHaveCount(
+    0
+  );
   await expect(page.locator('[data-component="Article.Preview"] h1')).toHaveCount(1);
 });
 
