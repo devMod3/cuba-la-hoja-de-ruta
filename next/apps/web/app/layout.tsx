@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { GlobalHeader } from '../components/global-header';
+import { ZrpLoader } from '../components/zrp-loader';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body>
         <GlobalHeader />
         {children}
+        <ZrpLoader />
       </body>
     </html>
   );
