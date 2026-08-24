@@ -1,18 +1,96 @@
 import { describe, expect, it } from 'vitest';
-import { mapBloggerEntry } from './src/index';
+import { BloggerFeedSource, buildBloggerFeedUrl, mapBloggerEntry } from './src/index';
+
+function entry(id: number, title: string) {
+  return {
+    id: { $t: `tag:blogger.com,1999:blog-1.post-${id}` },
+    title: { $t: title },
+    published: { $t: `2026-08-${String(id).padStart(2, '0')}T12:00:00-04:00` },
+    updated: { $t: `2026-08-${String(id).padStart(2, '0')}T12:30:00-04:00` },
+    link: [{ rel: 'alternate', href: `https://example.com/p/${id}.html` }],
+    category: [{ term: 'Constitución' }]
+  };
+}
 
 describe('mapBloggerEntry', () => {
   it('preserves the legacy Blogger mapping contract', () => {
-    const article = mapBloggerEntry({
-      id: { $t: 'tag:blogger.com,1999:blog-1.post-42' },
-      title: { $t: 'Documento' },
-      published: { $t: '2026-08-23T12:00:00-04:00' },
-      updated: { $t: '2026-08-23T12:30:00-04:00' },
-      link: [{ rel: 'alternate', href: 'https://example.com/p/documento.html' }],
-      category: [{ term: 'Constitución' }]
-    });
+    const article = mapBloggerEntry(entry(42, 'Documento'));
     expect(article.id).toBe('42');
     expect(article.title).toBe('Documento');
     expect(article.labels).toEqual(['Constitución']);
+  });
+});
+
+describe('buildBloggerFeedUrl', () => {
+  it('preserves the frozen Blogger feed query contract', () => {
+    const url = buildBloggerFeedUrl({
+      baseUrl: 'https://example.com/path/page',
+      pageSize: 150,
+      startIndex: 151
+    });
+    expect(url.pathname).toBe('/feeds/posts/default');
+    expect(url.searchParams.get('alt')).toBe('json');
+    expect(url.searchParams.get('max-results')).toBe('150');
+    expect(url.searchParams.get('start-index')).toBe('151');
+    expect(url.searchParams.get('orderby')).toBe('published');
+  });
+});
+
+describe('BloggerFeedSource', () => {
+  it('paginates with no-store/same-origin and deduplicates by post id', async () => {
+    const calls: Array<{ url: URL; init: RequestInit | undefined }> = [];
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = new URL(String(input));
+      calls.push({ url, init });
+      const start = url.searchParams.get('start-index');
+      const entries = start === '1' ? [entry(1, 'Uno'), entry(2, 'Dos')] : [entry(2, 'Dos'), entry(3, 'Tres')];
+      return new Response(
+        JSON.stringify({
+          feed: {
+            entry: entries,
+            'openSearch$totalResults': { $t: '4' }
+          }
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
+    };
+
+    const source = new BloggerFeedSource({
+      baseUrl: 'https://example.com/',
+      pageSize: 2,
+      fetcher
+    });
+    const posts = await source.listPosts();
+
+    expect(posts.map((post) => post.id)).toEqual(['1', '2', '3']);
+    expect(calls).toHaveLength(2);
+    expect(calls.map(({ url }) => url.searchParams.get('start-index'))).toEqual(['1', '3']);
+    expect(calls.every(({ init }) => init?.credentials === 'same-origin')).toBe(true);
+    expect(calls.every(({ init }) => init?.cache === 'no-store')).toBe(true);
+  });
+
+  it('rejects a non-success Blogger response', async () => {
+    const fetcher: typeof fetch = async () => new Response('no', { status: 503 });
+    const source = new BloggerFeedSource({ baseUrl: 'https://example.com/', fetcher });
+    await expect(source.listPosts()).rejects.toThrow('Blogger feed HTTP 503');
+  });
+
+  it('drops malformed external entries instead of trusting them', async () => {
+    const fetcher: typeof fetch = async () =>
+      new Response(
+        JSON.stringify({
+          feed: {
+            entry: [
+              { id: { $t: 'bad' }, title: { $t: 'Sin URL' }, link: [] },
+              entry(7, 'Válido')
+            ],
+            'openSearch$totalResults': { $t: '2' }
+          }
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } }
+      );
+    const source = new BloggerFeedSource({ baseUrl: 'https://example.com/', fetcher });
+    const posts = await source.listPosts();
+    expect(posts.map((post) => post.id)).toEqual(['7']);
   });
 });
