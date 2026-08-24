@@ -21,7 +21,11 @@ for (const article of snapshot.articles) {
   const html = await readFile(path.join(outputRoot, 'articulo', article.id, 'index.html'), 'utf8');
   const escapedCanonical = article.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  if (!new RegExp(`<link[^>]+rel=["']canonical["'][^>]+href=["']${escapedCanonical}["']`, 'i').test(html)) {
+  if (
+    !new RegExp(`<link[^>]+rel=["']canonical["'][^>]+href=["']${escapedCanonical}["']`, 'i').test(
+      html
+    )
+  ) {
     errors.push(`article ${article.id} must preserve Blogger canonical URL`);
   }
   if (!/<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(html)) {
