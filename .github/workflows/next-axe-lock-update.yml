@@ -1,0 +1,71 @@
+name: TEMP Update ZenBlog Next Axe Lockfile
+
+on:
+  push:
+    branches: [next-v1-foundation]
+    paths:
+      - 'next/package.json'
+      - '.github/workflows/next-axe-lock-update.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-lock:
+    if: ${{ github.repository == 'devMod3/cuba-la-hoja-de-ruta' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: next-v1-foundation
+          persist-credentials: true
+      - name: Detect exact axe dependency
+        id: axe
+        shell: bash
+        run: |
+          if grep -Fq '"@axe-core/playwright": "4.13.0"' next/package.json; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'Bootstrap run only; exact axe dependency is not present yet.'
+          fi
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        if: steps.axe.outputs.ready == 'true'
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+      - name: Install exact pnpm
+        if: steps.axe.outputs.ready == 'true'
+        run: npm install --global --ignore-scripts pnpm@11.22.0
+      - name: Regenerate lockfile without install scripts
+        if: steps.axe.outputs.ready == 'true'
+        working-directory: next
+        run: pnpm install --lockfile-only --ignore-scripts --no-frozen-lockfile
+      - name: Record lock metadata
+        if: steps.axe.outputs.ready == 'true'
+        working-directory: next
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum pnpm-lock.yaml | tee ../next-axe-lock-metadata.txt
+          printf 'integrity_entries=' >> ../next-axe-lock-metadata.txt
+          grep -c 'resolution: {integrity:' pnpm-lock.yaml | tee -a ../next-axe-lock-metadata.txt
+      - name: Upload lock metadata
+        if: steps.axe.outputs.ready == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: next-axe-lock-metadata
+          path: next-axe-lock-metadata.txt
+          if-no-files-found: error
+      - name: Commit only lockfile
+        if: steps.axe.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- next/pnpm-lock.yaml
+          test "$(git diff --cached --name-only)" = 'next/pnpm-lock.yaml'
+          git diff --cached --quiet && exit 0
+          git commit -m 'NEXT: update lockfile for axe accessibility gate'
+          git push origin HEAD:next-v1-foundation
