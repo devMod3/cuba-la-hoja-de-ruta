@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ZrpLauncher } from './zrp-launcher';
 
 const routes = [
   { href: '/', label: 'Portada' },
@@ -38,6 +39,7 @@ export function GlobalHeader() {
               {route.label}
             </Link>
           ))}
+          <ZrpLauncher />
         </nav>
       </div>
     </header>
