@@ -1,0 +1,131 @@
+name: TEMP Sync ZenBlog Next Blogger Snapshot
+
+on:
+  push:
+    branches: [next-v1-foundation]
+    paths:
+      - '.github/workflows/next-blogger-snapshot-temp.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    if: ${{ github.repository == 'devMod3/cuba-la-hoja-de-ruta' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: next-v1-foundation
+          persist-credentials: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+      - name: Fetch and normalize Blogger feed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p next/content
+          node <<'NODE'
+          import { createHash } from 'node:crypto';
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          const baseUrl = 'https://cubalahojaderuta.blogspot.com/';
+          const pageSize = 150;
+          const articles = [];
+          let startIndex = 1;
+          let total = null;
+          let guard = 0;
+
+          const text = (value) => value && typeof value === 'object' && typeof value.$t === 'string' ? value.$t : undefined;
+
+          while (guard++ < 50) {
+            const url = new URL('/feeds/posts/default', baseUrl);
+            url.searchParams.set('alt', 'json');
+            url.searchParams.set('max-results', String(pageSize));
+            url.searchParams.set('start-index', String(startIndex));
+            url.searchParams.set('orderby', 'published');
+
+            const response = await fetch(url, { headers: { 'user-agent': 'ZenBlog-Next-Snapshot/1.0' } });
+            if (!response.ok) throw new Error(`Blogger feed HTTP ${response.status}`);
+            const data = await response.json();
+            const feed = data?.feed ?? {};
+            const entries = Array.isArray(feed.entry) ? feed.entry : [];
+            const page = [];
+
+            for (const entry of entries) {
+              const atomId = text(entry?.id) ?? '';
+              const id = atomId.match(/post-(\d+)/)?.[1] ?? atomId;
+              const links = Array.isArray(entry?.link) ? entry.link : [];
+              const urlValue = links.find((item) => item?.rel === 'alternate')?.href ?? '';
+              if (!id || !urlValue) continue;
+              new URL(urlValue);
+              page.push({
+                id,
+                url: urlValue,
+                title: text(entry?.title) || '(sin título)',
+                publishedAt: text(entry?.published) ?? null,
+                updatedAt: text(entry?.updated) ?? null,
+                summary: text(entry?.summary) ?? '',
+                content: text(entry?.content) ?? '',
+                labels: (Array.isArray(entry?.category) ? entry.category : [])
+                  .map((item) => typeof item?.term === 'string' ? item.term : null)
+                  .filter(Boolean)
+              });
+            }
+
+            articles.push(...page);
+            if (total === null) {
+              const parsed = Number(text(feed['openSearch$totalResults']) ?? page.length);
+              total = Number.isFinite(parsed) ? parsed : page.length;
+            }
+            if (!page.length || articles.length >= total) break;
+            startIndex += page.length;
+          }
+
+          const seen = new Set();
+          const deduped = articles.filter((article) => {
+            if (seen.has(article.id)) return false;
+            seen.add(article.id);
+            return true;
+          });
+
+          const canonicalPayload = JSON.stringify(deduped);
+          const contentSha256 = createHash('sha256').update(canonicalPayload).digest('hex');
+          const path = 'next/content/blogger.snapshot.json';
+          let previous = null;
+          try { previous = JSON.parse(await readFile(path, 'utf8')); } catch {}
+          const syncedAt = previous?.contentSha256 === contentSha256 && typeof previous?.syncedAt === 'string'
+            ? previous.syncedAt
+            : new Date().toISOString();
+
+          const snapshot = {
+            schemaVersion: 1,
+            source: { type: 'blogger', baseUrl },
+            syncedAt,
+            contentSha256,
+            articleCount: deduped.length,
+            articles: deduped
+          };
+          await writeFile(path, `${JSON.stringify(snapshot, null, 2)}\n`);
+          await writeFile('next/content/blogger.snapshot.metadata.txt',
+            `contentSha256=${contentSha256}\narticleCount=${deduped.length}\nsyncedAt=${syncedAt}\n`);
+          NODE
+      - name: Commit only snapshot evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- next/content/blogger.snapshot.json next/content/blogger.snapshot.metadata.txt
+          CHANGED="$(git diff --cached --name-only)"
+          if [[ -z "$CHANGED" ]]; then exit 0; fi
+          while IFS= read -r path; do
+            case "$path" in
+              next/content/blogger.snapshot.json|next/content/blogger.snapshot.metadata.txt) ;;
+              *) echo "Unexpected staged path: $path" >&2; exit 1 ;;
+            esac
+          done <<< "$CHANGED"
+          git commit -m 'NEXT Q-040: capture validated Blogger content snapshot'
+          git push origin HEAD:next-v1-foundation
