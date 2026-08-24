@@ -1,38 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { BloggerFeedSource } from '@zenblog/cms-blogger';
+import { useMemo, useState } from 'react';
 import type { Article } from '@zenblog/domain';
 import { searchArticlesByTitle } from '@zenblog/search-core';
 
-export const BLOGGER_SOURCE_URL = 'https://cubalahojaderuta.blogspot.com/';
-
-export function ExploreClient() {
-  const [articles, setArticles] = useState<Article[]>([]);
+export function ExploreClient({ articles }: { readonly articles: readonly Article[] }) {
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const fetcher: typeof fetch = (input, init) =>
-      globalThis.fetch(input, { ...init, signal: controller.signal });
-    const source = new BloggerFeedSource({ baseUrl: BLOGGER_SOURCE_URL, fetcher });
-
-    source
-      .listPosts()
-      .then((posts) => {
-        if (!controller.signal.aborted) {
-          setArticles(posts);
-          setStatus('ready');
-        }
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setStatus('error');
-      });
-
-    return () => controller.abort();
-  }, []);
-
   const results = useMemo(() => searchArticlesByTitle(articles, query), [articles, query]);
 
   return (
@@ -53,14 +26,10 @@ export function ExploreClient() {
       </label>
 
       <p className="explore-status" role="status" aria-live="polite">
-        {status === 'loading' && 'Cargando artículos…'}
-        {status === 'error' && 'No se pudo cargar el índice público.'}
-        {status === 'ready' && `${results.length} artículo${results.length === 1 ? '' : 's'}`}
+        {`${results.length} artículo${results.length === 1 ? '' : 's'}`}
       </p>
 
-      {status === 'ready' && results.length === 0 ? (
-        <p>No hay artículos que coincidan con la búsqueda.</p>
-      ) : null}
+      {results.length === 0 ? <p>No hay artículos que coincidan con la búsqueda.</p> : null}
 
       <ul className="explore-results" aria-label="Artículos">
         {results.map((article) => (
