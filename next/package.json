@@ -12,6 +12,7 @@
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint . --max-warnings=0",
+    "project:standards": "node ../tools/quality/check-project-standards.mjs",
     "architecture:check": "node scripts/check-architecture.mjs",
     "content:snapshot:check": "node scripts/check-blogger-snapshot.mjs",
     "static:articles:check": "node scripts/check-static-article-routes.mjs",
@@ -24,7 +25,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "check": "pnpm format:check && pnpm lint && pnpm architecture:check && pnpm content:snapshot:check && pnpm security:check && pnpm typecheck && pnpm test && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget"
+    "check": "pnpm format:check && pnpm lint && pnpm project:standards && pnpm architecture:check && pnpm content:snapshot:check && pnpm security:check && pnpm typecheck && pnpm test && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
