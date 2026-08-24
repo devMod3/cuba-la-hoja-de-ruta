@@ -1,19 +1,20 @@
 # ZenBlog v0.9.2 — Release Manifest
 
-**Status**: `BLOGGER-REAL-Q035-TECHNICAL-GATES-CLOSED / FREEZE-AWAITING-EXPLICIT-PO`
+**Status**: `FROZEN / PRODUCT-OWNER-ACCEPTED / Q-035`
 
 ## Canonical product identity
 
 - Repository: `devMod3/cuba-la-hoja-de-ruta`
 - Release: `v0.9.2`
-- Latest product-affecting main merge: PR `#28`
+- Latest product-affecting merge: PR `#28`
 - Product merge SHA: `7f137fae995d69f6e0e02d68334667da09a47d8f`
 - Product tree: `eb9c6b1cf5fa72a08a638b135edb4a976e44c28b`
 - Blogger theme blob: `e6af7b237503629e6c7bd237c1378472b132da51`
 - Immutable Blogger payload pin: `3aa43f5b347a0711dafb4073fb5f2213a88909cc`
 - Installed Blogger XML SHA-256: `e8f4637a76ced77e8131cfd967b0028171c42a538a48798dd70e1fc989a35550`
 - Zen Radio Player: protected independent loader `v1.0.3`
-- Freeze: `NO` until explicit Product Owner acceptance
+- Freeze: `FROZEN`
+- Freeze acceptance: `2026-08-23 America/New_York — explicit Product Owner acceptance in Q-035`
 
 Repository commits after PR #28 that only align documentation do not change the installed Blogger product payload.
 
@@ -23,7 +24,7 @@ Blogger Real is running the Q-035 shell produced after PR #28. The shell retains
 
 The public editorial profile remains mutable through `config/site-profile.public.json`; code, CSS and application assets remain commit-pinned. No GitHub token is embedded in the XML or JavaScript, and publication credentials are not persisted in browser storage or URLs.
 
-## Hotfix lineage
+## Hotfix and documentation lineage
 
 - PR #22: initial v0.9.2 production promotion — merged.
 - PR #23: Admin routing hotfix — merged.
@@ -33,11 +34,12 @@ The public editorial profile remains mutable through `config/site-profile.public
 - PR #27: About Admin field parity — merged.
 - PR #28: compound Admin hash ownership — merged and installed.
 - PR #29: Q-035 documentation alignment — merged; docs only.
+- PR #30: final Safari/iPhone gate documentation — merged; docs only.
+- Freeze acceptance documentation: Q-035; docs only; no product payload change.
 
 ## HASH-COMPOUND-001
 
 Previous Blogger Real failure:
-
 `https://cubalahojaderuta.blogspot.com/#zen-explore/admin`
 
 Observed result before PR #28: Portada.
@@ -69,11 +71,16 @@ PR #29 documentation-only validation:
 - Run number: `263`
 - Conclusion: `SUCCESS`
 
+PR #30 documentation-only validation:
+- Run ID: `32678515932`
+- Run number: `265`
+- Conclusion: `SUCCESS`
+
 CI is not Blogger Real QA and is not Safari/iPhone/WebKit QA.
 
 ## Blogger Real QA — Q-035
 
-- QA-HF-004 Search / Search Lab: `PASS`
+- QA-HF-004 Search / Search Lab: `PASS`.
   - Real status observed: `2 artículos indexados.`
   - Query exercised: `pueblo`.
 - QA-HF-006 Inspector: `PASS`.
@@ -93,7 +100,7 @@ Product Owner verified on iPhone + Safari:
 - Admin tabs usable;
 - `Sitio ↗` visible in mobile format.
 
-Therefore `ADMIN-RESPONSIVE-OBS-001` is closed as `NOT A DEFECT`.
+`ADMIN-RESPONSIVE-OBS-001` is closed as `NOT A DEFECT`.
 
 ## About / public profile state
 
@@ -110,7 +117,7 @@ Therefore `ADMIN-RESPONSIVE-OBS-001` is closed as `NOT A DEFECT`.
 
 Admin was perceived as somewhat slow. No before/after metric exists. Do not classify this as a performance regression and do not open a performance hotfix without measurement.
 
-This observation is non-blocking for the current technical gate closure because there is no reproducible performance defect or failed acceptance criterion.
+This observation is non-blocking and does not invalidate FROZEN because there is no reproducible performance defect or failed acceptance criterion.
 
 ## Protected neighbor / future ZRP work
 
@@ -121,15 +128,15 @@ Q-035 queued `ZRP-UX-IMPROVEMENT-001` for a future code phase:
 - clicking the minimized player should expand the complete player surface, including controls plus playback/reproduction bar;
 - preserve playlist behavior, persistence, ZenBlog navigation, and the protected product boundary.
 
-This request is not part of v0.9.2 PR #28 and must not be silently implemented during release closeout.
+This request is explicitly future work and is not part of frozen ZenBlog v0.9.2.
 
 ## Freeze disposition
 
-All currently defined automated, Blogger Real, routing, player-boundary and Safari/iPhone/WebKit technical gates are closed.
+`FROZEN = YES`.
 
-`FREEZE` remains `NO` because freeze is a Product Owner decision and MUST NOT be inferred from passing QA.
+All currently defined automated, Blogger Real, routing, player-boundary and Safari/iPhone/WebKit technical gates are closed. The Product Owner explicitly accepted `FROZEN` in Q-035 on 2026-08-23 America/New_York.
 
-The remaining release decision is explicit Product Owner acceptance of `FROZEN`.
+FROZEN means this v0.9.2 state is the accepted stable baseline. Future work must begin from this baseline as a new controlled phase; freeze does not prohibit future changes.
 
 ## Current rollback reference
 
@@ -139,11 +146,14 @@ The immediately previous Q-034 production XML remains the pre-PR28 rollback refe
 
 The original pre-v0.9.2 forensic rollback artifact remains preserved separately under `docs/forensic/artifacts/`.
 
-## Evidence file
+## Evidence files
 
-Final Q-035 real QA is recorded in:
+Final Q-035 real QA:
 `docs/forensic/Q035-FINAL-REAL-QA-2026-08-23.txt`
+
+Explicit freeze acceptance:
+`docs/forensic/Q035-FREEZE-ACCEPTANCE-2026-08-23.txt`
 
 ## Authority rule
 
-This manifest records repository release state. The current continuity package / consultation state remains the operational authority for the active handoff, and Blogger Real/Safari real evidence cannot be inferred from CI.
+This manifest records repository release state. The final Q-035 continuity package is the operational handoff authority for the frozen baseline, and Blogger Real/Safari real evidence cannot be inferred from CI.
