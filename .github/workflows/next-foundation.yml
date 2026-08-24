@@ -40,13 +40,33 @@ jobs:
       - name: Install dependencies
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
-        run: pnpm install --no-frozen-lockfile
+        shell: bash
+        run: |
+          if [[ -f pnpm-lock.yaml ]]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install --no-frozen-lockfile
+          fi
       - name: Upload generated lockfile
         if: steps.workspace.outputs.available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: next-pnpm-lock
           path: next/pnpm-lock.yaml
+      - name: Produce deterministic formatting patch
+        if: steps.workspace.outputs.available == 'true'
+        working-directory: next
+        shell: bash
+        run: |
+          pnpm format
+          git diff -- . > ../next-prettier.patch
+          git checkout -- .
+      - name: Upload formatting patch
+        if: steps.workspace.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-prettier-patch
+          path: next-prettier.patch
       - name: Static quality gates
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
