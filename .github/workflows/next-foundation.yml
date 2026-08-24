@@ -47,10 +47,22 @@ jobs:
         with:
           name: next-pnpm-lock
           path: next/pnpm-lock.yaml
+      - name: Produce deterministic formatting patch
+        if: steps.workspace.outputs.available == 'true'
+        working-directory: next
+        run: |
+          pnpm format
+          git diff -- . > ../next-prettier.patch
+      - name: Upload formatting patch
+        if: steps.workspace.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-prettier-patch
+          path: next-prettier.patch
       - name: Static quality gates
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
-        run: pnpm check
+        run: pnpm lint && pnpm typecheck && pnpm test && pnpm build
       - name: Install Playwright browsers
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
@@ -59,3 +71,6 @@ jobs:
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
         run: pnpm test:e2e
+      - name: Verify formatting is committed
+        if: steps.workspace.outputs.available == 'true'
+        run: git diff --exit-code -- next
