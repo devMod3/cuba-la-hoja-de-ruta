@@ -164,6 +164,11 @@ export function searchArticles({
 
 export function searchArticlesByTitle(articles: readonly Article[], query: string): Article[] {
   const normalized = normalizeSearchText(query);
-  if (!normalized) return [...articles];
-  return articles.filter((article) => normalizeSearchText(article.title).includes(normalized));
+  const ordered = [...articles].sort((a, b) => {
+    const aTime = Date.parse(a.publishedAt ?? '') || 0;
+    const bTime = Date.parse(b.publishedAt ?? '') || 0;
+    return bTime - aTime;
+  });
+  if (!normalized) return ordered;
+  return ordered.filter((article) => normalizeSearchText(article.title).includes(normalized));
 }
