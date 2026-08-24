@@ -21,7 +21,9 @@ The snapshot must:
 - pass schema, origin, uniqueness, count, and SHA verification in CI;
 - remain generated evidence and therefore outside Prettier ownership.
 
-The Web package consumes the validated snapshot through a server/build adapter. It may not depend on `@zenblog/cms-blogger`. The CMS adapter remains an independent boundary for synchronization and parity tests.
+The snapshot is encapsulated by the first-class `@zenblog/content-snapshot` package. That package owns the generated evidence and exposes only its typed public API to consumers. `@zenblog/web` may depend on `@zenblog/content-snapshot` but may not reach the snapshot through a relative path and may not depend on `@zenblog/cms-blogger`.
+
+The CMS adapter remains an independent boundary for synchronization and parity tests.
 
 ## Consequences
 
