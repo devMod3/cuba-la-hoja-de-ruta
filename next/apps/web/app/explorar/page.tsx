@@ -1,11 +1,16 @@
+import type { Metadata } from 'next';
+import { ExploreClient } from '../../components/explore-client';
+
+export const metadata: Metadata = {
+  title: 'Explorar',
+  description: 'Explorar los artículos de La hoja de ruta por título.'
+};
+
 export default function ExplorePage() {
   return (
     <main data-component="Explore">
       <h1>Explorar</h1>
-      <p>
-        La semántica de búsqueda existente se migrará detrás de contratos tipados antes de cambiar
-        la experiencia.
-      </p>
+      <ExploreClient />
     </main>
   );
 }
