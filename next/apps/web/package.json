@@ -8,7 +8,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zenblog/cms-blogger": "workspace:*",
     "@zenblog/domain": "workspace:*",
     "@zenblog/search-core": "workspace:*",
     "@zenblog/zrp-adapter": "workspace:*",
