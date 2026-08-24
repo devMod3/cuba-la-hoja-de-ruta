@@ -48,7 +48,7 @@ jobs:
           assert xml.count("id='Blog1'") == 1
           assert xml.count("id='page_body'") == 1
           assert 'zen_main' not in xml
-          assert 'zen-radio-player/assets/zen-radio-player.js?v=1.0.3' in xml
+          assert 'zen-radio-player/assets/zen-radio-player.js?v=1.0.4' in xml
           assert 'dist/zenblog.js' in xml
           assert 'tools/runtime/bootstrap.js' in xml
           assert 'dist/zenblog.css' not in xml
