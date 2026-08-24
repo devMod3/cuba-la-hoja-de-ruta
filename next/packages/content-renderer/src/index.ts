@@ -1,4 +1,4 @@
-import * as sanitizeHtml from 'sanitize-html';
+import sanitizeHtml from 'sanitize-html';
 import type { IOptions } from 'sanitize-html';
 
 const BLOGGER_ARTICLE_POLICY: IOptions = {
