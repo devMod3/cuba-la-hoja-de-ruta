@@ -3,15 +3,25 @@ import snapshot from '../content/blogger.snapshot.json';
 
 const BLOGGER_ORIGIN = 'https://cubalahojaderuta.blogspot.com';
 
-function validateSnapshot(): readonly Article[] {
-  if (snapshot.schemaVersion !== 1) throw new Error('Unsupported Blogger snapshot schema');
-  if (snapshot.source.type !== 'blogger') throw new Error('Unexpected content snapshot source');
-  if (new globalThis.URL(snapshot.source.baseUrl).origin !== BLOGGER_ORIGIN) {
+export interface BloggerSnapshotPayload {
+  readonly schemaVersion: number;
+  readonly source: Readonly<{
+    type: string;
+    baseUrl: string;
+  }>;
+  readonly articleCount: number;
+  readonly articles: readonly unknown[];
+}
+
+export function validateBloggerSnapshot(candidate: BloggerSnapshotPayload): readonly Article[] {
+  if (candidate.schemaVersion !== 1) throw new Error('Unsupported Blogger snapshot schema');
+  if (candidate.source.type !== 'blogger') throw new Error('Unexpected content snapshot source');
+  if (new globalThis.URL(candidate.source.baseUrl).origin !== BLOGGER_ORIGIN) {
     throw new Error('Unexpected Blogger snapshot origin');
   }
 
-  const articles = snapshot.articles.map((entry) => ArticleSchema.parse(entry));
-  if (snapshot.articleCount !== articles.length) {
+  const articles = candidate.articles.map((entry) => ArticleSchema.parse(entry));
+  if (candidate.articleCount !== articles.length) {
     throw new Error('Blogger snapshot articleCount mismatch');
   }
 
@@ -24,7 +34,7 @@ function validateSnapshot(): readonly Article[] {
   return Object.freeze(articles);
 }
 
-export const bloggerSnapshotArticles = validateSnapshot();
+export const bloggerSnapshotArticles = validateBloggerSnapshot(snapshot);
 export const bloggerSnapshotContentSha256 = snapshot.contentSha256;
 export const bloggerSnapshotSyncedAt = snapshot.syncedAt;
 
