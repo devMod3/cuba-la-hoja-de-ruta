@@ -57,10 +57,19 @@ describe('validateBloggerSnapshot', () => {
 
   it.each([
     [payload({ schemaVersion: 2 }), 'Unsupported Blogger snapshot schema'],
-    [payload({ source: { type: 'other', baseUrl: BLOGGER_ORIGIN } }), 'Unexpected content snapshot source'],
-    [payload({ source: { type: 'blogger', baseUrl: 'https://example.com' } }), 'Unexpected Blogger snapshot origin'],
+    [
+      payload({ source: { type: 'other', baseUrl: BLOGGER_ORIGIN } }),
+      'Unexpected content snapshot source'
+    ],
+    [
+      payload({ source: { type: 'blogger', baseUrl: 'https://example.com' } }),
+      'Unexpected Blogger snapshot origin'
+    ],
     [payload({ articleCount: 2 }), 'Blogger snapshot articleCount mismatch'],
-    [payload({ articles: [article({ url: 'https://example.com/documento.html' })] }), 'escapes Blogger canonical origin']
+    [
+      payload({ articles: [article({ url: 'https://example.com/documento.html' })] }),
+      'escapes Blogger canonical origin'
+    ]
   ])('rejects invalid snapshot contract %#', (candidate, message) => {
     expect(() => validateBloggerSnapshot(candidate)).toThrow(message);
   });
