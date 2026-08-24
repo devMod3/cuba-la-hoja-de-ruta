@@ -11,7 +11,7 @@ The current Blogger/ZenBlog production baseline is not modified by work in this 
 - Node.js 24 LTS
 - Next.js 16.2 Active LTS (App Router)
 - React 19.2
-- TypeScript 6 in strict mode
+- TypeScript 7 in strict mode
 - pnpm workspace
 - Zod runtime validation at external boundaries
 - Vitest for unit/contract tests
