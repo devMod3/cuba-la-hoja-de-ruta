@@ -11,7 +11,7 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
   return (
     <section
       ref={(node) => {
-        if (node) node.dataset.hydrated = 'true';
+        if (node) node.dataset['hydrated'] = 'true';
       }}
       aria-labelledby="explore-search-heading"
       data-component="Explore.PublicSearch"
