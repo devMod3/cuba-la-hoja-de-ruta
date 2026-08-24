@@ -41,7 +41,7 @@ const boundaries = [
   {
     name: '@zenblog/web',
     root: 'apps/web',
-    sourceRoots: ['app', 'components'],
+    sourceRoots: ['app', 'components', 'adapters'],
     allowedInternal: ['@zenblog/domain', '@zenblog/search-core', '@zenblog/zrp-adapter'],
     forbiddenExternal: [],
     forbidNodeBuiltins: false
