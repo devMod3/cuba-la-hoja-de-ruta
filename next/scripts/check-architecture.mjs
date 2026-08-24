@@ -9,6 +9,7 @@ const boundaries = [
   {
     name: '@zenblog/domain',
     root: 'packages/domain',
+    sourceRoots: ['src'],
     allowedInternal: [],
     forbiddenExternal: ['next', 'react', 'react-dom'],
     forbidNodeBuiltins: true
@@ -16,6 +17,7 @@ const boundaries = [
   {
     name: '@zenblog/search-core',
     root: 'packages/search-core',
+    sourceRoots: ['src'],
     allowedInternal: ['@zenblog/domain'],
     forbiddenExternal: ['next', 'react', 'react-dom'],
     forbidNodeBuiltins: true
@@ -23,6 +25,7 @@ const boundaries = [
   {
     name: '@zenblog/cms-blogger',
     root: 'packages/cms-blogger',
+    sourceRoots: ['src'],
     allowedInternal: ['@zenblog/domain'],
     forbiddenExternal: ['next', 'react', 'react-dom'],
     forbidNodeBuiltins: true
@@ -30,6 +33,7 @@ const boundaries = [
   {
     name: '@zenblog/zrp-adapter',
     root: 'packages/zrp-adapter',
+    sourceRoots: ['src'],
     allowedInternal: [],
     forbiddenExternal: ['next', 'react', 'react-dom'],
     forbidNodeBuiltins: true
@@ -37,6 +41,7 @@ const boundaries = [
   {
     name: '@zenblog/web',
     root: 'apps/web',
+    sourceRoots: ['app', 'components'],
     allowedInternal: ['@zenblog/domain', '@zenblog/search-core', '@zenblog/zrp-adapter'],
     forbiddenExternal: [],
     forbidNodeBuiltins: false
@@ -112,8 +117,11 @@ for (const boundary of boundaries) {
     }
   }
 
-  const sourceRoot = path.join(packageRoot, 'src');
-  const files = await walk(sourceRoot);
+  const files = [];
+  for (const relativeSourceRoot of boundary.sourceRoots) {
+    files.push(...(await walk(path.join(packageRoot, relativeSourceRoot))));
+  }
+
   for (const file of files) {
     const source = await readFile(file, 'utf8');
     const relativeFile = path.relative(workspaceRoot, file);
