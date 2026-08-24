@@ -156,7 +156,9 @@ describe('legacy ExploreQueryService parity', () => {
       const legacyIds = legacyExplore
         .searchByTitle({ posts: articles, query })
         .map((result: { post: Article }) => result.post.id);
-      expect(searchArticlesByTitle(articles, query).map((article) => article.id)).toEqual(legacyIds);
+      expect(searchArticlesByTitle(articles, query).map((article) => article.id)).toEqual(
+        legacyIds
+      );
     }
   );
 });
