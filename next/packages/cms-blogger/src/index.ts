@@ -113,10 +113,12 @@ export class BloggerFeedSource {
       const page: Article[] = [];
 
       for (const entry of feed.entry) {
-        const result = ArticleSchema.safeParse({
-          ...mapBloggerEntry(entry)
-        });
-        if (result.success && result.data.id && result.data.url) page.push(result.data);
+        try {
+          const article = mapBloggerEntry(entry);
+          if (article.id && article.url) page.push(article);
+        } catch {
+          // External feed validation boundary: malformed entries are ignored, not trusted.
+        }
       }
 
       posts.push(...page);
