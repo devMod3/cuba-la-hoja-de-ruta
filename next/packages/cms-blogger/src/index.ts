@@ -26,7 +26,7 @@ const BloggerFeedSchema = z
         openSearch$totalResults: BloggerTextSchema.optional()
       })
       .passthrough()
-      .default({})
+      .default({ entry: [] })
   })
   .passthrough();
 
