@@ -8,7 +8,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zenblog/domain": "workspace:*",
-    "zod": "4.4.3"
+    "@zenblog/domain": "workspace:*"
   }
 }
