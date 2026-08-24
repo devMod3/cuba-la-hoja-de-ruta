@@ -1,7 +1,7 @@
 {
   "packageManager": "pnpm@11.22.0",
   "nodeEngine": "24.19.x",
-  "lockfileSha256": "3bbafd55c66ec8bf2f17c98d92df6bdbe92048c2f52f4d1ef1bfa3ba1e886c47",
+  "lockfileSha256": "c3d00690cd0b9371974fae77686ea3767da0517e9ecc022c51c0c4b78e8cbb99",
   "lockfileEntries": 267,
   "minimumReleaseAgeMinutes": 1440,
   "allowedBuildScripts": ["sharp@0.34.5"]
