@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-const zrpUrl =
-  'https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.4';
+const zrpUrl = 'https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.4';
 
 test('ZRP loader is mounted once and launcher survives App Router navigation', async ({ page }) => {
   const zrpRequests: string[] = [];
