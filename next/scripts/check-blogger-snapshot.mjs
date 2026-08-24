@@ -4,7 +4,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const snapshotPath = path.join(workspaceRoot, 'content/blogger.snapshot.json');
+const snapshotPath = path.join(
+  workspaceRoot,
+  'packages/content-snapshot/content/blogger.snapshot.json'
+);
 const snapshot = JSON.parse(await readFile(snapshotPath, 'utf8'));
 const errors = [];
 const expectedOrigin = 'https://cubalahojaderuta.blogspot.com';
