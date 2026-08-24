@@ -1,3 +1,4 @@
+const EXECUTABLE_OR_NONCONTENT_BLOCKS = /<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
 const BLOCK_TAGS = /<\/?(?:p|div|h[1-6]|li|blockquote|pre|br|hr)\b[^>]*>/gi;
 const ALL_TAGS = /<[^>]*>/g;
 const ENTITY_PATTERN = /&(#x?[0-9a-f]+|nbsp|amp|lt|gt|quot|apos|#39);/gi;
@@ -30,6 +31,7 @@ function decodeEntity(entity: string): string {
 
 export function bloggerHtmlToPlainText(html: string): string {
   return html
+    .replace(EXECUTABLE_OR_NONCONTENT_BLOCKS, '')
     .replace(BLOCK_TAGS, '\n')
     .replace(ALL_TAGS, ' ')
     .replace(ENTITY_PATTERN, (_match, entity: string) => decodeEntity(entity))
