@@ -3,9 +3,12 @@ import { MetadataRegistrySchema, type Article } from '@zenblog/domain';
 import {
   normalizeSearchText,
   searchArticles,
+  searchArticlesByTitle,
   type SearchFilters,
   type SearchSort
 } from './src/index';
+// @ts-expect-error The frozen legacy JavaScript module intentionally has no TypeScript declaration.
+import { ExploreQueryService } from '../../../src/features/explore/ExploreQueryService.js';
 // @ts-expect-error The frozen legacy JavaScript module intentionally has no TypeScript declaration.
 import { SearchService } from '../../../src/search/SearchService.js';
 // @ts-expect-error The frozen legacy JavaScript module intentionally has no TypeScript declaration.
@@ -95,6 +98,7 @@ const registry = MetadataRegistrySchema.parse({
 });
 
 const legacy = new SearchService();
+const legacyExplore = new ExploreQueryService({ searchService: legacy });
 const legacyNormalizer = new TextNormalizer();
 
 function legacyProjection(input: { query?: string; filters?: SearchFilters; sort?: SearchSort }) {
@@ -143,4 +147,16 @@ describe('legacy SearchService parity', () => {
   ])('matches legacy results for %#', (input) => {
     expect(nextProjection(input)).toEqual(legacyProjection(input));
   });
+});
+
+describe('legacy ExploreQueryService parity', () => {
+  it.each(['', 'constitucion', 'CODIGO_electoral', 'soberanía'])(
+    'matches title-only recent-first public search for %s',
+    (query) => {
+      const legacyIds = legacyExplore
+        .searchByTitle({ posts: articles, query })
+        .map((result: { post: Article }) => result.post.id);
+      expect(searchArticlesByTitle(articles, query).map((article) => article.id)).toEqual(legacyIds);
+    }
+  );
 });
