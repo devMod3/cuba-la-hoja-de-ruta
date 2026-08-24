@@ -8,11 +8,36 @@ const routes = [
 
 export function GlobalHeader() {
   return (
-    <header data-component="Global.Header" style={{ position: 'sticky', top: 0, zIndex: 40, background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-      <div style={{ minHeight: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, width: 'min(1180px, calc(100% - 2rem))', margin: '0 auto' }}>
-        <Link href="/" aria-label="Ir a la portada">La hoja de ruta</Link>
+    <header
+      data-component="Global.Header"
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)'
+      }}
+    >
+      <div
+        style={{
+          minHeight: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          width: 'min(1180px, calc(100% - 2rem))',
+          margin: '0 auto'
+        }}
+      >
+        <Link href="/" aria-label="Ir a la portada">
+          La hoja de ruta
+        </Link>
         <nav aria-label="Navegación principal" style={{ display: 'flex', gap: 16 }}>
-          {routes.map((route) => <Link key={route.href} href={route.href}>{route.label}</Link>)}
+          {routes.map((route) => (
+            <Link key={route.href} href={route.href}>
+              {route.label}
+            </Link>
+          ))}
         </nav>
       </div>
     </header>

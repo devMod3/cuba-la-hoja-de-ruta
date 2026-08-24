@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
-  "scripts": { "typecheck": "tsc --noEmit" },
-  "dependencies": { "@zenblog/domain": "workspace:*" }
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@zenblog/domain": "workspace:*"
+  }
 }
