@@ -7,8 +7,14 @@ describe('bloggerHtmlToPlainText', () => {
     expect(bloggerHtmlToPlainText(html)).toBe('Pueblo & Estado\n\nUno dos.\n\nTres — cuatro.');
   });
 
-  it('returns potentially hostile markup only as inert text', () => {
-    const html = '<p>Seguro</p><script>alert(1)</script><img src=x onerror=alert(2)>';
-    expect(bloggerHtmlToPlainText(html)).toBe('Seguro\n\nalert(1)');
+  it('drops executable and non-content blocks before returning inert text', () => {
+    const html = [
+      '<p>Seguro</p>',
+      '<script>alert(1)</script>',
+      '<style>body{display:none}</style>',
+      '<noscript>fallback</noscript>',
+      '<img src=x onerror=alert(2)>'
+    ].join('');
+    expect(bloggerHtmlToPlainText(html)).toBe('Seguro');
   });
 });
