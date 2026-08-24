@@ -13,7 +13,7 @@ if (snapshot.schemaVersion !== 1) errors.push('schemaVersion must be 1');
 if (snapshot.source?.type !== 'blogger') errors.push('source.type must be blogger');
 
 try {
-  if (new URL(snapshot.source?.baseUrl ?? '').origin !== expectedOrigin) {
+  if (new globalThis.URL(snapshot.source?.baseUrl ?? '').origin !== expectedOrigin) {
     errors.push(`source.baseUrl must use ${expectedOrigin}`);
   }
 } catch {
@@ -47,7 +47,7 @@ if (!Array.isArray(snapshot.articles)) {
       errors.push(`articles[${index}].url must be a non-empty string`);
     } else {
       try {
-        const url = new URL(article.url);
+        const url = new globalThis.URL(article.url);
         if (url.origin !== expectedOrigin) {
           errors.push(`article ${String(article.id)} escapes canonical Blogger origin`);
         }
