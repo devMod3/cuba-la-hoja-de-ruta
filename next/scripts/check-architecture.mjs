@@ -43,7 +43,12 @@ const boundaries = [
   }
 ];
 
-const dependencySections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
+const dependencySections = [
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies'
+];
 const errors = [];
 
 function isInside(parent, child) {
@@ -87,16 +92,22 @@ for (const boundary of boundaries) {
   const manifest = JSON.parse(await readFile(packageJsonPath, 'utf8'));
 
   if (manifest.name !== boundary.name) {
-    errors.push(`${boundary.root}/package.json: expected name ${boundary.name}, found ${String(manifest.name)}`);
+    errors.push(
+      `${boundary.root}/package.json: expected name ${boundary.name}, found ${String(manifest.name)}`
+    );
   }
 
   for (const section of dependencySections) {
     for (const dependency of Object.keys(manifest[section] ?? {})) {
       if (dependency.startsWith('@zenblog/') && !boundary.allowedInternal.includes(dependency)) {
-        errors.push(`${boundary.root}/package.json: ${boundary.name} may not declare ${dependency} in ${section}`);
+        errors.push(
+          `${boundary.root}/package.json: ${boundary.name} may not declare ${dependency} in ${section}`
+        );
       }
       if (boundary.forbiddenExternal.includes(dependency)) {
-        errors.push(`${boundary.root}/package.json: ${boundary.name} may not depend on ${dependency}`);
+        errors.push(
+          `${boundary.root}/package.json: ${boundary.name} may not depend on ${dependency}`
+        );
       }
     }
   }
@@ -117,7 +128,9 @@ for (const boundary of boundaries) {
       }
 
       if (boundary.forbidNodeBuiltins && specifier.startsWith('node:')) {
-        errors.push(`${relativeFile}: ${boundary.name} must remain runtime-portable; node builtin forbidden: ${specifier}`);
+        errors.push(
+          `${relativeFile}: ${boundary.name} must remain runtime-portable; node builtin forbidden: ${specifier}`
+        );
       }
 
       const internal = internalPackage(specifier);
@@ -125,13 +138,17 @@ for (const boundary of boundaries) {
         if (!boundary.allowedInternal.includes(internal)) {
           errors.push(`${relativeFile}: ${boundary.name} may not import ${specifier}`);
         } else if (specifier !== internal) {
-          errors.push(`${relativeFile}: deep internal import forbidden; import public package root ${internal}, not ${specifier}`);
+          errors.push(
+            `${relativeFile}: deep internal import forbidden; import public package root ${internal}, not ${specifier}`
+          );
         }
       }
 
       for (const external of boundary.forbiddenExternal) {
         if (specifier === external || specifier.startsWith(`${external}/`)) {
-          errors.push(`${relativeFile}: ${boundary.name} may not import framework dependency ${specifier}`);
+          errors.push(
+            `${relativeFile}: ${boundary.name} may not import framework dependency ${specifier}`
+          );
         }
       }
     }
