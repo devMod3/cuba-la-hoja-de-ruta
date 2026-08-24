@@ -1,7 +1,4 @@
-import {
-  bloggerSnapshotArticles,
-  getBloggerSnapshotArticleById
-} from '@zenblog/content-snapshot';
+import { bloggerSnapshotArticles, getBloggerSnapshotArticleById } from '@zenblog/content-snapshot';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { bloggerHtmlToPlainText } from '../../../adapters/blogger-html-to-text';
@@ -46,7 +43,9 @@ export default async function ArticlePreviewPage({ params }: ArticlePageProps) {
   const article = getBloggerSnapshotArticleById(id);
   if (!article) notFound();
 
-  const paragraphs = bloggerHtmlToPlainText(article.content).split(/\n{2,}/).filter(Boolean);
+  const paragraphs = bloggerHtmlToPlainText(article.content)
+    .split(/\n{2,}/)
+    .filter(Boolean);
 
   return (
     <main data-component="Article.Preview">
