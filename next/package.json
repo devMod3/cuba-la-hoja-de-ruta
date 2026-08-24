@@ -27,7 +27,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "check": "pnpm format:check && pnpm lint && pnpm project:standards && pnpm architecture:check && pnpm content:snapshot:check && pnpm security:check && pnpm typecheck && pnpm typecheck:quality && pnpm test && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget"
+    "check": "pnpm format:check && pnpm lint && pnpm project:standards && pnpm architecture:check && pnpm content:snapshot:check && pnpm security:check && pnpm typecheck && pnpm typecheck:quality && pnpm test:coverage && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
