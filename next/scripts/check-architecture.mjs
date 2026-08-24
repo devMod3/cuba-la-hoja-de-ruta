@@ -23,6 +23,14 @@ const boundaries = [
     forbidNodeBuiltins: true
   },
   {
+    name: '@zenblog/content-renderer',
+    root: 'packages/content-renderer',
+    sourceRoots: ['src'],
+    allowedInternal: [],
+    forbiddenExternal: ['next', 'react', 'react-dom'],
+    forbidNodeBuiltins: true
+  },
+  {
     name: '@zenblog/search-core',
     root: 'packages/search-core',
     sourceRoots: ['src'],
@@ -51,11 +59,13 @@ const boundaries = [
     root: 'apps/web',
     sourceRoots: ['app', 'components', 'adapters'],
     allowedInternal: [
+      '@zenblog/content-renderer',
       '@zenblog/content-snapshot',
       '@zenblog/domain',
       '@zenblog/search-core',
       '@zenblog/zrp-adapter'
     ],
+    serverOnlyInternal: ['@zenblog/content-renderer'],
     forbiddenExternal: [],
     forbidNodeBuiltins: false
   }
@@ -138,6 +148,7 @@ for (const boundary of boundaries) {
   for (const file of files) {
     const source = await readFile(file, 'utf8');
     const relativeFile = path.relative(workspaceRoot, file);
+    const isClientModule = /^\s*['"]use client['"]\s*;/.test(source);
 
     for (const specifier of importedSpecifiers(source)) {
       if (specifier.startsWith('.')) {
@@ -161,6 +172,12 @@ for (const boundary of boundaries) {
         } else if (specifier !== internal) {
           errors.push(
             `${relativeFile}: deep internal import forbidden; import public package root ${internal}, not ${specifier}`
+          );
+        }
+
+        if (isClientModule && boundary.serverOnlyInternal?.includes(internal)) {
+          errors.push(
+            `${relativeFile}: client module may not import server-only package ${internal}`
           );
         }
       }

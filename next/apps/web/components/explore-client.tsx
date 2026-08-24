@@ -9,7 +9,13 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
   const results = useMemo(() => searchArticlesByTitle(articles, query), [articles, query]);
 
   return (
-    <section aria-labelledby="explore-search-heading" data-component="Explore.PublicSearch">
+    <section
+      ref={(node) => {
+        if (node) node.dataset['hydrated'] = 'true';
+      }}
+      aria-labelledby="explore-search-heading"
+      data-component="Explore.PublicSearch"
+    >
       <h2 id="explore-search-heading" className="visually-hidden">
         Buscar artículos
       </h2>

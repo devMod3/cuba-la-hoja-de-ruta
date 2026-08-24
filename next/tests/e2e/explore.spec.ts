@@ -12,7 +12,9 @@ test('Explore is snapshot-backed, title-only, recent-first and accent-insensitiv
 
   await page.goto('/explorar/');
 
+  const search = page.locator('[data-component="Explore.PublicSearch"]');
   const results = page.locator('.explore-results a');
+  await expect(search).toHaveAttribute('data-hydrated', 'true');
   await expect(page.getByRole('status')).toHaveText('2 artículos');
   await expect(results).toHaveCount(2);
   await expect(results.nth(0)).toHaveText('Que es Pueblo?');
