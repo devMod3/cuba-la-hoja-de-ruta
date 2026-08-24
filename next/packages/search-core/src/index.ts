@@ -65,9 +65,7 @@ function pillars(record: MetadataRecord | null): string[] {
 
 function hasArticleReference(record: MetadataRecord | null, article: string | null): boolean {
   if (!article) return true;
-  return (record?.indexing.norms ?? []).some((reference) =>
-    reference.articles.includes(article)
-  );
+  return (record?.indexing.norms ?? []).some((reference) => reference.articles.includes(article));
 }
 
 function haystack(article: Article, record: MetadataRecord | null): string {
