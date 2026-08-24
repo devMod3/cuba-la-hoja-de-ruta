@@ -125,6 +125,6 @@
   <script src='https://cdn.jsdelivr.net/gh/devMod3/cuba-la-hoja-de-ruta@3aa43f5b347a0711dafb4073fb5f2213a88909cc/tools/runtime/bootstrap.js' type='module'></script>
 
   <!-- Protected independent foreground player. -->
-  <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.3' type='module'></script>
+  <script src='https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.4' type='module'></script>
 </body>
 </html>
