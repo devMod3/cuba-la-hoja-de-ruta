@@ -23,7 +23,7 @@ const BloggerFeedSchema = z
     feed: z
       .object({
         entry: z.array(BloggerEntrySchema).default([]),
-        'openSearch$totalResults': BloggerTextSchema.optional()
+        openSearch$totalResults: BloggerTextSchema.optional()
       })
       .passthrough()
       .default({})
@@ -78,7 +78,11 @@ export class BloggerFeedSource {
   readonly #baseUrl: string;
   readonly #fetcher: typeof fetch;
 
-  constructor({ pageSize = 150, baseUrl, fetcher = globalThis.fetch }: BloggerFeedSourceOptions = {}) {
+  constructor({
+    pageSize = 150,
+    baseUrl,
+    fetcher = globalThis.fetch
+  }: BloggerFeedSourceOptions = {}) {
     const resolvedBaseUrl = baseUrl ?? globalThis.document?.baseURI;
     if (!resolvedBaseUrl) throw new Error('BloggerFeedSource requires baseUrl outside a browser');
     if (!fetcher) throw new Error('BloggerFeedSource requires fetch');
@@ -123,7 +127,7 @@ export class BloggerFeedSource {
 
       posts.push(...page);
       if (total === null) {
-        const parsedTotal = Number(feed['openSearch$totalResults']?.$t ?? page.length);
+        const parsedTotal = Number(feed.openSearch$totalResults?.$t ?? page.length);
         total = Number.isFinite(parsedTotal) ? parsedTotal : page.length;
       }
       if (!page.length || posts.length >= total) break;
