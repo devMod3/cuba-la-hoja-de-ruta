@@ -29,6 +29,7 @@ const probeHtml = `<!doctype html>
     new MutationObserver(captureAdmin).observe(document.documentElement, { attributes: true, attributeFilter: ['data-zen-admin'] });
     setInterval(captureAdmin, 25);
   </script>
+  <script type="module" src="/dist/zenblog.js"></script>
   <script type="module" src="/tools/runtime/bootstrap.js"></script>
 </body>
 </html>`;
@@ -108,13 +109,19 @@ try {
   assert.match(deepPath, /data-zen-admin="true"/);
   assert.match(deepPath, /data-admin-boot="true"/);
   assert.match(deepPath, /data-admin-location="\/admin\?from=deep"/);
+  assert.doesNotMatch(deepPath, /data-zen-booted="true"/);
 
   const hashSuffix = await dump('/probe#zen-about/admin');
   assert.match(hashSuffix, /data-zen-admin="true"/);
   assert.match(hashSuffix, /data-admin-boot="true"/);
   assert.match(hashSuffix, /data-admin-location="\/admin"/);
+  assert.doesNotMatch(hashSuffix, /data-zen-booted="true"/);
 
-  console.log('Blogger Admin suffix route browser contract: PASS');
+  const publicHash = await dump('/probe#zen-explore');
+  assert.match(publicHash, /data-zen-booted="true"/);
+  assert.doesNotMatch(publicHash, /data-zen-admin="true"/);
+
+  console.log('Blogger Admin/public bootstrap ownership browser contract: PASS');
 } finally {
   await new Promise((done) => server.close(done));
 }
