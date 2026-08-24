@@ -42,6 +42,10 @@ function report(file, rule) {
   errors.push(`${path.relative(repoRoot, file)}: ${rule}`);
 }
 
+function requireText(source, pattern, message) {
+  if (!pattern.test(source)) errors.push(message);
+}
+
 const universalRules = [
   ['TypeScript suppression is forbidden', /@ts-(?:ignore|nocheck)\b/],
   ['ESLint suppression requires architectural removal, not silence', /eslint-disable\b/],
@@ -76,6 +80,35 @@ for (const relativeRoot of scanRoots) {
   }
 }
 
+const rootManifestPath = path.join(repoRoot, 'package.json');
+const rootManifest = JSON.parse(await readFile(rootManifestPath, 'utf8'));
+const legacyCoverageScript = String(rootManifest.scripts?.['test:coverage'] ?? '');
+requireText(
+  legacyCoverageScript,
+  /--test-coverage-lines=50(?:\s|$)/,
+  'package.json: legacy line coverage floor may not fall below 50%'
+);
+requireText(
+  legacyCoverageScript,
+  /--test-coverage-branches=59(?:\s|$)/,
+  'package.json: legacy branch coverage floor may not fall below 59%'
+);
+requireText(
+  legacyCoverageScript,
+  /--test-coverage-functions=57(?:\s|$)/,
+  'package.json: legacy function coverage floor may not fall below 57%'
+);
+requireText(
+  legacyCoverageScript,
+  /--test-coverage-include='src\/\*\*\/\*\.js'/,
+  'package.json: legacy coverage must include src/**/*.js explicitly'
+);
+requireText(
+  legacyCoverageScript,
+  /--test-coverage-include='tools\/\*\*\/\*\.js'/,
+  'package.json: legacy coverage must include tools/**/*.js explicitly'
+);
+
 const nextRoot = path.join(repoRoot, 'next');
 if (await exists(path.join(nextRoot, 'package.json'))) {
   const strictCompilerOptions = {
@@ -101,6 +134,41 @@ if (await exists(path.join(nextRoot, 'package.json'))) {
     if (baseTsconfig.compilerOptions?.[option] !== requiredValue) {
       errors.push(`next/tsconfig.base.json: compilerOptions.${option} must be ${String(requiredValue)}`);
     }
+  }
+
+  const nextManifestPath = path.join(nextRoot, 'package.json');
+  const nextManifest = JSON.parse(await readFile(nextManifestPath, 'utf8'));
+  if (nextManifest.devDependencies?.['@vitest/coverage-v8'] !== '4.1.11') {
+    errors.push('next/package.json: @vitest/coverage-v8 must remain exactly 4.1.11 while Vitest is 4.1.11');
+  }
+  if (nextManifest.devDependencies?.vitest !== '4.1.11') {
+    errors.push('next/package.json: Vitest must remain exactly 4.1.11 for the current testing baseline');
+  }
+  if (nextManifest.scripts?.['test:coverage'] !== 'vitest run --coverage') {
+    errors.push('next/package.json: test:coverage must remain the canonical Vitest coverage command');
+  }
+  if (!String(nextManifest.scripts?.check ?? '').includes('pnpm test:coverage')) {
+    errors.push('next/package.json: pnpm check must enforce test:coverage');
+  }
+
+  const vitestConfig = await readFile(path.join(nextRoot, 'vitest.config.ts'), 'utf8');
+  const requiredCoveragePolicy = [
+    [/provider:\s*'v8'/, 'Vitest coverage provider must be v8'],
+    [/autoUpdate:\s*false/, 'coverage thresholds may not auto-update'],
+    [/statements:\s*90/, 'global statement coverage floor may not fall below 90%'],
+    [/branches:\s*70/, 'global branch coverage floor may not fall below 70%'],
+    [/functions:\s*90/, 'global function coverage floor may not fall below 90%'],
+    [/lines:\s*95/, 'global line coverage floor may not fall below 95%'],
+    [/packages\/\*\/src\/\*\*\/\*\.ts/, 'coverage must explicitly include portable package sources'],
+    [/apps\/web\/adapters\/\*\*\/\*\.ts/, 'coverage must explicitly include Web adapters']
+  ];
+  for (const [pattern, message] of requiredCoveragePolicy) {
+    requireText(vitestConfig, pattern, `next/vitest.config.ts: ${message}`);
+  }
+  if (/apps\/web\/components/.test(vitestConfig)) {
+    errors.push(
+      'next/vitest.config.ts: TSX components must not be forced through unit line coverage; they are governed by browser behavior/accessibility gates'
+    );
   }
 
   const packageRoot = path.join(nextRoot, 'packages');
@@ -160,6 +228,11 @@ if (await exists(path.join(nextRoot, 'package.json'))) {
   if (!/\bforbidOnly:\s*true\b/.test(playwrightConfig)) {
     errors.push('next/playwright.config.ts: forbidOnly must be true in every environment');
   }
+  for (const project of ['chromium', 'firefox', 'webkit', 'mobile-webkit']) {
+    if (!playwrightConfig.includes(`name: '${project}'`)) {
+      errors.push(`next/playwright.config.ts: required browser project missing: ${project}`);
+    }
+  }
 }
 
 if (errors.length) {
@@ -172,4 +245,8 @@ globalThis.console.log('PROJECT_ENGINEERING_STANDARDS=PASS');
 globalThis.console.log(`SCANNED_CODE_FILES=${scannedFiles}`);
 globalThis.console.log(`STRICT_TS_OPTIONS=${strictOptionCount}`);
 globalThis.console.log(`INTERNAL_PACKAGES=${internalPackageCount}`);
-if (internalPackageCount > 0) globalThis.console.log('PLAYWRIGHT_RETRIES=0');
+globalThis.console.log('LEGACY_COVERAGE_FLOOR=lines:50,branches:59,functions:57');
+if (internalPackageCount > 0) {
+  globalThis.console.log('NEXT_COVERAGE_FLOOR=statements:90,branches:70,functions:90,lines:95');
+  globalThis.console.log('PLAYWRIGHT_RETRIES=0');
+}
