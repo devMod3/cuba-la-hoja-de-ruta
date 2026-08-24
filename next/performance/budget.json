@@ -1,0 +1,6 @@
+{
+  "totalJavaScriptGzipBytes": 250000,
+  "largestJavaScriptGzipBytes": 150000,
+  "totalCssGzipBytes": 50000,
+  "largestCssGzipBytes": 40000
+}
