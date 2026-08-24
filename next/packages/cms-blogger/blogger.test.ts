@@ -91,7 +91,10 @@ describe('BloggerFeedSource', () => {
         new Response(
           JSON.stringify({
             feed: {
-              entry: [{ id: { $t: 'bad' }, title: { $t: 'Sin URL' }, link: [] }, entry(7, 'Válido')],
+              entry: [
+                { id: { $t: 'bad' }, title: { $t: 'Sin URL' }, link: [] },
+                entry(7, 'Válido')
+              ],
               openSearch$totalResults: { $t: '2' }
             }
           }),
