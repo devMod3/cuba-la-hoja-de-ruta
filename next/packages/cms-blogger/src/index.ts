@@ -33,7 +33,7 @@ function isObject(value: unknown): value is JsonObject {
 
 function readText(value: unknown): string | undefined {
   if (!isObject(value)) return undefined;
-  return typeof value.$t === 'string' ? value.$t : undefined;
+  return typeof value['$t'] === 'string' ? value['$t'] : undefined;
 }
 
 function readLinks(value: unknown): BloggerLink[] {
@@ -43,8 +43,8 @@ function readLinks(value: unknown): BloggerLink[] {
   for (const item of value) {
     if (!isObject(item)) continue;
     const link: BloggerLink = {};
-    if (typeof item.rel === 'string') link.rel = item.rel;
-    if (typeof item.href === 'string') link.href = item.href;
+    if (typeof item['rel'] === 'string') link.rel = item['rel'];
+    if (typeof item['href'] === 'string') link.href = item['href'];
     links.push(link);
   }
 
@@ -58,7 +58,7 @@ function readCategories(value: unknown): BloggerCategory[] {
   for (const item of value) {
     if (!isObject(item)) continue;
     const category: BloggerCategory = {};
-    if (typeof item.term === 'string') category.term = item.term;
+    if (typeof item['term'] === 'string') category.term = item['term'];
     categories.push(category);
   }
 
@@ -69,16 +69,16 @@ function parseBloggerEntry(input: unknown): BloggerEntry {
   if (!isObject(input)) throw new Error('Invalid Blogger entry');
 
   const entry: BloggerEntry = {
-    link: readLinks(input.link),
-    category: readCategories(input.category)
+    link: readLinks(input['link']),
+    category: readCategories(input['category'])
   };
 
-  const id = readText(input.id);
-  const title = readText(input.title);
-  const published = readText(input.published);
-  const updated = readText(input.updated);
-  const summary = readText(input.summary);
-  const content = readText(input.content);
+  const id = readText(input['id']);
+  const title = readText(input['title']);
+  const published = readText(input['published']);
+  const updated = readText(input['updated']);
+  const summary = readText(input['summary']);
+  const content = readText(input['content']);
 
   if (id !== undefined) entry.id = id;
   if (title !== undefined) entry.title = title;
@@ -91,12 +91,16 @@ function parseBloggerEntry(input: unknown): BloggerEntry {
 }
 
 function parseBloggerFeed(input: unknown): BloggerFeedPage {
-  if (!isObject(input) || !isObject(input.feed)) throw new Error('Invalid Blogger feed');
+  if (!isObject(input)) throw new Error('Invalid Blogger feed');
+  const feed = input['feed'];
+  if (!isObject(feed)) throw new Error('Invalid Blogger feed');
 
-  return {
-    entry: Array.isArray(input.feed.entry) ? input.feed.entry : [],
-    totalResults: readText(input.feed['openSearch$totalResults'])
+  const page: BloggerFeedPage = {
+    entry: Array.isArray(feed['entry']) ? feed['entry'] : []
   };
+  const totalResults = readText(feed['openSearch$totalResults']);
+  if (totalResults !== undefined) page.totalResults = totalResults;
+  return page;
 }
 
 function assertValidUrl(value: string): void {
