@@ -176,7 +176,9 @@ for (const boundary of boundaries) {
         }
 
         if (isClientModule && boundary.serverOnlyInternal?.includes(internal)) {
-          errors.push(`${relativeFile}: client module may not import server-only package ${internal}`);
+          errors.push(
+            `${relativeFile}: client module may not import server-only package ${internal}`
+          );
         }
       }
 
