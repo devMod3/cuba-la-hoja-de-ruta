@@ -1,0 +1,105 @@
+ZENBLOG — CURRENT BLOGGER DEPLOYMENT EVIDENCE
+============================================
+Date captured: 2026-08-23 America/New_York
+Consultation: Q-035
+Source: canonical GitHub main plus Product Owner Blogger Real QA
+Purpose: record the current operational deployment after PR #28 compound Admin hash hotfix.
+
+CURRENT CANONICAL GITHUB
+------------------------
+Repository: devMod3/cuba-la-hoja-de-ruta
+main: 7f137fae995d69f6e0e02d68334667da09a47d8f
+main tree: eb9c6b1cf5fa72a08a638b135edb4a976e44c28b
+Release label: v0.9.2
+Theme blob: e6af7b237503629e6c7bd237c1378472b132da51
+Immutable Blogger asset pin: 3aa43f5b347a0711dafb4073fb5f2213a88909cc
+Installed XML SHA-256: e8f4637a76ced77e8131cfd967b0028171c42a538a48798dd70e1fc989a35550
+Zen Radio Player: protected independent loader v1.0.3
+FREEZE: NO
+
+LATEST HOTFIX
+-------------
+PR #28: HOTFIX v0.9.2 — compound Admin hash ownership
+Status: MERGED
+Merge SHA: 7f137fae995d69f6e0e02d68334667da09a47d8f
+Defect: HASH-COMPOUND-001
+Previous real failure:
+  https://cubalahojaderuta.blogspot.com/#zen-explore/admin
+  observed Portada instead of Admin.
+
+Root ownership correction:
+- public ZenBlog entry now refuses to boot when pathname/hash belongs to Admin;
+- Admin/runtime bootstrap remains the owner of /admin, path-suffix /admin and hash-suffix /admin routes;
+- normal public hashes remain owned by ZenBlog public navigation.
+
+AUTOMATED EVIDENCE
+------------------
+PR #28 Validate ZenBlog run: 32677678214 / run #261
+Conclusion: SUCCESS
+JavaScript checks: PASS
+Unit tests: 86/86 PASS
+About browser smoke: PASS
+About Admin-to-public field parity browser contract: PASS
+Admin/public bootstrap ownership browser contract: PASS
+Blogger XML parse: PASS
+Architecture invariants: PASS
+Protected Blogger/player invariants: PASS
+
+CI evidence is not Blogger Real QA and is not Safari/iPhone QA.
+
+BLOGGER REAL QA — Q-035
+-----------------------
+QA-HF-004 Search / Search Lab: PASS
+  Real index observed: 2 artículos indexados.
+  Query: pueblo.
+
+QA-HF-006 Inspector: PASS
+
+QA-HF-007 leave Admin / return to public site: PASS
+  Observation: Sitio ↗ visibility differs by responsive format and remains tracked for mobile acceptance.
+
+QA-HF-009 Zen Radio Player / ZenBlog navigation boundary: PASS
+  Audio/player continuity preserved across Portada/Explorar navigation.
+
+HASH-COMPOUND-001 after PR #28 deployment: PASS
+  #zen-explore/admin now opens Admin instead of Portada.
+
+OPEN OBSERVATIONS / PENDING ACCEPTANCE
+--------------------------------------
+ADMIN-RESPONSIVE-OBS-001:
+  Product Owner observed Sitio ↗ only in PC format.
+  Code contract hides it on tablet and expects it visible again on mobile.
+  Must be checked during real Safari/iPhone acceptance before deciding defect vs intended/acceptable behavior.
+
+PERFORMANCE-OBS-001:
+  Admin was perceived as somewhat slow.
+  No before/after metric exists.
+  Do not classify as regression or open a performance hotfix without measurement.
+
+Safari/iPhone/WebKit real acceptance remains pending:
+- safe-area behavior;
+- mobile navigation/touch behavior;
+- player coexistence;
+- orientation / critical heights;
+- Admin responsive visibility including Sitio ↗.
+
+ZRP DURABLE IMPROVEMENT REQUEST
+-------------------------------
+ZRP-UX-IMPROVEMENT-001:
+Current:
+- Reproductor opens minimized and autoplays first playlist item;
+- clicking minimized player opens only the controls bar.
+Desired future behavior:
+- preserve minimized initial open and autoplay;
+- clicking minimized player should expand the complete player surface: controls + playback/reproduction bar;
+- do not regress playlist, persistence, ZenBlog navigation, or player isolation.
+Status: queued for future code-modification phase; not part of PR #28.
+
+RELEASE / FREEZE STATE
+----------------------
+Current release remains v0.9.2.
+Blogger Real routing defect HASH-COMPOUND-001 is closed PASS.
+Main functional Q-035 Blogger Real gates QA-HF-004/006/007/009 are PASS.
+FREEZE remains NO because Safari/iPhone/WebKit real acceptance has not yet been completed and Product Owner has not explicitly accepted FROZEN.
+
+END
