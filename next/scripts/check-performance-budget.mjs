@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputRoot = path.join(workspaceRoot, 'apps/web/out');
-const budget = JSON.parse(await readFile(path.join(workspaceRoot, 'performance/budget.json'), 'utf8'));
+const budget = JSON.parse(
+  await readFile(path.join(workspaceRoot, 'performance/budget.json'), 'utf8')
+);
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
