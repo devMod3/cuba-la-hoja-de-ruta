@@ -23,7 +23,9 @@ describe('sanitizeBloggerArticleHtml', () => {
 
     for (const payload of payloads) {
       const output = sanitizeBloggerArticleHtml(payload);
-      expect(output).not.toMatch(/<script|<iframe|<form|<img|javascript:|onerror=|onclick=|onmouseover=|style=/i);
+      expect(output).not.toMatch(
+        /<script|<iframe|<form|<img|javascript:|onerror=|onclick=|onmouseover=|style=/i
+      );
     }
   });
 
