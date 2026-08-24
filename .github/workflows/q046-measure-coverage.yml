@@ -1,14 +1,14 @@
 name: Q-046 Measure Testing Baseline
 
 on:
-  push:
-    branches: [q046-project-wide-testing-standards]
+  pull_request:
+    branches: [next-v1-foundation]
 
 permissions:
   contents: read
 
 concurrency:
-  group: q046-testing-baseline
+  group: q046-testing-baseline-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
