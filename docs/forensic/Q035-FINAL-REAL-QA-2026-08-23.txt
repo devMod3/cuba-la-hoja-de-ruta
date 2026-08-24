@@ -1,0 +1,61 @@
+ZENBLOG — Q-035 FINAL REAL QA EVIDENCE
+======================================
+Date: 2026-08-23 America/New_York
+Consultation: Q-035
+Release: v0.9.2
+Repository: devMod3/cuba-la-hoja-de-ruta
+
+SCOPE
+-----
+This file records Product Owner real-environment evidence gathered during Q-035. It does not convert CI into Blogger Real QA and does not replace the continuity package as operational authority.
+
+BLOGGER REAL QA CLOSED IN Q-035
+-------------------------------
+QA-HF-004 Search / Search Lab: PASS
+Observed real status: 2 artículos indexados.
+Query exercised: pueblo.
+
+QA-HF-006 Inspector: PASS
+
+QA-HF-007 leave Admin / return to public site: PASS
+
+QA-HF-009 Zen Radio Player / ZenBlog navigation boundary: PASS
+
+HASH-COMPOUND-001 after PR #28 deployment: PASS
+Route exercised: https://cubalahojaderuta.blogspot.com/#zen-explore/admin
+Expected/observed result after hotfix: ZenBlog Admin opens; Portada fallback no longer owns the route.
+
+SAFARI / IPHONE / WEBKIT REAL ACCEPTANCE
+----------------------------------------
+Final real-device session: PASS
+Verified by Product Owner on iPhone + Safari:
+- Portada -> Explorar -> Acerca de navigation usable.
+- No reported critical safe-area overlap.
+- Zen Radio Player coexists with mobile UI.
+- Portrait/landscape transition produced no reported critical cut, overlap, or horizontal overflow.
+- /admin tabs usable.
+- Sitio ↗ is visible in mobile format.
+
+ADMIN-RESPONSIVE-OBS-001
+------------------------
+Disposition: CLOSED / NOT A DEFECT.
+Reason: final Safari/iPhone real acceptance confirmed Sitio ↗ visible on mobile.
+
+PERFORMANCE-OBS-001
+-------------------
+Status: OPEN OBSERVATION / NON-BLOCKING.
+Admin was perceived as somewhat slow, but no before/after metric exists. Do not classify as regression or open a performance hotfix without measurement.
+
+ZRP-UX-IMPROVEMENT-001
+----------------------
+Queued future improvement, not part of v0.9.2:
+- Keep initial minimized open and autoplay behavior.
+- Clicking the minimized player should expand the complete player surface, including controls plus playback/reproduction bar.
+- Preserve playlist behavior, persistence, ZenBlog navigation, and protected product boundary.
+
+FREEZE
+------
+All currently defined technical and real-environment gates are closed.
+FREEZE remains NO until explicit Product Owner acceptance. Freeze must not be inferred from this file.
+
+END
