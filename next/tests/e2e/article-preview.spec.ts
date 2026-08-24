@@ -11,10 +11,9 @@ test('article preview is static, noindex and canonically owned by Blogger', asyn
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', CANONICAL);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/i);
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', CANONICAL);
-  await expect(page.getByRole('link', { name: 'Leer versión canónica en Blogger ↗' })).toHaveAttribute(
-    'href',
-    CANONICAL
-  );
+  await expect(
+    page.getByRole('link', { name: 'Leer versión canónica en Blogger ↗' })
+  ).toHaveAttribute('href', CANONICAL);
   await expect(page.locator('[data-component="Article.Preview"] script')).toHaveCount(0);
   await expect(page.locator('[data-component="Article.Preview"] iframe')).toHaveCount(0);
 });
