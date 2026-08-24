@@ -13,6 +13,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint . --max-warnings=0",
     "architecture:check": "node scripts/check-architecture.mjs",
+    "content:snapshot:check": "node scripts/check-blogger-snapshot.mjs",
     "security:baseline": "node scripts/check-supply-chain.mjs",
     "security:sbom": "node scripts/generate-sbom.mjs",
     "security:check": "pnpm security:baseline && pnpm peers check && pnpm security:sbom",
@@ -21,7 +22,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "check": "pnpm format:check && pnpm lint && pnpm architecture:check && pnpm security:check && pnpm typecheck && pnpm test && pnpm build && pnpm performance:budget"
+    "check": "pnpm format:check && pnpm lint && pnpm architecture:check && pnpm content:snapshot:check && pnpm security:check && pnpm typecheck && pnpm test && pnpm build && pnpm performance:budget"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
