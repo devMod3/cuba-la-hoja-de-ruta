@@ -1,23 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Article } from '@zenblog/domain';
 import { searchArticlesByTitle } from '@zenblog/search-core';
 
 export function ExploreClient({ articles }: { readonly articles: readonly Article[] }) {
   const [query, setQuery] = useState('');
-  const [hydrated, setHydrated] = useState(false);
   const results = useMemo(() => searchArticlesByTitle(articles, query), [articles, query]);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
 
   return (
     <section
+      ref={(node) => {
+        if (node) node.dataset.hydrated = 'true';
+      }}
       aria-labelledby="explore-search-heading"
       data-component="Explore.PublicSearch"
-      data-hydrated={hydrated ? 'true' : 'false'}
     >
       <h2 id="explore-search-heading" className="visually-hidden">
         Buscar artículos
