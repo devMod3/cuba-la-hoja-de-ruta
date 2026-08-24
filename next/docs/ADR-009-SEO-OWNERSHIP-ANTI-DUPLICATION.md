@@ -16,6 +16,10 @@ Until an explicit hostname cutover is accepted by the Product Owner:
 - The Next platform does not advertise its own sitemap before a real public hostname and cutover policy exist.
 - A post-build gate reads the exported HTML and fails if a preview loses `noindex`, points canonical somewhere other than its exact Blogger URL, or if `robots.txt` no longer enforces the migration boundary.
 
+## Verification
+
+The acceptance evidence for this ADR is the normal Next quality pipeline: the static export must complete first and `seo:ownership:check` must then pass against that generated export. No source-only assertion substitutes for the exported-HTML check.
+
 ## Consequences
 
 This creates defense in depth: metadata, exported HTML and crawler policy all express the same ownership model. The rule is executable rather than documentary only.
