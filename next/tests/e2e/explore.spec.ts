@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 const feed = {
   feed: {
-    'openSearch$totalResults': { $t: '2' },
+    openSearch$totalResults: { $t: '2' },
     entry: [
       {
         id: { $t: 'tag:blogger.com,1999:blog-1.post-1' },
@@ -28,7 +28,11 @@ const feed = {
 
 test.beforeEach(async ({ page }) => {
   await page.route('https://cubalahojaderuta.blogspot.com/feeds/posts/default**', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(feed) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(feed)
+    });
   });
 });
 
