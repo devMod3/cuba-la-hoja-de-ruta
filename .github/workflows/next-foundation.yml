@@ -2,22 +2,31 @@ name: Validate ZenBlog Next
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, next-v1-foundation]
     paths:
       - 'next/**'
+      - 'tools/quality/**'
+      - 'docs/ENGINEERING-STANDARDS-50Y.md'
       - '.github/workflows/next-foundation.yml'
   push:
     branches: [next-v1-foundation]
     paths:
       - 'next/**'
+      - 'tools/quality/**'
+      - 'docs/ENGINEERING-STANDARDS-50Y.md'
       - '.github/workflows/next-foundation.yml'
 
 permissions:
   contents: read
 
+concurrency:
+  group: next-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
