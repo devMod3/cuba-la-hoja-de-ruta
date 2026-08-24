@@ -25,17 +25,19 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     };
   }
 
+  const articleOpenGraph: NonNullable<Metadata['openGraph']> = {
+    type: 'article',
+    title: article.title,
+    url: article.url,
+    ...(article.publishedAt ? { publishedTime: article.publishedAt } : {}),
+    ...(article.updatedAt ? { modifiedTime: article.updatedAt } : {})
+  };
+
   return {
     title: article.title,
     alternates: { canonical: article.url },
     robots: { index: false, follow: true },
-    openGraph: {
-      type: 'article',
-      title: article.title,
-      url: article.url,
-      publishedTime: article.publishedAt ?? undefined,
-      modifiedTime: article.updatedAt ?? undefined
-    }
+    openGraph: articleOpenGraph
   };
 }
 
