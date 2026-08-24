@@ -43,12 +43,13 @@ describe('BloggerFeedSource', () => {
       const url = new URL(String(input));
       calls.push({ url, init });
       const start = url.searchParams.get('start-index');
-      const entries = start === '1' ? [entry(1, 'Uno'), entry(2, 'Dos')] : [entry(2, 'Dos'), entry(3, 'Tres')];
+      const entries =
+        start === '1' ? [entry(1, 'Uno'), entry(2, 'Dos')] : [entry(2, 'Dos'), entry(3, 'Tres')];
       return new Response(
         JSON.stringify({
           feed: {
             entry: entries,
-            'openSearch$totalResults': { $t: '4' }
+            openSearch$totalResults: { $t: '4' }
           }
         }),
         { status: 200, headers: { 'content-type': 'application/json' } }
@@ -80,11 +81,8 @@ describe('BloggerFeedSource', () => {
       new Response(
         JSON.stringify({
           feed: {
-            entry: [
-              { id: { $t: 'bad' }, title: { $t: 'Sin URL' }, link: [] },
-              entry(7, 'Válido')
-            ],
-            'openSearch$totalResults': { $t: '2' }
+            entry: [{ id: { $t: 'bad' }, title: { $t: 'Sin URL' }, link: [] }, entry(7, 'Válido')],
+            openSearch$totalResults: { $t: '2' }
           }
         }),
         { status: 200, headers: { 'content-type': 'application/json' } }
