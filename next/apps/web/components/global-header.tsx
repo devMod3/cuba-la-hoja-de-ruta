@@ -61,9 +61,7 @@ export function GlobalHeader() {
               {route.label}
             </Link>
           ))}
-          <span className="nav-player" onClick={() => setMenuOpen(false)}>
-            <ZrpLauncher />
-          </span>
+          <ZrpLauncher onOpen={() => setMenuOpen(false)} />
           <Link
             href={aboutRoute.href}
             aria-current={routeIsActive(pathname, aboutRoute.href) ? 'page' : undefined}
