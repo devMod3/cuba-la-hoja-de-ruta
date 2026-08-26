@@ -28,8 +28,14 @@ describe('Blogger snapshot control-plane contract', () => {
     const newer = article('1', '2026-08-02T00:00:00.000Z');
     const canonical = canonicalizeArticles([older, newer]);
 
-    assert.deepEqual(canonical.map(({ id }) => id), ['1', '2']);
-    assert.equal(computeArticleContentSha256(canonical), computeArticleContentSha256([...canonical]));
+    assert.deepEqual(
+      canonical.map(({ id }) => id),
+      ['1', '2']
+    );
+    assert.equal(
+      computeArticleContentSha256(canonical),
+      computeArticleContentSha256([...canonical])
+    );
   });
 
   it('normalizes provenance and renders coherent metadata', () => {
