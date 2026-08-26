@@ -7,7 +7,7 @@ export default {
     configFile: 'vitest.config.ts',
     related: false
   },
-  coverageAnalysis: 'perTest',
+  coverageAnalysis: 'off',
   concurrency: 2,
   inPlace: true,
   reporters: ['clear-text', 'json'],
