@@ -107,14 +107,13 @@ describe('LocalMetadataSource', () => {
     expect(listener).toHaveBeenCalledTimes(2);
   });
 
-  it('honors a custom storage key and tolerates absent event targets', () => {
+  it('honors a custom storage key and tolerates an omitted event target', () => {
     const storage = new MemoryStorage(JSON.stringify({ records: {} }));
     const windowTarget = new EventTarget();
     const listener = vi.fn();
     const source = new LocalMetadataSource({
       storage,
       storageKey: 'custom.metadata',
-      documentTarget: undefined,
       windowTarget
     });
     const unsubscribe = source.subscribe(listener);
