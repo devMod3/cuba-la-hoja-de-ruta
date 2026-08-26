@@ -1,10 +1,10 @@
 export default {
   mutate: ['packages/search-core/src/index.ts'],
+  testFiles: ['packages/search-core/**/*.test.ts'],
   plugins: ['@stryker-mutator/vitest-runner'],
   testRunner: 'vitest',
   vitest: {
     configFile: 'vitest.config.ts',
-    dir: 'packages/search-core',
     related: false
   },
   coverageAnalysis: 'perTest',
