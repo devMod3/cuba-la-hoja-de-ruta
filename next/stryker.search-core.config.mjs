@@ -5,7 +5,7 @@ export default {
   vitest: {
     configFile: 'vitest.config.ts',
     dir: 'packages/search-core',
-    related: true
+    related: false
   },
   coverageAnalysis: 'perTest',
   concurrency: 2,
