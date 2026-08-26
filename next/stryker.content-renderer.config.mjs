@@ -9,6 +9,7 @@ export default {
   },
   coverageAnalysis: 'off',
   concurrency: 2,
+  maxTestRunnerReuse: 1,
   inPlace: true,
   reporters: ['clear-text', 'json'],
   clearTextReporter: {
