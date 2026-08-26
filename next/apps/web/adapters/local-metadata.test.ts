@@ -84,7 +84,7 @@ describe('LocalMetadataSource', () => {
       new LocalMetadataSource({ storage: new MemoryStorage(null), warn }).getRegistry()
     ).toEqual(EMPTY_METADATA_REGISTRY);
     expect(
-      new LocalMetadataSource({ storage: new MemoryStorage('{}'), warn }).getRegistry()
+      new LocalMetadataSource({ storage: new MemoryStorage('{"records":null}'), warn }).getRegistry()
     ).toEqual(EMPTY_METADATA_REGISTRY);
     expect(warn).not.toHaveBeenCalled();
   });
