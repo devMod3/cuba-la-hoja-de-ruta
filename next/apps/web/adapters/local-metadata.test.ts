@@ -124,6 +124,8 @@ describe('LocalMetadataSource', () => {
     windowTarget.dispatchEvent(new KeyedEvent('storage', 'custom.metadata'));
 
     expect(listener).toHaveBeenCalledOnce();
-    expect(() => unsubscribe()).not.toThrow();
+    expect(() => {
+      unsubscribe();
+    }).not.toThrow();
   });
 });
