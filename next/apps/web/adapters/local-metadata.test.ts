@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_METADATA_STORAGE_KEY,
   EMPTY_METADATA_REGISTRY,
@@ -31,6 +31,10 @@ class KeyedEvent extends Event {
   }
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('LocalMetadataSource', () => {
   it('preserves the zenMetadataRegistry.v2 storage contract', () => {
     expect(DEFAULT_METADATA_STORAGE_KEY).toBe('zenMetadataRegistry.v2');
@@ -61,6 +65,30 @@ describe('LocalMetadataSource', () => {
     expect(warn).toHaveBeenCalledOnce();
   });
 
+  it('uses the default console warning for storage parse failures', () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const source = new LocalMetadataSource({ storage: new MemoryStorage('{broken') });
+
+    expect(source.getRegistry()).toEqual(EMPTY_METADATA_REGISTRY);
+    expect(consoleWarn).toHaveBeenCalledOnce();
+    expect(consoleWarn).toHaveBeenCalledWith(
+      '[ZenBlog] Metadata registry unavailable',
+      expect.any(SyntaxError)
+    );
+  });
+
+  it('falls back silently for missing or schema-invalid metadata', () => {
+    const warn = vi.fn();
+
+    expect(new LocalMetadataSource({ storage: new MemoryStorage(null), warn }).getRegistry()).toEqual(
+      EMPTY_METADATA_REGISTRY
+    );
+    expect(new LocalMetadataSource({ storage: new MemoryStorage('{}'), warn }).getRegistry()).toEqual(
+      EMPTY_METADATA_REGISTRY
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
+
   it('publishes updates for zenmetadata:changed and only the matching storage key', () => {
     const storage = new MemoryStorage(JSON.stringify({ records: {} }));
     const documentTarget = new EventTarget();
@@ -77,5 +105,25 @@ describe('LocalMetadataSource', () => {
     unsubscribe();
     documentTarget.dispatchEvent(new Event('zenmetadata:changed'));
     expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it('honors a custom storage key and tolerates absent event targets', () => {
+    const storage = new MemoryStorage(JSON.stringify({ records: {} }));
+    const windowTarget = new EventTarget();
+    const listener = vi.fn();
+    const source = new LocalMetadataSource({
+      storage,
+      storageKey: 'custom.metadata',
+      documentTarget: undefined,
+      windowTarget
+    });
+    const unsubscribe = source.subscribe(listener);
+
+    windowTarget.dispatchEvent(new KeyedEvent('storage', DEFAULT_METADATA_STORAGE_KEY));
+    windowTarget.dispatchEvent(new KeyedEvent('storage', null));
+    windowTarget.dispatchEvent(new KeyedEvent('storage', 'custom.metadata'));
+
+    expect(listener).toHaveBeenCalledOnce();
+    expect(() => unsubscribe()).not.toThrow();
   });
 });
