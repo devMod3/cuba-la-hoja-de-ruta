@@ -11,8 +11,11 @@ permissions:
   pages: write
   id-token: write
 
+# Recovery generation v2: the original `pages` group contains a zombie queued
+# run from 2026-08-19. Keep production serialized on a clean group while the
+# stale-deployment guard protects against that old run publishing later.
 concurrency:
-  group: pages
+  group: pages-production-v2
   cancel-in-progress: false
 
 jobs:
