@@ -16,6 +16,7 @@
     "project:standards": "node ../tools/quality/check-project-standards.mjs",
     "architecture:check": "node scripts/check-architecture.mjs",
     "content:control-plane:test": "node --test packages/cms-blogger/tools/snapshot-contract.test.mjs",
+    "content:control-plane:smoke": "node packages/cms-blogger/tools/sync-snapshot.mjs --mode=self-test",
     "content:snapshot:check": "node scripts/check-blogger-snapshot.mjs",
     "content:snapshot:probe": "node packages/cms-blogger/tools/sync-snapshot.mjs --mode=check",
     "content:snapshot:sync": "node packages/cms-blogger/tools/sync-snapshot.mjs --mode=sync",
@@ -30,7 +31,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "check": "pnpm format:check && pnpm lint && pnpm project:standards && pnpm architecture:check && pnpm content:control-plane:test && pnpm content:snapshot:check && pnpm security:check && pnpm typecheck && pnpm typecheck:quality && pnpm test:coverage && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget"
+    "check": "pnpm format:check && pnpm lint && pnpm project:standards && pnpm architecture:check && pnpm content:control-plane:test && pnpm content:control-plane:smoke && pnpm content:snapshot:check && pnpm security:check && pnpm typecheck && pnpm typecheck:quality && pnpm test:coverage && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
