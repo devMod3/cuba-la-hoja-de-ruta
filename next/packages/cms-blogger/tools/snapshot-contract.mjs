@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 export const BLOGGER_ORIGIN = 'https://cubalahojaderuta.blogspot.com';
 
 function canonicalOrigin(baseUrl) {
-  const url = new URL(baseUrl);
+  const url = new globalThis.URL(baseUrl);
   if (url.origin !== BLOGGER_ORIGIN) {
     throw new Error(`Blogger source origin must be ${BLOGGER_ORIGIN}`);
   }
@@ -23,7 +23,7 @@ export function canonicalizeArticles(articles) {
     if (ids.has(article.id)) throw new Error(`duplicate article id: ${article.id}`);
     ids.add(article.id);
 
-    const url = new URL(article.url);
+    const url = new globalThis.URL(article.url);
     if (url.origin !== BLOGGER_ORIGIN) {
       throw new Error(`article ${article.id} escapes canonical Blogger origin`);
     }
