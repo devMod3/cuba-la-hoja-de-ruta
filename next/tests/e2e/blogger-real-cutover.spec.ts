@@ -13,6 +13,8 @@ const ARTICLES = [
 ] as const;
 
 test.describe('Blogger Real cutover QA', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test('production Blogger home remains reachable', async ({ page }) => {
     const response = await page.goto(BLOGGER_BASE_URL, { waitUntil: 'domcontentloaded' });
     expect
