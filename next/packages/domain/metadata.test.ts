@@ -25,8 +25,8 @@ describe('MetadataRegistrySchema', () => {
       }
     });
 
-    expect(positive.records.positive?.temporal.documentYear).toBe(1940);
-    expect(zero.records.zero?.temporal.documentYear).toBeNull();
-    expect(negative.records.negative?.temporal.documentYear).toBeNull();
+    expect(positive.records['positive']?.temporal.documentYear).toBe(1940);
+    expect(zero.records['zero']?.temporal.documentYear).toBeNull();
+    expect(negative.records['negative']?.temporal.documentYear).toBeNull();
   });
 });
