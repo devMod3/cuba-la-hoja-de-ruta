@@ -20,16 +20,14 @@ function routeIsActive(pathname: string, href: string): boolean {
 export function GlobalHeader() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => {
+    setMenuOpen(false);
+  };
 
   return (
     <header className="site-header" data-component="Global.Header">
       <div className="site-header-inner">
-        <Link
-          className="brand"
-          href="/"
-          aria-label="Ir a la portada"
-          onClick={() => setMenuOpen(false)}
-        >
+        <Link className="brand" href="/" aria-label="Ir a la portada" onClick={closeMenu}>
           <span className="brand-mark" aria-hidden="true">
             HR
           </span>
@@ -44,7 +42,9 @@ export function GlobalHeader() {
           type="button"
           aria-expanded={menuOpen}
           aria-controls="primary-navigation"
-          onClick={() => setMenuOpen((open) => !open)}
+          onClick={() => {
+            setMenuOpen((open) => !open);
+          }}
         >
           <span className="visually-hidden">
             {menuOpen ? 'Cerrar navegación' : 'Abrir navegación'}
@@ -63,16 +63,16 @@ export function GlobalHeader() {
               key={route.href}
               href={route.href}
               aria-current={routeIsActive(pathname, route.href) ? 'page' : undefined}
-              onClick={() => setMenuOpen(false)}
+              onClick={closeMenu}
             >
               {route.label}
             </Link>
           ))}
-          <ZrpLauncher onOpen={() => setMenuOpen(false)} />
+          <ZrpLauncher onOpen={closeMenu} />
           <Link
             href={aboutRoute.href}
             aria-current={routeIsActive(pathname, aboutRoute.href) ? 'page' : undefined}
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           >
             {aboutRoute.label}
           </Link>
