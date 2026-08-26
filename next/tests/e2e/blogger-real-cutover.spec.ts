@@ -16,7 +16,7 @@ test.describe('Blogger Real cutover QA', () => {
   test('production Blogger home remains reachable', async ({ page }) => {
     const response = await page.goto(BLOGGER_BASE_URL, { waitUntil: 'domcontentloaded' });
     expect
-      .soft(response?.ok(), `Blogger home HTTP status=${response?.status() ?? 'no-response'}`)
+      .soft(response?.ok(), `Blogger home HTTP status=${String(response?.status() ?? 'no-response')}`)
       .toBe(true);
     expect(new URL(page.url()).hostname).toBe('cubalahojaderuta.blogspot.com');
   });
@@ -25,7 +25,7 @@ test.describe('Blogger Real cutover QA', () => {
     test(`preserves production article contract: ${article.title}`, async ({ page }) => {
       const response = await page.goto(article.url, { waitUntil: 'domcontentloaded' });
       expect
-        .soft(response?.ok(), `${article.url} HTTP status=${response?.status() ?? 'no-response'}`)
+        .soft(response?.ok(), `${article.url} HTTP status=${String(response?.status() ?? 'no-response')}`)
         .toBe(true);
       expect(await page.title()).toContain(article.title);
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', article.url);
