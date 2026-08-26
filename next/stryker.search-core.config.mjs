@@ -1,5 +1,6 @@
 export default {
   mutate: ['packages/search-core/src/index.ts'],
+  plugins: ['@stryker-mutator/vitest-runner'],
   testRunner: 'vitest',
   vitest: {
     configFile: 'vitest.config.ts',
