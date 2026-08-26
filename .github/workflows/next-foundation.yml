@@ -9,6 +9,7 @@ on:
       - 'docs/ENGINEERING-STANDARDS-50Y.md'
       - 'docs/TESTING-STANDARDS.md'
       - '.github/workflows/next-foundation.yml'
+      - '.github/workflows/deploy-pages.yml'
   push:
     branches: [next-v1-foundation]
     paths:
@@ -17,6 +18,7 @@ on:
       - 'docs/ENGINEERING-STANDARDS-50Y.md'
       - 'docs/TESTING-STANDARDS.md'
       - '.github/workflows/next-foundation.yml'
+      - '.github/workflows/deploy-pages.yml'
 
 permissions:
   contents: read
@@ -107,3 +109,18 @@ jobs:
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
         run: pnpm test:e2e
+      - name: Rehearse GitHub Pages base-path export
+        if: steps.workspace.outputs.available == 'true'
+        working-directory: next
+        env:
+          ZENBLOG_BASE_PATH: /zenblog-pages-probe
+        shell: bash
+        run: |
+          rm -rf apps/web/.next apps/web/out
+          pnpm --filter @zenblog/web build
+          test -f apps/web/out/index.html
+          test -d apps/web/out/_next
+          if ! grep -R -F -q --include='*.html' '/zenblog-pages-probe/_next/' apps/web/out; then
+            echo 'Pages rehearsal did not emit base-path-prefixed Next assets.' >&2
+            exit 1
+          fi
