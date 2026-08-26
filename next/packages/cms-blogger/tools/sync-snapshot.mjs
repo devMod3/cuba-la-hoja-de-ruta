@@ -1,5 +1,6 @@
 import { readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { BloggerFeedSource } from '../src/index.ts';
 import {
@@ -21,7 +22,7 @@ if (!['check', 'sync', 'self-test'].includes(mode)) {
 }
 
 const sourceBaseUrl = process.env.ZENBLOG_BLOGGER_ORIGIN ?? BLOGGER_ORIGIN;
-if (new URL(sourceBaseUrl).origin !== BLOGGER_ORIGIN) {
+if (new globalThis.URL(sourceBaseUrl).origin !== BLOGGER_ORIGIN) {
   throw new Error(`ZENBLOG_BLOGGER_ORIGIN must resolve to ${BLOGGER_ORIGIN}`);
 }
 
@@ -34,14 +35,14 @@ if (mode === 'self-test') {
   if (typeof currentSnapshot.contentSha256 !== 'string') {
     throw new Error('Checked-in Blogger snapshot failed to load in the control-plane runtime');
   }
-  console.log('BLOGGER_CONTROL_PLANE_BOOTSTRAP=PASS');
+  globalThis.console.log('BLOGGER_CONTROL_PLANE_BOOTSTRAP=PASS');
   process.exit(0);
 }
 
 const fetcher = (url, init) =>
   globalThis.fetch(url, {
     ...init,
-    signal: AbortSignal.timeout(15_000)
+    signal: globalThis.AbortSignal.timeout(15_000)
   });
 const source = new BloggerFeedSource({ baseUrl: sourceBaseUrl, fetcher });
 const articles = await source.listPosts();
@@ -60,16 +61,16 @@ const contentChanged =
   probe.articleCount !== currentSnapshot.articleCount;
 
 if (!contentChanged) {
-  console.log('BLOGGER_SNAPSHOT_REMOTE=UNCHANGED');
-  console.log(`ARTICLES=${probe.articleCount}`);
-  console.log(`CONTENT_SHA256=${probe.contentSha256}`);
+  globalThis.console.log('BLOGGER_SNAPSHOT_REMOTE=UNCHANGED');
+  globalThis.console.log(`ARTICLES=${probe.articleCount}`);
+  globalThis.console.log(`CONTENT_SHA256=${probe.contentSha256}`);
   process.exit(0);
 }
 
 if (mode === 'check') {
-  console.error('BLOGGER_SNAPSHOT_REMOTE=STALE');
-  console.error(`LOCAL_SHA256=${String(currentSnapshot.contentSha256)}`);
-  console.error(`REMOTE_SHA256=${probe.contentSha256}`);
+  globalThis.console.error('BLOGGER_SNAPSHOT_REMOTE=STALE');
+  globalThis.console.error(`LOCAL_SHA256=${String(currentSnapshot.contentSha256)}`);
+  globalThis.console.error(`REMOTE_SHA256=${probe.contentSha256}`);
   process.exit(2);
 }
 
@@ -95,6 +96,6 @@ try {
   await Promise.allSettled([unlink(snapshotTemporary), unlink(metadataTemporary)]);
 }
 
-console.log('BLOGGER_SNAPSHOT_REMOTE=SYNCED');
-console.log(`ARTICLES=${nextSnapshot.articleCount}`);
-console.log(`CONTENT_SHA256=${nextSnapshot.contentSha256}`);
+globalThis.console.log('BLOGGER_SNAPSHOT_REMOTE=SYNCED');
+globalThis.console.log(`ARTICLES=${nextSnapshot.articleCount}`);
+globalThis.console.log(`CONTENT_SHA256=${nextSnapshot.contentSha256}`);
