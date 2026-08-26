@@ -4,11 +4,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const snapshotPath = path.join(
-  workspaceRoot,
-  'packages/content-snapshot/content/blogger.snapshot.json'
-);
+const contentDirectory = path.join(workspaceRoot, 'packages/content-snapshot/content');
+const snapshotPath = path.join(contentDirectory, 'blogger.snapshot.json');
+const metadataPath = path.join(contentDirectory, 'blogger.snapshot.metadata.txt');
 const snapshot = JSON.parse(await readFile(snapshotPath, 'utf8'));
+const metadata = Object.fromEntries(
+  (await readFile(metadataPath, 'utf8'))
+    .trim()
+    .split('\n')
+    .map((line) => {
+      const separator = line.indexOf('=');
+      return [line.slice(0, separator), line.slice(separator + 1)];
+    })
+);
 const errors = [];
 const expectedOrigin = 'https://cubalahojaderuta.blogspot.com';
 
@@ -62,6 +70,14 @@ if (!Array.isArray(snapshot.articles)) {
     }
   }
 
+  const canonicalOrder = snapshot.articles.toSorted((left, right) => {
+    const byPublished = Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
+    return byPublished || String(left.id).localeCompare(String(right.id));
+  });
+  if (JSON.stringify(canonicalOrder) !== JSON.stringify(snapshot.articles)) {
+    errors.push('articles must use canonical published-descending order');
+  }
+
   const canonicalPayload = JSON.stringify(snapshot.articles);
   const actualSha256 = createHash('sha256').update(canonicalPayload).digest('hex');
   if (snapshot.contentSha256 !== actualSha256) {
@@ -73,6 +89,16 @@ if (typeof snapshot.syncedAt !== 'string' || !Number.isFinite(Date.parse(snapsho
   errors.push('syncedAt must be an ISO-compatible date string');
 }
 
+if (metadata.contentSha256 !== snapshot.contentSha256) {
+  errors.push('metadata contentSha256 must match snapshot');
+}
+if (metadata.articleCount !== String(snapshot.articleCount)) {
+  errors.push('metadata articleCount must match snapshot');
+}
+if (metadata.syncedAt !== snapshot.syncedAt) {
+  errors.push('metadata syncedAt must match snapshot');
+}
+
 if (errors.length) {
   globalThis.console.error('BLOGGER_SNAPSHOT_CHECK=FAIL');
   for (const error of errors) globalThis.console.error(`- ${error}`);
@@ -82,3 +108,4 @@ if (errors.length) {
 globalThis.console.log('BLOGGER_SNAPSHOT_CHECK=PASS');
 globalThis.console.log(`ARTICLES=${snapshot.articleCount}`);
 globalThis.console.log(`CONTENT_SHA256=${snapshot.contentSha256}`);
+globalThis.console.log('SNAPSHOT_METADATA_COHERENCE=PASS');

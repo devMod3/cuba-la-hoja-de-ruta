@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Source_Sans_3, Source_Serif_4 } from 'next/font/google';
 import type { CSSProperties, ReactNode } from 'react';
 import { GlobalHeader } from '../components/global-header';
+import { MobileGestureNavigation } from '../components/mobile-gesture-navigation';
 import { ZrpLoader } from '../components/zrp-loader';
 import './globals.css';
 
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body style={fontFamilies}>
         <GlobalHeader />
         {children}
+        <MobileGestureNavigation />
         <ZrpLoader />
       </body>
     </html>
