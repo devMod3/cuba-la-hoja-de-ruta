@@ -49,6 +49,13 @@ describe('mapBloggerEntry', () => {
     expect(() =>
       mapBloggerEntry({
         id: { $t: 'post-8' },
+        link: null,
+        category: []
+      })
+    ).toThrow('Blogger entry requires alternate URL');
+    expect(() =>
+      mapBloggerEntry({
+        id: { $t: 'post-8' },
         link: [{ rel: 'alternate', href: 'not a valid absolute url' }],
         category: []
       })
@@ -80,6 +87,17 @@ describe('mapBloggerEntry', () => {
       content: '',
       labels: ['Ley']
     });
+  });
+
+  it('preserves optional summary and content text from Blogger', () => {
+    const article = mapBloggerEntry({
+      ...entry(12, 'Doce'),
+      summary: { $t: 'Resumen' },
+      content: { $t: '<p>Contenido</p>' }
+    });
+
+    expect(article.summary).toBe('Resumen');
+    expect(article.content).toBe('<p>Contenido</p>');
   });
 });
 
@@ -168,6 +186,11 @@ describe('BloggerFeedSource', () => {
       'BloggerFeedSource requires baseUrl outside a browser'
     );
 
+    vi.stubGlobal('document', { baseURI: 42 });
+    expect(() => new BloggerFeedSource({ fetcher: inertFetcher })).toThrow(
+      'BloggerFeedSource requires baseUrl outside a browser'
+    );
+
     vi.stubGlobal('fetch', undefined);
     expect(() => new BloggerFeedSource({ baseUrl: 'https://example.com/' })).toThrow(
       'BloggerFeedSource requires fetch'
@@ -192,6 +215,18 @@ describe('BloggerFeedSource', () => {
       const source = new BloggerFeedSource({ baseUrl: 'https://example.com/', fetcher });
       await expect(source.listPosts()).rejects.toThrow('Invalid Blogger feed');
     }
+  });
+
+  it('treats a valid feed without entry or total metadata as an empty page', async () => {
+    const fetcher: typeof fetch = () =>
+      Promise.resolve(
+        new Response(JSON.stringify({ feed: {} }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' }
+        })
+      );
+    const source = new BloggerFeedSource({ baseUrl: 'https://example.com/', fetcher });
+    await expect(source.listPosts()).resolves.toEqual([]);
   });
 
   it('treats malformed pagination metadata conservatively', async () => {
