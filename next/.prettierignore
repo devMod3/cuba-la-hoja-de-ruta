@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+packages/content-snapshot/content/blogger.snapshot.json
+.next/
+out/
+coverage/
+playwright-report/
+test-results/

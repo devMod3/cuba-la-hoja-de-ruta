@@ -1,0 +1,14 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+engineStrict: true
+strictPeerDependencies: true
+savePrefix: ''
+pmOnFail: error
+minimumReleaseAge: 1440
+blockExoticSubdeps: true
+strictDepBuilds: true
+
+allowBuilds:
+  'sharp@0.34.5': true

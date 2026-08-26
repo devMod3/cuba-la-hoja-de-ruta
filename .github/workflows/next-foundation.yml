@@ -2,22 +2,35 @@ name: Validate ZenBlog Next
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, next-v1-foundation]
     paths:
       - 'next/**'
+      - 'tools/quality/**'
+      - 'docs/ENGINEERING-STANDARDS-50Y.md'
+      - 'docs/TESTING-STANDARDS.md'
       - '.github/workflows/next-foundation.yml'
+      - '.github/workflows/deploy-pages.yml'
   push:
-    branches: [next-v1-foundation]
+    branches: [main, next-v1-foundation]
     paths:
       - 'next/**'
+      - 'tools/quality/**'
+      - 'docs/ENGINEERING-STANDARDS-50Y.md'
+      - 'docs/TESTING-STANDARDS.md'
       - '.github/workflows/next-foundation.yml'
+      - '.github/workflows/deploy-pages.yml'
 
 permissions:
   contents: read
 
+concurrency:
+  group: next-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -74,6 +87,13 @@ jobs:
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
         run: pnpm check
+      - name: Upload unit coverage evidence
+        if: steps.workspace.outputs.available == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: next-unit-coverage
+          path: next/coverage
+          if-no-files-found: error
       - name: Upload CycloneDX SBOM
         if: steps.workspace.outputs.available == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -89,3 +109,18 @@ jobs:
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
         run: pnpm test:e2e
+      - name: Rehearse GitHub Pages base-path export
+        if: steps.workspace.outputs.available == 'true'
+        working-directory: next
+        env:
+          ZENBLOG_BASE_PATH: /zenblog-pages-probe
+        shell: bash
+        run: |
+          rm -rf apps/web/.next apps/web/out
+          pnpm --filter @zenblog/web build
+          test -f apps/web/out/index.html
+          test -d apps/web/out/_next
+          if ! grep -R -F -q --include='*.html' '/zenblog-pages-probe/_next/' apps/web/out; then
+            echo 'Pages rehearsal did not emit base-path-prefixed Next assets.' >&2
+            exit 1
+          fi

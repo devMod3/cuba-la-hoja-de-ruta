@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /next
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      next-platform:
+        patterns:
+          - 'next'
+          - 'react'
+          - 'react-dom'
+          - 'eslint-config-next'
+      test-tooling:
+        patterns:
+          - 'vitest'
+          - '@playwright/test'

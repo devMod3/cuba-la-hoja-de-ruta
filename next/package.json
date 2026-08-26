@@ -1,0 +1,47 @@
+{
+  "name": "zenblog-next-platform",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": "24.19.x",
+    "pnpm": "11.22.x"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @zenblog/web dev",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "typecheck:quality": "tsc -p tsconfig.quality.json --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "project:standards": "node ../tools/quality/check-project-standards.mjs",
+    "architecture:check": "node scripts/check-architecture.mjs",
+    "content:snapshot:check": "node scripts/check-blogger-snapshot.mjs",
+    "static:articles:check": "node scripts/check-static-article-routes.mjs",
+    "seo:ownership:check": "node scripts/check-seo-ownership.mjs",
+    "security:baseline": "node scripts/check-supply-chain.mjs",
+    "security:sbom": "node scripts/generate-sbom.mjs",
+    "security:check": "pnpm security:baseline && pnpm peers check && pnpm security:sbom",
+    "performance:budget": "node scripts/check-performance-budget.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "check": "pnpm format:check && pnpm lint && pnpm project:standards && pnpm architecture:check && pnpm content:snapshot:check && pnpm security:check && pnpm typecheck && pnpm typecheck:quality && pnpm test:coverage && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "16.2.12",
+    "@playwright/test": "1.62.1",
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "4.1.11",
+    "eslint": "10.9.0",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "prettier": "^3.0.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.67.0",
+    "vitest": "4.1.11"
+  }
+}
