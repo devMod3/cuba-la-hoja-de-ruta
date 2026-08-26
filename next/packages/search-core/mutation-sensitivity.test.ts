@@ -26,11 +26,7 @@ function ids(results: readonly SearchResult[]): string[] {
 
 const metadataArticle = article('meta', 'Documento neutral', '2024-01-01T00:00:00.000Z');
 const laterArticle = article('later', 'Documento posterior', '2024-01-03T00:00:00.000Z');
-const noMetadataArticle = article(
-  'no-meta',
-  'Constitución sin ficha',
-  '2024-01-04T00:00:00.000Z'
-);
+const noMetadataArticle = article('no-meta', 'Constitución sin ficha', '2024-01-04T00:00:00.000Z');
 
 const registry = MetadataRegistrySchema.parse({
   records: {
@@ -177,13 +173,12 @@ describe('search-core fault sensitivity', () => {
       )
     ).toEqual(new Set(['meta', 'later', 'no-meta']));
 
-    expect(ids(searchArticles({ articles: corpus, registry, filters: { yearFrom: 1940 } }))).toEqual([
-      'later',
-      'meta'
-    ]);
-    expect(ids(searchArticles({ articles: corpus, registry, filters: { yearFrom: 1943 } }))).toEqual([
-      'later'
-    ]);
+    expect(
+      ids(searchArticles({ articles: corpus, registry, filters: { yearFrom: 1940 } }))
+    ).toEqual(['later', 'meta']);
+    expect(
+      ids(searchArticles({ articles: corpus, registry, filters: { yearFrom: 1943 } }))
+    ).toEqual(['later']);
     expect(ids(searchArticles({ articles: corpus, registry, filters: { yearTo: 1943 } }))).toEqual([
       'later',
       'meta'
@@ -216,15 +211,17 @@ describe('search-core fault sensitivity', () => {
     );
     const corpus = [exact, prefix, contained];
 
-    const relevance = searchArticles({ articles: corpus, query: 'constitucion', sort: 'relevance' });
+    const relevance = searchArticles({
+      articles: corpus,
+      query: 'constitucion',
+      sort: 'relevance'
+    });
     expect(ids(relevance)).toEqual(['exact', 'prefix', 'contained']);
     expect(relevance.find((result) => result.article.id === 'contained')?.score).toBe(1260);
 
-    expect(ids(searchArticles({ articles: corpus, query: 'constitucion', sort: 'recent' }))).toEqual([
-      'contained',
-      'prefix',
-      'exact'
-    ]);
+    expect(
+      ids(searchArticles({ articles: corpus, query: 'constitucion', sort: 'recent' }))
+    ).toEqual(['contained', 'prefix', 'exact']);
   });
 
   it('uses publication recency as the deterministic tie-break for equal relevance scores', () => {
