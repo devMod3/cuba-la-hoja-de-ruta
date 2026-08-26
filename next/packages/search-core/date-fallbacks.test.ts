@@ -32,9 +32,7 @@ describe('search-core publication date fallbacks', () => {
     expect(resultIds([undated, dated])).toEqual(['dated', 'undated']);
 
     expect(
-      searchArticles({ articles: [dated, undated], sort: 'old' }).map(
-        (result) => result.article.id
-      )
+      searchArticles({ articles: [dated, undated], sort: 'old' }).map((result) => result.article.id)
     ).toEqual(['undated', 'dated']);
   });
 
