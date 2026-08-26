@@ -61,7 +61,12 @@ describe('mapBloggerEntry', () => {
       title: { $t: '' },
       published: { $t: 123 },
       summary: null,
-      link: [null, {}, { rel: 7, href: 'https://ignored.example/' }, { rel: 'alternate', href: 'https://example.com/post' }],
+      link: [
+        null,
+        {},
+        { rel: 7, href: 'https://ignored.example/' },
+        { rel: 'alternate', href: 'https://example.com/post' }
+      ],
       category: [null, {}, { term: 7 }, { term: 'Ley' }]
     });
 
@@ -158,9 +163,9 @@ describe('BloggerFeedSource', () => {
 
   it('fails closed when runtime dependencies cannot be resolved', () => {
     vi.stubGlobal('document', undefined);
-    expect(() => new BloggerFeedSource({ fetcher: (() => Promise.reject()) as typeof fetch })).toThrow(
-      'BloggerFeedSource requires baseUrl outside a browser'
-    );
+    expect(
+      () => new BloggerFeedSource({ fetcher: (() => Promise.reject()) as typeof fetch })
+    ).toThrow('BloggerFeedSource requires baseUrl outside a browser');
 
     vi.stubGlobal('fetch', undefined);
     expect(() => new BloggerFeedSource({ baseUrl: 'https://example.com/' })).toThrow(
