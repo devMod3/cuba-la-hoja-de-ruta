@@ -11,7 +11,7 @@ on:
       - '.github/workflows/next-foundation.yml'
       - '.github/workflows/deploy-pages.yml'
   push:
-    branches: [next-v1-foundation]
+    branches: [main, next-v1-foundation]
     paths:
       - 'next/**'
       - 'tools/quality/**'
