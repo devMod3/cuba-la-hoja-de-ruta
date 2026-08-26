@@ -1,0 +1,31 @@
+export default {
+  mutate: ['packages/search-core/src/index.ts'],
+  testRunner: 'vitest',
+  vitest: {
+    configFile: 'vitest.config.ts',
+    dir: 'packages/search-core',
+    related: true
+  },
+  coverageAnalysis: 'perTest',
+  concurrency: 2,
+  inPlace: true,
+  reporters: ['clear-text', 'json'],
+  clearTextReporter: {
+    allowColor: false,
+    allowEmojis: false,
+    logTests: false,
+    reportTests: false,
+    reportMutants: true,
+    reportScoreTable: true,
+    skipFull: false
+  },
+  jsonReporter: {
+    fileName: '../mutation-spike-artifacts/search-core-mutation.json'
+  },
+  thresholds: {
+    high: 80,
+    low: 60,
+    break: null
+  },
+  cleanTempDir: 'always'
+};
