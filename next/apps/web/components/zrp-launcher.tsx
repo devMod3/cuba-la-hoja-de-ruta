@@ -2,12 +2,19 @@
 
 import { ZRP_OPEN_EVENT } from '@zenblog/zrp-adapter';
 
-export function ZrpLauncher() {
+interface ZrpLauncherProps {
+  readonly onOpen?: () => void;
+}
+
+export function ZrpLauncher({ onOpen }: ZrpLauncherProps = {}) {
   return (
     <button
       type="button"
       data-component="ZRP.Launcher"
-      onClick={() => window.dispatchEvent(new CustomEvent(ZRP_OPEN_EVENT))}
+      onClick={() => {
+        onOpen?.();
+        window.dispatchEvent(new CustomEvent(ZRP_OPEN_EVENT));
+      }}
       style={{
         appearance: 'none',
         border: 0,
