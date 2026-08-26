@@ -162,10 +162,11 @@ describe('BloggerFeedSource', () => {
   });
 
   it('fails closed when runtime dependencies cannot be resolved', () => {
+    const inertFetcher: typeof fetch = () => Promise.resolve(new Response());
     vi.stubGlobal('document', undefined);
-    expect(
-      () => new BloggerFeedSource({ fetcher: (() => Promise.reject()) as typeof fetch })
-    ).toThrow('BloggerFeedSource requires baseUrl outside a browser');
+    expect(() => new BloggerFeedSource({ fetcher: inertFetcher })).toThrow(
+      'BloggerFeedSource requires baseUrl outside a browser'
+    );
 
     vi.stubGlobal('fetch', undefined);
     expect(() => new BloggerFeedSource({ baseUrl: 'https://example.com/' })).toThrow(
