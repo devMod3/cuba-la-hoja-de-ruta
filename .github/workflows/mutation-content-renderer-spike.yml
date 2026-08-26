@@ -1,0 +1,115 @@
+name: Mutation spike — content-renderer
+
+on:
+  push:
+    branches: [spike/mutation-content-renderer]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-content-renderer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+
+      - name: Install exact pnpm
+        run: npm install --global --ignore-scripts pnpm@11.22.0
+
+      - name: Install protected baseline
+        working-directory: next
+        run: pnpm install --frozen-lockfile
+
+      - name: Capture baseline footprint
+        working-directory: next
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ../mutation-content-renderer-artifacts
+          echo "BASELINE_NODE_MODULES_KIB=$(du -sk node_modules | awk '{print $1}')" > ../mutation-content-renderer-artifacts/metrics.env
+          echo "BASELINE_LIST_ENTRIES=$(pnpm list --depth Infinity --parseable | sort -u | wc -l | tr -d ' ')" >> ../mutation-content-renderer-artifacts/metrics.env
+          pnpm security:sbom
+          cp security-reports/sbom.cdx.json ../mutation-content-renderer-artifacts/baseline-sbom.cdx.json
+
+      - name: Install exact mutation tooling transiently
+        working-directory: next
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm add -Dw --save-exact --ignore-scripts \
+            @stryker-mutator/core@9.6.1 \
+            @stryker-mutator/vitest-runner@9.6.1
+          echo "MUTATION_NODE_MODULES_KIB=$(du -sk node_modules | awk '{print $1}')" >> ../mutation-content-renderer-artifacts/metrics.env
+          echo "MUTATION_LIST_ENTRIES=$(pnpm list --depth Infinity --parseable | sort -u | wc -l | tr -d ' ')" >> ../mutation-content-renderer-artifacts/metrics.env
+          echo "MUTATION_LOCK_SHA256=$(sha256sum pnpm-lock.yaml | awk '{print $1}')" >> ../mutation-content-renderer-artifacts/metrics.env
+          git diff -- package.json pnpm-lock.yaml > ../mutation-content-renderer-artifacts/dependency-delta.patch
+          pnpm security:sbom
+          cp security-reports/sbom.cdx.json ../mutation-content-renderer-artifacts/mutation-sbom.cdx.json
+
+      - name: Measure supply-chain gate and registry audit
+        working-directory: next
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          pnpm security:baseline > ../mutation-content-renderer-artifacts/supply-chain-baseline.txt 2>&1
+          BASELINE_RC=$?
+          pnpm audit --audit-level=low --json > ../mutation-content-renderer-artifacts/pnpm-audit.json 2> ../mutation-content-renderer-artifacts/pnpm-audit.stderr
+          AUDIT_RC=$?
+          set -e
+          echo "SUPPLY_CHAIN_BASELINE_RC=${BASELINE_RC}" >> ../mutation-content-renderer-artifacts/metrics.env
+          echo "PNPM_AUDIT_RC=${AUDIT_RC}" >> ../mutation-content-renderer-artifacts/metrics.env
+          node --input-type=module <<'NODE'
+          import { readFile, appendFile } from 'node:fs/promises';
+          const before = JSON.parse(await readFile('../mutation-content-renderer-artifacts/baseline-sbom.cdx.json', 'utf8'));
+          const after = JSON.parse(await readFile('../mutation-content-renderer-artifacts/mutation-sbom.cdx.json', 'utf8'));
+          const beforeCount = Array.isArray(before.components) ? before.components.length : 0;
+          const afterCount = Array.isArray(after.components) ? after.components.length : 0;
+          await appendFile('../mutation-content-renderer-artifacts/metrics.env', `SBOM_COMPONENTS_BEFORE=${beforeCount}\nSBOM_COMPONENTS_AFTER=${afterCount}\nSBOM_COMPONENT_DELTA=${afterCount - beforeCount}\n`);
+          NODE
+
+      - name: Run content-renderer mutation measurement
+        working-directory: next
+        shell: bash
+        run: |
+          set -uo pipefail
+          START=$(date +%s)
+          set +e
+          pnpm exec stryker run stryker.content-renderer.config.mjs 2>&1 | tee ../mutation-content-renderer-artifacts/stryker-output.txt
+          STRYKER_RC=${PIPESTATUS[0]}
+          set -e
+          END=$(date +%s)
+          echo "STRYKER_SECONDS=$((END - START))" >> ../mutation-content-renderer-artifacts/metrics.env
+          echo "STRYKER_RC=${STRYKER_RC}" >> ../mutation-content-renderer-artifacts/metrics.env
+          exit 0
+
+      - name: Upload spike evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-content-renderer-spike
+          path: mutation-content-renderer-artifacts
+          if-no-files-found: error
+
+      - name: Require valid mutation run
+        if: always()
+        shell: bash
+        run: |
+          test -f mutation-content-renderer-artifacts/metrics.env
+          grep -q '^STRYKER_RC=0$' mutation-content-renderer-artifacts/metrics.env
+          test -s mutation-content-renderer-artifacts/content-renderer-mutation.json
