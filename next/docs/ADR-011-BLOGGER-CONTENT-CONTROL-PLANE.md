@@ -27,6 +27,10 @@ Public Next pages continue to consume only `@zenblog/content-snapshot`. They do 
 
 For F06, mobile gesture navigation is mounted once in the root App Router layout. It preserves the established gesture thresholds and only navigates between `/`, `/explorar/` and `/acerca-de/`. It does not wrap at either end and ignores article routes, interactive controls, results surfaces and all protected ZRP surfaces.
 
+## Verification contract
+
+The deterministic quality chain must execute the dependency-free snapshot contract tests, prove that the synchronization entrypoint boots under the pinned Node runtime without network access, and then validate snapshot/metadata coherence before supply-chain, TypeScript, coverage, build, SEO, performance and browser gates. Network freshness is intentionally verified only by the dedicated control-plane workflow after promotion, not by ordinary pull-request builds.
+
 ## Consequences
 
 Content publication and application deployment remain distinct, reviewable events. Blogger outages cannot break already deployed public navigation or search. A compromised or malformed CMS response cannot silently transfer canonical ownership or directly alter `main`.
