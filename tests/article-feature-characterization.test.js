@@ -766,7 +766,7 @@ test('reading state tracks percentage and current TOC heading from viewport geom
   try {
     const body = new FakeElement('div');
     body.offsetHeight = 3000;
-    body.rect = { top: 100 };
+    body.rect = { top: -800 };
     const first = new FakeElement('h2');
     first.id = 'primero';
     first.rect = { top: 80 };
