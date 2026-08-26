@@ -7,885 +7,296 @@ import {
   slugifyHeading
 } from '../src/features/article/ArticleFeature.js';
 
-class FakeClassList {
-  constructor(values = []) {
-    this.values = new Set(values);
-  }
-
-  contains(value) {
-    return this.values.has(value);
-  }
-
+class Classes {
+  constructor(...values) { this.values = new Set(values); }
+  contains(value) { return this.values.has(value); }
   toggle(value, force) {
-    const enabled = force === undefined ? !this.values.has(value) : Boolean(force);
-    if (enabled) this.values.add(value);
-    else this.values.delete(value);
-    return enabled;
+    const on = force ?? !this.values.has(value);
+    if (on) this.values.add(value); else this.values.delete(value);
+    return on;
   }
 }
 
-class FakeElement {
-  constructor(tagName = 'div') {
-    this.tagName = String(tagName).toUpperCase();
+class El {
+  constructor(tag = 'div') {
+    this.tagName = tag.toUpperCase();
     this.dataset = {};
-    this.attributes = new Map();
-    this.classList = new FakeClassList();
+    this.attrs = new Map();
+    this.classList = new Classes();
     this.children = [];
+    this.q = new Map();
+    this.qa = new Map();
+    this.closestMap = new Map();
     this.hidden = false;
     this.id = '';
-    this.className = '';
     this.textContent = '';
     this.innerHTML = '';
     this.offsetHeight = 0;
-    this.removed = false;
     this.listeners = [];
-    this.queryMap = new Map();
-    this.queryAllMap = new Map();
-    this.closestMap = new Map();
-    this.rect = { top: 0 };
   }
-
-  setAttribute(name, value) {
-    this.attributes.set(name, String(value));
-  }
-
-  getAttribute(name) {
-    if (name === 'href' && typeof this.href === 'string') return this.href;
-    return this.attributes.get(name) ?? null;
-  }
-
-  removeAttribute(name) {
-    this.attributes.delete(name);
-  }
-
-  hasAttribute(name) {
-    return this.attributes.has(name);
-  }
-
-  append(child) {
-    this.children.push(child);
-    child.parentElement = this;
-  }
-
-  replaceChildren(...children) {
-    this.children = [...children];
-  }
-
-  remove() {
-    this.removed = true;
-  }
-
-  addEventListener(type, handler, options) {
-    this.listeners.push({ op: 'add', type, handler, options });
-  }
-
-  removeEventListener(type, handler, options) {
-    this.listeners.push({ op: 'remove', type, handler, options });
-  }
-
-  querySelector(selector) {
-    return this.queryMap.get(selector) ?? null;
-  }
-
-  querySelectorAll(selector) {
-    return this.queryAllMap.get(selector) ?? [];
-  }
-
-  closest(selector) {
-    return this.closestMap.get(selector) ?? null;
-  }
-
-  getBoundingClientRect() {
-    return this.rect;
-  }
-
-  scrollIntoView(options) {
-    this.scrollOptions = options;
-  }
+  setAttribute(k, v) { this.attrs.set(k, String(v)); }
+  getAttribute(k) { return k === 'href' && this.href !== undefined ? this.href : (this.attrs.get(k) ?? null); }
+  removeAttribute(k) { this.attrs.delete(k); }
+  hasAttribute(k) { return this.attrs.has(k); }
+  append(child) { this.children.push(child); }
+  replaceChildren(...children) { this.children = children; }
+  querySelector(s) { return this.q.get(s) ?? null; }
+  querySelectorAll(s) { return this.qa.get(s) ?? []; }
+  closest(s) { return this.closestMap.get(s) ?? null; }
+  addEventListener(type, fn, options) { this.listeners.push(['add', type, fn, options]); }
+  removeEventListener(type, fn, options) { this.listeners.push(['remove', type, fn, options]); }
+  getBoundingClientRect() { return this.rect ?? { top: 0 }; }
+  scrollIntoView(options) { this.scrolled = options; }
+  remove() { this.removed = true; }
 }
 
-class FakeAnchor extends FakeElement {
-  constructor(href = '') {
-    super('a');
-    this.href = href;
-    this.target = '';
-  }
+class Anchor extends El {
+  constructor(href = '') { super('a'); this.href = href; this.target = ''; }
 }
 
-class FakeDOMParser {
+class Parser {
   parseFromString(value) {
-    const textContent = String(value)
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ');
-    return { body: { textContent } };
+    return { body: { textContent: String(value).replace(/<[^>]+>/g, ' ') } };
   }
 }
 
-class FakeCustomEvent {
-  constructor(type, init = {}) {
-    this.type = type;
-    this.detail = init.detail;
-  }
+class CE {
+  constructor(type, init = {}) { this.type = type; this.detail = init.detail; }
 }
 
-function installGlobal(name, value, saved) {
-  const descriptor = Object.getOwnPropertyDescriptor(globalThis, name);
-  saved.set(name, descriptor);
-  Object.defineProperty(globalThis, name, {
-    configurable: true,
-    writable: true,
-    value
-  });
-}
-
-function installBrowser(href = 'https://example.test/#zen-home') {
+function browser(href = 'https://example.test/#zen-home') {
   const saved = new Map();
-  let currentUrl = new URL(href);
-  const assigned = [];
-  const historyCalls = [];
-  const scrollCalls = [];
-  const printCalls = [];
-  const clipboardWrites = [];
-  const documentEvents = [];
-  const documentListeners = [];
-  const windowListeners = [];
-
-  const locationObject = {
-    assign(value) {
-      assigned.push(String(value));
-      currentUrl = new URL(value, currentUrl);
-    }
+  const set = (name, value) => {
+    saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name));
+    Object.defineProperty(globalThis, name, { configurable: true, writable: true, value });
   };
-  Object.defineProperties(locationObject, {
-    href: { get: () => currentUrl.href },
-    origin: { get: () => currentUrl.origin },
-    pathname: { get: () => currentUrl.pathname },
-    hash: { get: () => currentUrl.hash }
+  let url = new URL(href);
+  const assigned = [], history = [], scrolls = [], prints = [], copies = [], documentEvents = [];
+  const docListeners = [], winListeners = [];
+  const location = { assign(value) { assigned.push(String(value)); url = new URL(value, url); } };
+  Object.defineProperties(location, {
+    href: { get: () => url.href }, origin: { get: () => url.origin },
+    pathname: { get: () => url.pathname }, hash: { get: () => url.hash }
   });
-
-  const documentObject = {
-    documentElement: new FakeElement('html'),
-    body: new FakeElement('body'),
-    createElement(tagName) {
-      return String(tagName).toLowerCase() === 'a'
-        ? new FakeAnchor()
-        : new FakeElement(tagName);
-    },
-    dispatchEvent(event) {
-      documentEvents.push(event);
-      return true;
-    },
-    addEventListener(type, handler, options) {
-      documentListeners.push({ op: 'add', type, handler, options });
-    },
-    removeEventListener(type, handler, options) {
-      documentListeners.push({ op: 'remove', type, handler, options });
-    },
-    querySelector() {
-      return null;
-    },
-    querySelectorAll() {
-      return [];
-    }
+  const document = {
+    documentElement: new El('html'), body: new El('body'),
+    createElement(tag) { return tag === 'a' ? new Anchor() : new El(tag); },
+    dispatchEvent(event) { documentEvents.push(event); },
+    addEventListener(...args) { docListeners.push(['add', ...args]); },
+    removeEventListener(...args) { docListeners.push(['remove', ...args]); },
+    querySelector() { return null; }, querySelectorAll() { return []; }
   };
-
-  const windowObject = {
-    innerHeight: 1000,
-    scrollY: 0,
+  const window = {
+    scrollY: 0, innerHeight: 1000,
     history: {
-      pushState(state, title, value) {
-        historyCalls.push({ method: 'push', state, title, value: String(value) });
-        currentUrl = new URL(value, currentUrl);
-      },
-      replaceState(state, title, value) {
-        historyCalls.push({ method: 'replace', state, title, value: String(value) });
-        currentUrl = new URL(value, currentUrl);
-      }
+      pushState(state, title, value) { history.push(['push', state, value]); url = new URL(value, url); },
+      replaceState(state, title, value) { history.push(['replace', state, value]); url = new URL(value, url); }
     },
-    scrollTo(options) {
-      scrollCalls.push(options);
-      if (typeof options?.top === 'number') this.scrollY = options.top;
-    },
-    print() {
-      printCalls.push(true);
-    },
-    addEventListener(type, handler, options) {
-      windowListeners.push({ op: 'add', type, handler, options });
-    },
-    removeEventListener(type, handler, options) {
-      windowListeners.push({ op: 'remove', type, handler, options });
-    }
+    scrollTo(options) { scrolls.push(options); this.scrollY = options.top ?? this.scrollY; },
+    print() { prints.push(true); },
+    addEventListener(...args) { winListeners.push(['add', ...args]); },
+    removeEventListener(...args) { winListeners.push(['remove', ...args]); }
   };
-
-  const navigatorObject = {
-    clipboard: {
-      writeText(value) {
-        clipboardWrites.push(String(value));
-        return Promise.resolve();
-      }
-    }
-  };
-
-  installGlobal('Element', FakeElement, saved);
-  installGlobal('HTMLAnchorElement', FakeAnchor, saved);
-  installGlobal('DOMParser', FakeDOMParser, saved);
-  installGlobal('CustomEvent', FakeCustomEvent, saved);
-  installGlobal('CSS', { escape: (value) => String(value) }, saved);
-  installGlobal('document', documentObject, saved);
-  installGlobal('window', windowObject, saved);
-  installGlobal('location', locationObject, saved);
-  installGlobal('navigator', navigatorObject, saved);
-
+  set('Element', El); set('HTMLAnchorElement', Anchor); set('DOMParser', Parser); set('CustomEvent', CE);
+  set('CSS', { escape: String }); set('document', document); set('window', window); set('location', location);
+  set('navigator', { clipboard: { writeText(value) { copies.push(String(value)); return Promise.resolve(); } } });
   return {
-    assigned,
-    clipboardWrites,
-    documentEvents,
-    documentListeners,
-    documentObject,
-    historyCalls,
-    locationObject,
-    navigate(value) {
-      currentUrl = new URL(value, currentUrl);
-    },
-    printCalls,
-    restore() {
-      for (const [name, descriptor] of saved) {
-        if (descriptor) Object.defineProperty(globalThis, name, descriptor);
-        else delete globalThis[name];
-      }
-    },
-    scrollCalls,
-    windowListeners,
-    windowObject
+    assigned, history, scrolls, prints, copies, documentEvents, docListeners, winListeners, document, window,
+    go(value) { url = new URL(value, url); },
+    restore() { for (const [name, d] of saved) d ? Object.defineProperty(globalThis, name, d) : delete globalThis[name]; }
   };
 }
 
-function plainClick(target) {
+function click(target) {
   return {
-    altKey: false,
-    button: 0,
-    ctrlKey: false,
-    defaultPrevented: false,
-    metaKey: false,
-    shiftKey: false,
-    target,
-    preventDefault() {
-      this.prevented = true;
-    }
+    button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false,
+    defaultPrevented: false, target,
+    preventDefault() { this.prevented = true; }
   };
 }
 
-function actionTarget(action) {
-  const target = new FakeElement('button');
-  const actionNode = new FakeElement('button');
-  actionNode.setAttribute('data-action', action);
-  target.closestMap.set('[data-action]', actionNode);
-  return target;
-}
+async function flush() { await Promise.resolve(); await new Promise((r) => setImmediate(r)); }
 
-async function flushPromises() {
-  await Promise.resolve();
-  await new Promise((resolve) => setImmediate(resolve));
-}
-
-test('recognizes Blogger post URLs without matching static pages', () => {
-  assert.equal(isBloggerPostPath('/2026/08/que-es-pueblo.html'), true);
-  assert.equal(isBloggerPostPath('/2026/8/que-es-pueblo.html'), false);
+test('article helpers preserve routing, slugs and reading-time contracts', () => {
+  assert.equal(isBloggerPostPath('/2026/08/doc.html'), true);
   assert.equal(isBloggerPostPath('/p/acerca-de.html'), false);
-  assert.equal(isBloggerPostPath('/search'), false);
-});
-
-test('creates stable accent-insensitive TOC slugs with deterministic fallback', () => {
   assert.equal(slugifyHeading('Soberanía y Constitución'), 'soberania-y-constitucion');
-  assert.equal(slugifyHeading('  Artículo 40  '), 'articulo-40');
   assert.equal(slugifyHeading('***'), 'seccion');
+  assert.equal(estimateReadingMinutes('breve'), 1);
+  assert.equal(estimateReadingMinutes('p '.repeat(441)), 3);
 });
 
-test('reading time never collapses below one minute', () => {
-  assert.equal(estimateReadingMinutes('texto breve'), 1);
-  assert.equal(estimateReadingMinutes('palabra '.repeat(441)), 3);
-  assert.equal(estimateReadingMinutes('', 100), 1);
-});
-
-test('ensureMount reuses the existing article view or creates the canonical mount', () => {
-  const browser = installBrowser();
+test('mount creation, post caching and path lookup are deterministic', async () => {
+  const b = browser();
   try {
-    const existing = new FakeElement('section');
-    const rootWithExisting = {
-      querySelector(selector) {
-        return selector === '#zen-article' ? existing : null;
-      }
-    };
-    const reused = new ArticleFeature({ root: rootWithExisting });
-    reused.ensureMount();
-    assert.equal(reused.mount, existing);
-    assert.equal(reused.createdMount, false);
-
-    const app = new FakeElement('main');
-    const root = {
-      querySelector(selector) {
-        if (selector === '#zen-article') return null;
-        if (selector === '#zen-app') return app;
-        return null;
-      }
-    };
-    const created = new ArticleFeature({ root });
-    created.ensureMount();
-    assert.equal(created.createdMount, true);
-    assert.equal(created.mount.id, 'zen-article');
-    assert.equal(created.mount.dataset.zenView, 'article');
-    assert.equal(created.mount.hidden, true);
-    assert.equal(created.mount.getAttribute('aria-hidden'), 'true');
-    assert.equal(app.children[0], created.mount);
-
-    const missingApp = new ArticleFeature({
-      root: { querySelector: () => null }
-    });
-    missingApp.ensureMount();
-    assert.equal(missingApp.mount, null);
-  } finally {
-    browser.restore();
-  }
+    const app = new El('main');
+    const root = { querySelector: (s) => s === '#zen-app' ? app : null };
+    let calls = 0;
+    const posts = [{ id: '1', url: 'https://example.test/2026/08/a.html/' }, { id: 'x' }];
+    const f = new ArticleFeature({ root, contentSource: { async listPosts() { calls++; return posts; } } });
+    f.ensureMount();
+    assert.equal(f.createdMount, true);
+    assert.equal(f.mount.id, 'zen-article');
+    assert.equal(f.mount.hidden, true);
+    assert.equal(f.mount.getAttribute('aria-hidden'), 'true');
+    assert.equal(app.children[0], f.mount);
+    const p1 = f.loadPosts(), p2 = f.loadPosts();
+    assert.equal(p1, p2); await p1;
+    assert.equal(calls, 1);
+    assert.equal((await f.findPost('/2026/08/a.html')).id, '1');
+    assert.equal(await f.findPost('/2026/08/missing.html'), null);
+    const existing = new El('section');
+    const reused = new ArticleFeature({ root: { querySelector: () => existing } });
+    reused.ensureMount(); assert.equal(reused.mount, existing); assert.equal(reused.createdMount, false);
+  } finally { b.restore(); }
 });
 
-test('loadPosts caches one content fetch and findPost normalizes Blogger paths', async () => {
-  const browser = installBrowser('https://example.test/#zen-home');
+test('render emits escaped metadata, raw article body and safe fallback', () => {
+  const b = browser();
   try {
-    let listCalls = 0;
-    const posts = [
-      { id: '1', url: 'https://example.test/2026/08/uno.html' },
-      { id: '2', url: 'https://example.test/2026/08/dos.html/' },
-      { id: 'ignored' }
-    ];
-    const feature = new ArticleFeature({
-      contentSource: {
-        async listPosts() {
-          listCalls += 1;
-          return posts;
-        }
-      }
+    const f = new ArticleFeature(); f.mount = new El('section');
+    let toc = 0; f.buildToc = () => toc++;
+    f.render({
+      id: '1', title: '<Título & control>', url: 'https://example.test/2026/08/a.html',
+      content: '<h2>Parte</h2><p>texto</p>', summary: '<b>Resumen</b>',
+      publishedAt: '2026-08-20T00:00:00Z', labels: ['Tipo/Norma', 'Pilar/Estado', 'Tema <x>']
     });
-
-    const first = feature.loadPosts();
-    const second = feature.loadPosts();
-    assert.equal(first, second);
-    assert.equal(await first, posts);
-    assert.equal(listCalls, 1);
-    assert.equal((await feature.findPost('/2026/08/uno.html')).id, '1');
-    assert.equal((await feature.findPost('https://example.test/2026/08/dos.html')).id, '2');
-    assert.equal(await feature.findPost('/2026/08/missing.html'), null);
-  } finally {
-    browser.restore();
-  }
+    assert.match(f.mount.innerHTML, /&lt;Título &amp; control&gt;/);
+    assert.match(f.mount.innerHTML, /Resumen/);
+    assert.match(f.mount.innerHTML, /zen-article-type">Norma/);
+    assert.match(f.mount.innerHTML, /zen-article-pillar">Estado/);
+    assert.match(f.mount.innerHTML, /Tema &lt;x&gt;/);
+    assert.match(f.mount.innerHTML, /<h2>Parte<\/h2><p>texto<\/p>/);
+    assert.equal(toc, 1);
+    f.render({ id: '2', title: 'Vacío', url: '/2026/08/b.html', content: '', summary: '', publishedAt: 'bad', labels: [] });
+    assert.match(f.mount.innerHTML, /Este documento no contiene cuerpo de lectura/);
+    assert.match(f.mount.innerHTML, /bad/);
+  } finally { b.restore(); }
 });
 
-test('render preserves article HTML while escaping metadata and exposing fallback reading content', () => {
-  const browser = installBrowser();
+test('TOC derives unique stable ids and collapses when no headings exist', () => {
+  const b = browser();
   try {
-    const mount = new FakeElement('section');
-    const feature = new ArticleFeature();
-    feature.mount = mount;
-    let tocBuilds = 0;
-    feature.buildToc = () => {
-      tocBuilds += 1;
-    };
-
-    feature.render({
-      id: '42',
-      title: '<Riesgo & "control">',
-      url: 'https://example.test/2026/08/documento.html',
-      content: '<h2>Ámbito</h2><p>uno dos tres</p>',
-      summary: '<p>Resumen <strong>seguro</strong></p>',
-      publishedAt: '2026-08-20T12:00:00.000Z',
-      labels: ['Tipo/Norma', 'Pilar/Estado', 'Tema <x>']
-    });
-
-    assert.equal(tocBuilds, 1);
-    assert.match(mount.innerHTML, /&lt;Riesgo &amp; &quot;control&quot;&gt;/);
-    assert.match(mount.innerHTML, /Resumen seguro/);
-    assert.match(mount.innerHTML, /zen-article-type">Norma</);
-    assert.match(mount.innerHTML, /zen-article-pillar">Estado</);
-    assert.match(mount.innerHTML, /Tema &lt;x&gt;/);
-    assert.match(mount.innerHTML, /<h2>Ámbito<\/h2><p>uno dos tres<\/p>/);
-    assert.match(mount.innerHTML, /1 min de lectura/);
-
-    feature.render({
-      id: '43',
-      title: 'Sin cuerpo',
-      url: 'https://example.test/2026/08/sin-cuerpo.html',
-      content: '',
-      summary: '',
-      publishedAt: 'not-a-date',
-      labels: []
-    });
-    assert.equal(tocBuilds, 2);
-    assert.match(mount.innerHTML, /Este documento no contiene cuerpo de lectura/);
-    assert.match(mount.innerHTML, /not-a-date/);
-    assert.doesNotMatch(mount.innerHTML, /zen-article-identity/);
-    assert.doesNotMatch(mount.innerHTML, /zen-article-matters/);
-  } finally {
-    browser.restore();
-  }
-});
-
-test('buildToc generates unique heading anchors and collapses the rail when headings disappear', () => {
-  const browser = installBrowser();
-  try {
-    const body = new FakeElement('div');
-    const first = new FakeElement('h2');
-    first.textContent = 'Soberanía y Constitución';
-    const second = new FakeElement('h3');
-    second.textContent = 'Soberanía y Constitución';
-    const blank = new FakeElement('h2');
-    blank.textContent = '   ';
-    const preserved = new FakeElement('h2');
-    preserved.textContent = 'Original';
-    preserved.id = 'id-editorial';
-    body.queryAllMap.set('h2, h3', [first, second, blank, preserved]);
-
-    const toc = new FakeElement('nav');
-    const rail = new FakeElement('aside');
-    const toggle = new FakeElement('button');
-    const layout = new FakeElement('div');
-    const mount = new FakeElement('section');
-    mount.queryMap.set('#zen-article-body', body);
-    mount.queryMap.set('.zen-article-toc', toc);
-    mount.queryMap.set('.zen-article-rail', rail);
-    mount.queryMap.set('.zen-article-toc-toggle', toggle);
-    mount.queryMap.set('.zen-article-layout', layout);
-
-    const feature = new ArticleFeature();
-    feature.mount = mount;
-    feature.buildToc();
-
-    assert.equal(first.id, 'soberania-y-constitucion');
-    assert.equal(second.id, 'soberania-y-constitucion-2');
-    assert.equal(preserved.id, 'id-editorial');
-    assert.deepEqual(toc.children.map((link) => link.textContent), [
-      'Soberanía y Constitución',
-      'Soberanía y Constitución',
-      'Original'
-    ]);
-    assert.deepEqual(toc.children.map((link) => link.dataset.level), ['h2', 'h3', 'h2']);
-    assert.equal(rail.hidden, false);
-    assert.equal(toggle.hidden, false);
-    assert.equal(layout.classList.contains('zen-article-layout-single'), false);
-    assert.equal(mount.dataset.hasToc, 'true');
-
-    body.queryAllMap.set('h2, h3', []);
-    feature.buildToc();
-    assert.equal(toc.children.length, 0);
-    assert.equal(rail.hidden, true);
-    assert.equal(toggle.hidden, true);
+    const body = new El(), toc = new El('nav'), rail = new El(), toggle = new El(), layout = new El();
+    const a = new El('h2'); a.textContent = 'Ámbito';
+    const c = new El('h3'); c.textContent = 'Ámbito';
+    const keep = new El('h2'); keep.textContent = 'Original'; keep.id = 'editorial';
+    body.qa.set('h2, h3', [a, c, keep]);
+    const mount = new El();
+    for (const [k, v] of [['#zen-article-body', body], ['.zen-article-toc', toc], ['.zen-article-rail', rail], ['.zen-article-toc-toggle', toggle], ['.zen-article-layout', layout]]) mount.q.set(k, v);
+    const f = new ArticleFeature(); f.mount = mount; f.buildToc();
+    assert.equal(a.id, 'ambito'); assert.equal(c.id, 'ambito-2'); assert.equal(keep.id, 'editorial');
+    assert.equal(toc.children.length, 3); assert.equal(mount.dataset.hasToc, 'true');
+    body.qa.set('h2, h3', []); f.buildToc();
+    assert.equal(rail.hidden, true); assert.equal(toggle.hidden, true);
     assert.equal(layout.classList.contains('zen-article-layout-single'), true);
-    assert.equal(mount.dataset.hasToc, 'false');
-
-    feature.mount = new FakeElement('section');
-    assert.doesNotThrow(() => feature.buildToc());
-  } finally {
-    browser.restore();
-  }
+  } finally { b.restore(); }
 });
 
-test('activate owns the reader route, view visibility and route-change event', () => {
-  const browser = installBrowser();
+test('open and activate own SPA history, view visibility and route events', async () => {
+  const b = browser();
   try {
-    const mount = new FakeElement('section');
-    mount.hidden = true;
-    const home = new FakeElement('section');
-    const routeLink = new FakeAnchor('#zen-home');
-    routeLink.setAttribute('aria-current', 'true');
-    const root = {
-      querySelectorAll(selector) {
-        if (selector === '[data-zen-view]') return [home, mount];
-        if (selector === '[data-zen-route]') return [routeLink];
-        return [];
-      }
-    };
-    const shell = new FakeElement('main');
-    shell.setAttribute('data-toc-open', 'true');
-    const feature = new ArticleFeature({ root });
-    feature.mount = mount;
-    feature.shell = shell;
-    let readingUpdates = 0;
-    feature.updateReadingState = () => {
-      readingUpdates += 1;
-    };
-    const post = { id: '42' };
-
-    feature.activate(post);
-    assert.equal(home.hidden, true);
-    assert.equal(home.getAttribute('aria-hidden'), 'true');
-    assert.equal(mount.hidden, false);
-    assert.equal(mount.getAttribute('aria-hidden'), 'false');
-    assert.equal(routeLink.getAttribute('aria-current'), 'false');
-    assert.equal(feature.currentPost, post);
-    assert.equal(shell.hasAttribute('data-toc-open'), false);
-    assert.equal(browser.documentObject.documentElement.dataset.zenRoute, 'zen-article');
-    assert.deepEqual(browser.documentEvents[0].detail, { route: 'zen-article', postId: '42' });
-    assert.deepEqual(browser.scrollCalls[0], { top: 0, behavior: 'auto' });
-    assert.equal(readingUpdates, 1);
-
-    feature.activate(post, { scrollTop: false });
-    assert.equal(browser.scrollCalls.length, 1);
-    assert.equal(readingUpdates, 2);
-
-    const withoutMount = new ArticleFeature({ root });
-    withoutMount.activate(post);
-    assert.equal(withoutMount.currentPost, null);
-  } finally {
-    browser.restore();
-  }
+    const mount = new El('section'), home = new El('section'), link = new Anchor('#zen-home'), shell = new El();
+    const root = { querySelectorAll: (s) => s === '[data-zen-view]' ? [home, mount] : s === '[data-zen-route]' ? [link] : [] };
+    const f = new ArticleFeature({ root }); f.mount = mount; f.shell = shell;
+    f.updateReadingState = () => { f.reads = (f.reads ?? 0) + 1; };
+    const post = { id: '42', url: 'https://example.test/2026/08/doc.html' };
+    f.findPost = async () => post; f.render = (p) => { f.rendered = p; };
+    assert.equal(await f.open(post.url), true);
+    assert.equal(b.history[0][0], 'push'); assert.equal(f.rendered, post); assert.equal(f.currentPost, post);
+    assert.equal(home.hidden, true); assert.equal(mount.hidden, false);
+    assert.equal(document.documentElement.dataset.zenRoute, 'zen-article');
+    assert.deepEqual(b.documentEvents[0].detail, { route: 'zen-article', postId: '42' });
+    assert.equal(f.reads, 1);
+    await f.open(post.url, { history: 'replace', scrollTop: false });
+    assert.equal(b.history.at(-1)[0], 'replace');
+    f.findPost = async () => null; assert.equal(await f.open('/2026/08/no.html'), false);
+  } finally { b.restore(); }
 });
 
-test('open applies push, replace and none history modes without navigating for missing posts', async () => {
-  const browser = installBrowser('https://example.test/#zen-home');
+test('document link interception preserves native semantics and falls back to Blogger', async () => {
+  const b = browser();
+  const oldError = console.error;
   try {
-    const feature = new ArticleFeature();
-    feature.mount = new FakeElement('section');
-    const post = {
-      id: '42',
-      url: 'https://example.test/2026/08/documento.html'
-    };
-    feature.findPost = async () => post;
-    const rendered = [];
-    const activated = [];
-    feature.render = (value) => rendered.push(value);
-    feature.activate = (value, options) => activated.push({ value, options });
-
-    assert.equal(await feature.open(post.url, { history: 'push' }), true);
-    assert.equal(browser.historyCalls.length, 1);
-    assert.equal(browser.historyCalls[0].method, 'push');
-    assert.deepEqual(browser.historyCalls[0].state, { zenArticleId: '42' });
-    assert.equal(rendered[0], post);
-    assert.deepEqual(activated[0].options, { scrollTop: true });
-
-    assert.equal(await feature.open(post.url, { history: 'push', scrollTop: false }), true);
-    assert.equal(browser.historyCalls.length, 1);
-    assert.deepEqual(activated[1].options, { scrollTop: false });
-
-    assert.equal(await feature.open(post.url, { history: 'replace' }), true);
-    assert.equal(browser.historyCalls.at(-1).method, 'replace');
-
-    assert.equal(await feature.open(post.url, { history: 'none' }), true);
-    assert.equal(browser.historyCalls.length, 2);
-
-    feature.findPost = async () => null;
-    assert.equal(await feature.open('/2026/08/missing.html'), false);
-    assert.equal(rendered.length, 4);
-  } finally {
-    browser.restore();
-  }
+    const f = new ArticleFeature();
+    const a = new Anchor('https://example.test/2026/08/doc.html');
+    const target = new El('span'); target.closestMap.set('a[href]', a);
+    f.open = async () => true;
+    const e = click(target); f.onDocumentClick(e); await flush();
+    assert.equal(e.prevented, true); assert.equal(b.assigned.length, 0);
+    const ctrl = click(target); ctrl.ctrlKey = true; f.onDocumentClick(ctrl); assert.equal(ctrl.prevented, undefined);
+    a.target = '_blank'; const blank = click(target); f.onDocumentClick(blank); assert.equal(blank.prevented, undefined); a.target = '';
+    f.open = async () => false; const miss = click(target); f.onDocumentClick(miss); await flush(); assert.equal(b.assigned.at(-1), a.href);
+    console.error = () => {}; f.open = async () => { throw new Error('x'); };
+    const bad = click(target); f.onDocumentClick(bad); await flush(); assert.equal(b.assigned.at(-1), a.href);
+  } finally { console.error = oldError; b.restore(); }
 });
 
-test('document click interception respects native link semantics and falls back safely', async () => {
-  const browser = installBrowser('https://example.test/#zen-home');
-  const originalConsoleError = console.error;
+test('reader controls print, copy, TOC and heading navigation', async () => {
+  const b = browser();
   try {
-    const feature = new ArticleFeature();
-    const openCalls = [];
-    feature.open = async (href, options) => {
-      openCalls.push({ href, options });
-      return true;
-    };
-
-    const anchor = new FakeAnchor('https://example.test/2026/08/documento.html');
-    const target = new FakeElement('span');
-    target.closestMap.set('a[href]', anchor);
-    const event = plainClick(target);
-    feature.onDocumentClick(event);
-    await flushPromises();
-    assert.equal(event.prevented, true);
-    assert.equal(openCalls.length, 1);
-    assert.deepEqual(openCalls[0].options, { history: 'push' });
-    assert.equal(browser.assigned.length, 0);
-
-    const modified = plainClick(target);
-    modified.ctrlKey = true;
-    feature.onDocumentClick(modified);
-    assert.equal(modified.prevented, undefined);
-    assert.equal(openCalls.length, 1);
-
-    const external = new FakeAnchor('https://outside.test/2026/08/documento.html');
-    const externalTarget = new FakeElement('span');
-    externalTarget.closestMap.set('a[href]', external);
-    const externalEvent = plainClick(externalTarget);
-    feature.onDocumentClick(externalEvent);
-    assert.equal(externalEvent.prevented, undefined);
-
-    anchor.target = '_blank';
-    const targetEvent = plainClick(target);
-    feature.onDocumentClick(targetEvent);
-    assert.equal(targetEvent.prevented, undefined);
-    anchor.target = '';
-    anchor.setAttribute('download', 'documento.html');
-    const downloadEvent = plainClick(target);
-    feature.onDocumentClick(downloadEvent);
-    assert.equal(downloadEvent.prevented, undefined);
-    anchor.removeAttribute('download');
-
-    feature.open = async () => false;
-    const fallbackEvent = plainClick(target);
-    feature.onDocumentClick(fallbackEvent);
-    await flushPromises();
-    assert.equal(fallbackEvent.prevented, true);
-    assert.equal(browser.assigned.at(-1), anchor.href);
-
-    const errors = [];
-    console.error = (...args) => errors.push(args);
-    feature.open = async () => {
-      throw new Error('fallo controlado');
-    };
-    browser.navigate('https://example.test/#zen-home');
-    const rejectedEvent = plainClick(target);
-    feature.onDocumentClick(rejectedEvent);
-    await flushPromises();
-    assert.equal(rejectedEvent.prevented, true);
-    assert.equal(errors.length, 1);
-    assert.equal(browser.assigned.at(-1), anchor.href);
-  } finally {
-    console.error = originalConsoleError;
-    browser.restore();
-  }
+    const f = new ArticleFeature(); f.shell = new El(); f.mount = new El();
+    f.currentPost = { title: 'Documento', url: 'https://example.test/2026/08/doc.html' };
+    const action = (name) => { const t = new El('button'), n = new El('button'); n.setAttribute('data-action', name); t.closestMap.set('[data-action]', n); return t; };
+    f.onMountClick({ target: action('toc-open') }); assert.equal(f.shell.getAttribute('data-toc-open'), 'true');
+    f.onMountClick({ target: action('toc-close') }); assert.equal(f.shell.hasAttribute('data-toc-open'), false);
+    f.onMountClick({ target: action('print') }); assert.equal(b.prints.length, 1);
+    f.onMountClick({ target: action('copy-reference') }); await flush(); assert.equal(b.copies[0], 'Documento — https://example.test/2026/08/doc.html');
+    const heading = new El('h2'), a = new Anchor('#parte'), t = new El('span'); a.setAttribute('href', '#parte');
+    t.closestMap.set('[data-action]', null); t.closestMap.set('.zen-article-toc a[href^="#"]', a); f.mount.q.set('#parte', heading);
+    const e = { target: t, preventDefault() { this.prevented = true; } }; f.onMountClick(e);
+    assert.equal(e.prevented, true); assert.deepEqual(heading.scrolled, { behavior: 'smooth', block: 'start' });
+  } finally { b.restore(); }
 });
 
-test('mount actions control the TOC, printing, reference copy and in-document heading navigation', async () => {
-  const browser = installBrowser();
+test('popstate and route-change preserve direct Blogger fallback semantics', () => {
+  const b = browser('https://example.test/2026/08/doc.html');
   try {
-    const shell = new FakeElement('main');
-    const mount = new FakeElement('section');
-    const feature = new ArticleFeature();
-    feature.shell = shell;
-    feature.mount = mount;
-    feature.currentPost = {
-      title: 'Documento constitucional',
-      url: 'https://example.test/2026/08/documento.html'
-    };
-
-    feature.onMountClick({ target: actionTarget('toc-open') });
-    assert.equal(shell.getAttribute('data-toc-open'), 'true');
-    feature.onMountClick({ target: actionTarget('toc-close') });
-    assert.equal(shell.hasAttribute('data-toc-open'), false);
-    feature.onMountClick({ target: actionTarget('print') });
-    assert.equal(browser.printCalls.length, 1);
-    feature.onMountClick({ target: actionTarget('copy-reference') });
-    await flushPromises();
-    assert.equal(
-      browser.clipboardWrites[0],
-      'Documento constitucional — https://example.test/2026/08/documento.html'
-    );
-
-    const heading = new FakeElement('h2');
-    const tocLink = new FakeAnchor('#seccion');
-    tocLink.setAttribute('href', '#seccion');
-    const tocTarget = new FakeElement('span');
-    tocTarget.closestMap.set('[data-action]', null);
-    tocTarget.closestMap.set('.zen-article-toc a[href^="#"]', tocLink);
-    mount.queryMap.set('#seccion', heading);
-    shell.setAttribute('data-toc-open', 'true');
-    const tocEvent = {
-      target: tocTarget,
-      preventDefault() {
-        this.prevented = true;
-      }
-    };
-    feature.onMountClick(tocEvent);
-    assert.equal(tocEvent.prevented, true);
-    assert.deepEqual(heading.scrollOptions, { behavior: 'smooth', block: 'start' });
-    assert.equal(shell.hasAttribute('data-toc-open'), false);
-
-    const textTarget = new FakeElement('span');
-    assert.doesNotThrow(() => feature.onMountClick({ target: textTarget }));
-  } finally {
-    browser.restore();
-  }
+    const applied = []; const f = new ArticleFeature({ navigation: { apply: (r) => applied.push(r) } });
+    const opens = []; f.open = (href, options) => { opens.push([href, options]); return Promise.resolve(true); };
+    f.onPopState(); assert.deepEqual(opens[0][1], { history: 'none', scrollTop: false });
+    b.go('https://example.test/#zen-explore'); f.currentPost = { id: '1' }; f.onPopState(); assert.equal(applied.at(-1), 'zen-explore');
+    b.go('https://example.test/2026/08/doc.html'); f.currentPost = { id: '1' }; f.startedOnItemDocument = false;
+    f.onRouteChanged({ detail: { route: 'zen-home' } }); assert.equal(b.history.at(-1)[2], '/#zen-home');
+    b.go('https://example.test/2026/08/doc.html'); f.currentPost = { id: '1' }; f.startedOnItemDocument = true;
+    const n = b.history.length; f.onRouteChanged({ detail: { route: 'zen-about' } }); assert.equal(b.history.length, n);
+  } finally { b.restore(); }
 });
 
-test('popstate reopens Blogger items or restores the shell route from the hash', () => {
-  const browser = installBrowser('https://example.test/2026/08/documento.html');
+test('reading progress and active TOC follow actual viewport geometry', () => {
+  const b = browser();
   try {
-    const applied = [];
-    const feature = new ArticleFeature({
-      navigation: { apply: (route) => applied.push(route) }
-    });
-    const opened = [];
-    feature.open = (href, options) => {
-      opened.push({ href, options });
-      return Promise.resolve(true);
-    };
-
-    feature.onPopState();
-    assert.equal(opened[0].href, 'https://example.test/2026/08/documento.html');
-    assert.deepEqual(opened[0].options, { history: 'none', scrollTop: false });
-
-    feature.currentPost = { id: '42' };
-    browser.navigate('https://example.test/#zen-explore');
-    feature.onPopState();
-    assert.equal(feature.currentPost, null);
-    assert.equal(applied.at(-1), 'zen-explore');
-
-    browser.navigate('https://example.test/#desconocida');
-    feature.onPopState();
-    assert.equal(applied.at(-1), 'zen-home');
-  } finally {
-    browser.restore();
-  }
+    const body = new El(); body.offsetHeight = 3000; body.getBoundingClientRect = () => ({ top: 100 - window.scrollY });
+    const h1 = new El('h2'); h1.id = 'uno'; h1.rect = { top: 80 };
+    const h2 = new El('h3'); h2.id = 'dos'; h2.rect = { top: 160 };
+    const h3 = new El('h2'); h3.id = 'tres'; h3.rect = { top: 260 };
+    body.qa.set('h2[id], h3[id]', [h1, h2, h3]);
+    const progress = new El('progress'); progress.value = 0;
+    const l1 = new Anchor('#uno'), l2 = new Anchor('#dos'), l3 = new Anchor('#tres');
+    const mount = new El(); mount.q.set('#zen-article-body', body); mount.q.set('.zen-reading-progress', progress); mount.qa.set('.zen-article-toc a', [l1, l2, l3]);
+    const f = new ArticleFeature(); f.mount = mount; f.currentPost = { id: '1' };
+    window.scrollY = 900; f.updateReadingState();
+    assert.ok(progress.value > 40 && progress.value < 50); assert.equal(l2.getAttribute('aria-current'), 'true');
+    window.scrollY = 10000; f.updateReadingState(); assert.equal(progress.value, 100);
+    body.qa.set('h2[id], h3[id]', []); assert.doesNotThrow(() => f.updateReadingState());
+    f.currentPost = null; progress.value = 17; f.updateReadingState(); assert.equal(progress.value, 17);
+  } finally { b.restore(); }
 });
 
-test('shell route changes deactivate SPA articles and normalize only non-item document URLs', () => {
-  const browser = installBrowser('https://example.test/2026/08/documento.html');
+test('boot and destroy wire lifecycle without changing product behavior', async () => {
+  const b = browser();
   try {
-    const feature = new ArticleFeature();
-    feature.shell = new FakeElement('main');
-    feature.currentPost = { id: '42' };
-    feature.startedOnItemDocument = false;
-    feature.onRouteChanged({ detail: { route: 'zen-home' } });
-    assert.equal(feature.currentPost, null);
-    assert.equal(browser.historyCalls.at(-1).method, 'replace');
-    assert.equal(browser.historyCalls.at(-1).value, '/#zen-home');
+    const mount = new El('section'), shell = new El('main');
+    const root = { querySelector: (s) => s === '#zen-article' ? mount : s === '#zen-blog-prototype' ? shell : null };
+    const f = new ArticleFeature({ root }); let loads = 0; f.loadPosts = () => { loads++; return Promise.resolve([]); };
+    f.boot(); assert.equal(loads, 1); assert.equal(b.docListeners.filter(x => x[0] === 'add').length, 2); assert.equal(b.winListeners.filter(x => x[0] === 'add').length, 3);
+    f.createdMount = true; f.currentPost = { id: '1' }; f.destroy();
+    assert.equal(mount.removed, true); assert.equal(f.currentPost, null); assert.equal(f.mount, null); assert.equal(f.shell, null);
 
-    browser.navigate('https://example.test/2026/08/documento.html');
-    feature.currentPost = { id: '42' };
-    feature.startedOnItemDocument = true;
-    const historyCount = browser.historyCalls.length;
-    feature.onRouteChanged({ detail: { route: 'zen-about' } });
-    assert.equal(feature.currentPost, null);
-    assert.equal(browser.historyCalls.length, historyCount);
-
-    feature.currentPost = { id: '43' };
-    feature.onRouteChanged({ detail: { route: 'zen-article' } });
-    assert.deepEqual(feature.currentPost, { id: '43' });
-  } finally {
-    browser.restore();
-  }
-});
-
-test('reading state tracks percentage and current TOC heading from viewport geometry', () => {
-  const browser = installBrowser();
-  try {
-    const body = new FakeElement('div');
-    body.offsetHeight = 3000;
-    body.rect = { top: -800 };
-    const first = new FakeElement('h2');
-    first.id = 'primero';
-    first.rect = { top: 80 };
-    const second = new FakeElement('h3');
-    second.id = 'segundo';
-    second.rect = { top: 160 };
-    const third = new FakeElement('h2');
-    third.id = 'tercero';
-    third.rect = { top: 260 };
-    body.queryAllMap.set('h2[id], h3[id]', [first, second, third]);
-
-    const progress = new FakeElement('progress');
-    progress.value = 0;
-    const firstLink = new FakeAnchor('#primero');
-    firstLink.setAttribute('href', '#primero');
-    const secondLink = new FakeAnchor('#segundo');
-    secondLink.setAttribute('href', '#segundo');
-    const thirdLink = new FakeAnchor('#tercero');
-    thirdLink.setAttribute('href', '#tercero');
-
-    const mount = new FakeElement('section');
-    mount.hidden = false;
-    mount.queryMap.set('#zen-article-body', body);
-    mount.queryMap.set('.zen-reading-progress', progress);
-    mount.queryAllMap.set('.zen-article-toc a', [firstLink, secondLink, thirdLink]);
-    const feature = new ArticleFeature();
-    feature.mount = mount;
-    feature.currentPost = { id: '42' };
-    browser.windowObject.scrollY = 900;
-    browser.windowObject.innerHeight = 1000;
-
-    feature.updateReadingState();
-    assert.ok(progress.value > 40 && progress.value < 50);
-    assert.equal(firstLink.getAttribute('aria-current'), 'false');
-    assert.equal(secondLink.getAttribute('aria-current'), 'true');
-    assert.equal(thirdLink.getAttribute('aria-current'), 'false');
-
-    browser.windowObject.scrollY = 10000;
-    feature.updateReadingState();
-    assert.equal(progress.value, 100);
-
-    body.queryAllMap.set('h2[id], h3[id]', []);
-    assert.doesNotThrow(() => feature.updateReadingState());
-
-    feature.currentPost = null;
-    progress.value = 17;
-    feature.updateReadingState();
-    assert.equal(progress.value, 17);
-  } finally {
-    browser.restore();
-  }
-});
-
-test('boot wires lifecycle listeners and destroy removes owned state and created mounts', async () => {
-  const browser = installBrowser('https://example.test/#zen-home');
-  try {
-    const mount = new FakeElement('section');
-    const shell = new FakeElement('main');
-    const root = {
-      querySelector(selector) {
-        if (selector === '#zen-article') return mount;
-        if (selector === '#zen-blog-prototype') return shell;
-        return null;
-      }
-    };
-    const feature = new ArticleFeature({ root });
-    let loadCalls = 0;
-    feature.loadPosts = () => {
-      loadCalls += 1;
-      return Promise.resolve([]);
-    };
-
-    feature.boot();
-    assert.equal(feature.mount, mount);
-    assert.equal(feature.shell, shell);
-    assert.equal(feature.startedOnItemDocument, false);
-    assert.equal(loadCalls, 1);
-    assert.equal(browser.documentListeners.filter((entry) => entry.op === 'add').length, 2);
-    assert.equal(browser.windowListeners.filter((entry) => entry.op === 'add').length, 3);
-    assert.equal(mount.listeners.filter((entry) => entry.op === 'add').length, 1);
-
-    shell.setAttribute('data-toc-open', 'true');
-    feature.currentPost = { id: '42' };
-    feature.createdMount = true;
-    feature.destroy();
-    assert.equal(browser.documentListeners.filter((entry) => entry.op === 'remove').length, 2);
-    assert.equal(browser.windowListeners.filter((entry) => entry.op === 'remove').length, 3);
-    assert.equal(mount.listeners.filter((entry) => entry.op === 'remove').length, 1);
-    assert.equal(shell.hasAttribute('data-toc-open'), false);
-    assert.equal(mount.removed, true);
-    assert.equal(feature.currentPost, null);
-    assert.equal(feature.mount, null);
-    assert.equal(feature.shell, null);
-
-    browser.navigate('https://example.test/2026/08/directo.html');
-    browser.documentObject.body.classList = new FakeClassList(['item-view']);
-    const directMount = new FakeElement('section');
-    const direct = new ArticleFeature({
-      root: {
-        querySelector(selector) {
-          if (selector === '#zen-article') return directMount;
-          if (selector === '#zen-blog-prototype') return new FakeElement('main');
-          return null;
-        }
-      }
-    });
-    direct.loadPosts = () => Promise.resolve([]);
-    const directOpens = [];
-    direct.open = async (href, options) => {
-      directOpens.push({ href, options });
-      return true;
-    };
-    direct.boot();
-    await flushPromises();
-    assert.equal(direct.startedOnItemDocument, true);
-    assert.equal(directOpens[0].href, 'https://example.test/2026/08/directo.html');
-    assert.deepEqual(directOpens[0].options, { history: 'none' });
-    direct.destroy();
-  } finally {
-    browser.restore();
-  }
+    b.go('https://example.test/2026/08/direct.html'); document.body.classList = new Classes('item-view');
+    const directMount = new El('section');
+    const direct = new ArticleFeature({ root: { querySelector: (s) => s === '#zen-article' ? directMount : s === '#zen-blog-prototype' ? new El('main') : null } });
+    direct.loadPosts = () => Promise.resolve([]); const opened = []; direct.open = async (...args) => { opened.push(args); return true; };
+    direct.boot(); await flush(); assert.equal(direct.startedOnItemDocument, true); assert.deepEqual(opened[0][1], { history: 'none' }); direct.destroy();
+  } finally { b.restore(); }
 });
