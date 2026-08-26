@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 
-const pagesBasePath = process.env.ZENBLOG_BASE_PATH ?? '';
+const pagesBasePath = process.env['ZENBLOG_BASE_PATH'] ?? '';
 
 const nextConfig: NextConfig = {
   output: 'export',
