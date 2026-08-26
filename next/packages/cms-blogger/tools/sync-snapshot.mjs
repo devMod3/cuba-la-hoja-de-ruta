@@ -16,8 +16,8 @@ const metadataPath = path.join(contentDirectory, 'blogger.snapshot.metadata.txt'
 const modeArgument = process.argv.find((argument) => argument.startsWith('--mode='));
 const mode = modeArgument?.slice('--mode='.length) ?? 'check';
 
-if (mode !== 'check' && mode !== 'sync') {
-  throw new Error('Usage: sync-snapshot.mjs --mode=check|sync');
+if (!['check', 'sync', 'self-test'].includes(mode)) {
+  throw new Error('Usage: sync-snapshot.mjs --mode=check|sync|self-test');
 }
 
 const sourceBaseUrl = process.env.ZENBLOG_BLOGGER_ORIGIN ?? BLOGGER_ORIGIN;
@@ -26,6 +26,18 @@ if (new URL(sourceBaseUrl).origin !== BLOGGER_ORIGIN) {
 }
 
 const currentSnapshot = JSON.parse(await readFile(snapshotPath, 'utf8'));
+
+if (mode === 'self-test') {
+  if (typeof BloggerFeedSource !== 'function') {
+    throw new Error('BloggerFeedSource failed to load in the Node control-plane runtime');
+  }
+  if (typeof currentSnapshot.contentSha256 !== 'string') {
+    throw new Error('Checked-in Blogger snapshot failed to load in the control-plane runtime');
+  }
+  console.log('BLOGGER_CONTROL_PLANE_BOOTSTRAP=PASS');
+  process.exit(0);
+}
+
 const fetcher = (url, init) =>
   globalThis.fetch(url, {
     ...init,
