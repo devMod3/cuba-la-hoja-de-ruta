@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ZrpLauncher } from './zrp-launcher';
 
 const primaryRoutes = [
@@ -21,14 +21,10 @@ export function GlobalHeader() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
-
   return (
     <header className="site-header" data-component="Global.Header">
       <div className="site-header-inner">
-        <Link className="brand" href="/" aria-label="Ir a la portada">
+        <Link className="brand" href="/" aria-label="Ir a la portada" onClick={() => setMenuOpen(false)}>
           <span className="brand-mark" aria-hidden="true">
             HR
           </span>
@@ -60,14 +56,18 @@ export function GlobalHeader() {
               key={route.href}
               href={route.href}
               aria-current={routeIsActive(pathname, route.href) ? 'page' : undefined}
+              onClick={() => setMenuOpen(false)}
             >
               {route.label}
             </Link>
           ))}
-          <ZrpLauncher />
+          <span className="nav-player" onClick={() => setMenuOpen(false)}>
+            <ZrpLauncher />
+          </span>
           <Link
             href={aboutRoute.href}
             aria-current={routeIsActive(pathname, aboutRoute.href) ? 'page' : undefined}
+            onClick={() => setMenuOpen(false)}
           >
             {aboutRoute.label}
           </Link>
