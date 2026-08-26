@@ -21,7 +21,9 @@ test('editorial home exposes the approved discovery contract', async ({ page }) 
   );
 });
 
-test('mobile navigation exposes every first-level action without removing ZRP', async ({ page }) => {
+test('mobile navigation exposes every first-level action without removing ZRP', async ({
+  page
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
 
