@@ -8,7 +8,19 @@ for (const route of routes) {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'es');
     await expect(page.getByRole('banner')).toHaveCount(1);
-    await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible();
+
+    const navigationDom = page.locator('nav[aria-label="Navegación principal"]');
+    await expect(navigationDom).toHaveCount(1);
+
+    const mobileToggle = page.getByRole('button', { name: 'Abrir navegación' });
+    if (await mobileToggle.isVisible()) {
+      await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toHaveCount(0);
+      await mobileToggle.click();
+      await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible();
+    } else {
+      await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible();
+    }
+
     await expect(page.getByRole('main')).toHaveCount(1);
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
 
