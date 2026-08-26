@@ -63,13 +63,25 @@ The first Node 24 measurement on Q-046 produced:
 - branches: 59.39%
 - functions: 57.01%
 
-The immediate non-regression gate is therefore:
+That initial non-regression floor was:
 
 - lines >= 50%
 - branches >= 59%
 - functions >= 57%
 
-This is a floor, not a target. Low-coverage legacy modules are visible technical debt and must be improved through characterization tests without changing working behavior. The initial measurement identified `ArticleFeature.js` and `AdaptiveMetadataUI.js` as priority characterization targets.
+Q-046 identified `ArticleFeature.js` and `AdaptiveMetadataUI.js` as the first characterization priorities. After executable behavior characterization of both modules, the measured legacy baseline reached:
+
+- lines: 91.70%
+- branches: 72.73%
+- functions: 88.52%
+
+The permanent non-regression floor is therefore raised conservatively to preserve the characterized behavior while retaining headroom for scoped future work:
+
+- lines >= 85%
+- branches >= 65%
+- functions >= 80%
+
+This remains a floor, not a target. Improvements must come from meaningful characterization, unit, contract or integration assertions rather than coverage-only execution. The floor may rise again when stable evidence justifies it; it may not be lowered merely to make CI green.
 
 Node's built-in test coverage remains marked Experimental in Node 24.19.0. For that reason it is supplemental evidence for the protected legacy line and is not the sole acceptance gate; the existing unit, browser, XML and architecture invariants remain mandatory.
 
