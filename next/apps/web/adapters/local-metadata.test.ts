@@ -80,12 +80,12 @@ describe('LocalMetadataSource', () => {
   it('falls back silently for missing or schema-invalid metadata', () => {
     const warn = vi.fn();
 
-    expect(new LocalMetadataSource({ storage: new MemoryStorage(null), warn }).getRegistry()).toEqual(
-      EMPTY_METADATA_REGISTRY
-    );
-    expect(new LocalMetadataSource({ storage: new MemoryStorage('{}'), warn }).getRegistry()).toEqual(
-      EMPTY_METADATA_REGISTRY
-    );
+    expect(
+      new LocalMetadataSource({ storage: new MemoryStorage(null), warn }).getRegistry()
+    ).toEqual(EMPTY_METADATA_REGISTRY);
+    expect(
+      new LocalMetadataSource({ storage: new MemoryStorage('{}'), warn }).getRegistry()
+    ).toEqual(EMPTY_METADATA_REGISTRY);
     expect(warn).not.toHaveBeenCalled();
   });
 
