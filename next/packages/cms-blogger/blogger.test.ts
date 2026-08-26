@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BloggerFeedSource, buildBloggerFeedUrl, mapBloggerEntry } from './src/index';
 
 function entry(id: number, title: string) {
@@ -19,12 +19,62 @@ function requestUrl(input: RequestInfo | URL): URL {
   return new URL(input.url);
 }
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe('mapBloggerEntry', () => {
   it('preserves the legacy Blogger mapping contract', () => {
     const article = mapBloggerEntry(entry(42, 'Documento'));
     expect(article.id).toBe('42');
     expect(article.title).toBe('Documento');
     expect(article.labels).toEqual(['Constitución']);
+  });
+
+  it('rejects malformed identity and alternate URL fields at the trust boundary', () => {
+    expect(() => mapBloggerEntry(null)).toThrow('Invalid Blogger entry');
+    expect(() =>
+      mapBloggerEntry({
+        link: [{ rel: 'alternate', href: 'https://example.com/post' }],
+        category: []
+      })
+    ).toThrow('Blogger entry requires id');
+    expect(() =>
+      mapBloggerEntry({
+        id: { $t: 'post-8' },
+        link: [],
+        category: []
+      })
+    ).toThrow('Blogger entry requires alternate URL');
+    expect(() =>
+      mapBloggerEntry({
+        id: { $t: 'post-8' },
+        link: [{ rel: 'alternate', href: 'not a valid absolute url' }],
+        category: []
+      })
+    ).toThrow('Invalid Blogger alternate URL');
+  });
+
+  it('defaults optional Blogger fields and ignores malformed link/category members', () => {
+    const article = mapBloggerEntry({
+      id: { $t: 'legacy-id' },
+      title: { $t: '' },
+      published: { $t: 123 },
+      summary: null,
+      link: [null, {}, { rel: 7, href: 'https://ignored.example/' }, { rel: 'alternate', href: 'https://example.com/post' }],
+      category: [null, {}, { term: 7 }, { term: 'Ley' }]
+    });
+
+    expect(article).toMatchObject({
+      id: 'legacy-id',
+      url: 'https://example.com/post',
+      title: '(sin título)',
+      publishedAt: null,
+      updatedAt: null,
+      summary: '',
+      content: '',
+      labels: ['Ley']
+    });
   });
 });
 
@@ -79,10 +129,81 @@ describe('BloggerFeedSource', () => {
     expect(calls.every(({ init }) => init?.cache === 'no-store')).toBe(true);
   });
 
+  it('uses browser document.baseURI and runtime fetch when dependencies are omitted', async () => {
+    const calls: URL[] = [];
+    const fetcher: typeof fetch = (input) => {
+      calls.push(requestUrl(input));
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            feed: {
+              entry: [entry(9, 'Nueve')],
+              openSearch$totalResults: { $t: '1' }
+            }
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      );
+    };
+
+    vi.stubGlobal('document', { baseURI: 'https://example.com/context/page' });
+    vi.stubGlobal('fetch', fetcher);
+
+    const posts = await new BloggerFeedSource({ pageSize: 1 }).listPosts();
+    expect(posts.map((post) => post.id)).toEqual(['9']);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.origin).toBe('https://example.com');
+    expect(calls[0]?.pathname).toBe('/feeds/posts/default');
+  });
+
+  it('fails closed when runtime dependencies cannot be resolved', () => {
+    vi.stubGlobal('document', undefined);
+    expect(() => new BloggerFeedSource({ fetcher: (() => Promise.reject()) as typeof fetch })).toThrow(
+      'BloggerFeedSource requires baseUrl outside a browser'
+    );
+
+    vi.stubGlobal('fetch', undefined);
+    expect(() => new BloggerFeedSource({ baseUrl: 'https://example.com/' })).toThrow(
+      'BloggerFeedSource requires fetch'
+    );
+  });
+
   it('rejects a non-success Blogger response', async () => {
     const fetcher: typeof fetch = () => Promise.resolve(new Response('no', { status: 503 }));
     const source = new BloggerFeedSource({ baseUrl: 'https://example.com/', fetcher });
     await expect(source.listPosts()).rejects.toThrow('Blogger feed HTTP 503');
+  });
+
+  it('rejects structurally invalid Blogger feed envelopes', async () => {
+    for (const payload of [null, {}, { feed: null }]) {
+      const fetcher: typeof fetch = () =>
+        Promise.resolve(
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { 'content-type': 'application/json' }
+          })
+        );
+      const source = new BloggerFeedSource({ baseUrl: 'https://example.com/', fetcher });
+      await expect(source.listPosts()).rejects.toThrow('Invalid Blogger feed');
+    }
+  });
+
+  it('treats malformed pagination metadata conservatively', async () => {
+    const fetcher: typeof fetch = () =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            feed: {
+              entry: [entry(10, 'Diez')],
+              openSearch$totalResults: { $t: 'not-a-number' }
+            }
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
+      );
+    const source = new BloggerFeedSource({ baseUrl: 'https://example.com/', fetcher });
+    const posts = await source.listPosts();
+    expect(posts.map((post) => post.id)).toEqual(['10']);
   });
 
   it('drops malformed external entries instead of trusting them', async () => {
