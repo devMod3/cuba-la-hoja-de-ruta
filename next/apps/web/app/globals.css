@@ -12,7 +12,9 @@
   --border: #2d3338;
   --border-strong: #434a50;
   --content: 1180px;
-  --sans: 'Source Sans 3', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sans:
+    'Source Sans 3', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    sans-serif;
   --serif: 'Source Serif 4', ui-serif, Georgia, Cambria, 'Times New Roman', serif;
 }
 
