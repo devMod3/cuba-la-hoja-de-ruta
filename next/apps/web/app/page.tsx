@@ -2,7 +2,10 @@ import { bloggerSnapshotArticles } from '@zenblog/content-snapshot';
 import Link from 'next/link';
 
 function cleanSummary(value: string): string {
-  return value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function excerpt(value: string, max = 260): string {
@@ -22,8 +25,8 @@ export default function HomePage() {
           <p className="kicker">SOBERANÍA · CONSTITUCIÓN · ESTADO</p>
           <h1 id="home-title">Seguir el origen, los límites y el ejercicio del poder.</h1>
           <p className="home-deck">
-            Conceptos, normas, documentos y análisis organizados para situar, relacionar y
-            verificar cada afirmación.
+            Conceptos, normas, documentos y análisis organizados para situar, relacionar y verificar
+            cada afirmación.
           </p>
           <Link className="text-action" href="/explorar/">
             Explorar el sistema <span aria-hidden="true">→</span>
