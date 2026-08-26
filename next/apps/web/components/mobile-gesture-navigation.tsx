@@ -48,7 +48,7 @@ export function MobileGestureNavigation() {
     const root = document.documentElement;
 
     const updateCapability = () => {
-      root.dataset.zenGestures = media.matches ? 'on' : 'off';
+      root.dataset['zenGestures'] = media.matches ? 'on' : 'off';
       if (!media.matches) activePointer.current = null;
     };
 
@@ -104,7 +104,7 @@ export function MobileGestureNavigation() {
       globalThis.removeEventListener('pointerdown', onPointerDown);
       globalThis.removeEventListener('pointerup', onPointerUp);
       globalThis.removeEventListener('pointercancel', onPointerCancel);
-      delete root.dataset.zenGestures;
+      delete root.dataset['zenGestures'];
       activePointer.current = null;
     };
   }, [pathname, router]);
