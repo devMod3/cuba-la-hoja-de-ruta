@@ -85,18 +85,18 @@ const rootManifest = JSON.parse(await readFile(rootManifestPath, 'utf8'));
 const legacyCoverageScript = String(rootManifest.scripts?.['test:coverage'] ?? '');
 requireText(
   legacyCoverageScript,
-  /--test-coverage-lines=50(?:\s|$)/,
-  'package.json: legacy line coverage floor may not fall below 50%'
+  /--test-coverage-lines=85(?:\s|$)/,
+  'package.json: legacy line coverage floor may not fall below 85%'
 );
 requireText(
   legacyCoverageScript,
-  /--test-coverage-branches=59(?:\s|$)/,
-  'package.json: legacy branch coverage floor may not fall below 59%'
+  /--test-coverage-branches=65(?:\s|$)/,
+  'package.json: legacy branch coverage floor may not fall below 65%'
 );
 requireText(
   legacyCoverageScript,
-  /--test-coverage-functions=57(?:\s|$)/,
-  'package.json: legacy function coverage floor may not fall below 57%'
+  /--test-coverage-functions=80(?:\s|$)/,
+  'package.json: legacy function coverage floor may not fall below 80%'
 );
 requireText(
   legacyCoverageScript,
@@ -245,7 +245,7 @@ globalThis.console.log('PROJECT_ENGINEERING_STANDARDS=PASS');
 globalThis.console.log(`SCANNED_CODE_FILES=${scannedFiles}`);
 globalThis.console.log(`STRICT_TS_OPTIONS=${strictOptionCount}`);
 globalThis.console.log(`INTERNAL_PACKAGES=${internalPackageCount}`);
-globalThis.console.log('LEGACY_COVERAGE_FLOOR=lines:50,branches:59,functions:57');
+globalThis.console.log('LEGACY_COVERAGE_FLOOR=lines:85,branches:65,functions:80');
 if (internalPackageCount > 0) {
   globalThis.console.log('NEXT_COVERAGE_FLOOR=statements:90,branches:70,functions:90,lines:95');
   globalThis.console.log('PLAYWRIGHT_RETRIES=0');
