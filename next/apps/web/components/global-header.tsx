@@ -24,7 +24,12 @@ export function GlobalHeader() {
   return (
     <header className="site-header" data-component="Global.Header">
       <div className="site-header-inner">
-        <Link className="brand" href="/" aria-label="Ir a la portada" onClick={() => setMenuOpen(false)}>
+        <Link
+          className="brand"
+          href="/"
+          aria-label="Ir a la portada"
+          onClick={() => setMenuOpen(false)}
+        >
           <span className="brand-mark" aria-hidden="true">
             HR
           </span>
@@ -41,7 +46,9 @@ export function GlobalHeader() {
           aria-controls="primary-navigation"
           onClick={() => setMenuOpen((open) => !open)}
         >
-          <span className="visually-hidden">{menuOpen ? 'Cerrar navegación' : 'Abrir navegación'}</span>
+          <span className="visually-hidden">
+            {menuOpen ? 'Cerrar navegación' : 'Abrir navegación'}
+          </span>
           <span aria-hidden="true">{menuOpen ? '×' : 'Menú'}</span>
         </button>
 
