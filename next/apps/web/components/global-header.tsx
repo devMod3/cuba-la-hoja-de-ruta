@@ -5,11 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ZrpLauncher } from './zrp-launcher';
 
-const routes = [
+const primaryRoutes = [
   { href: '/', label: 'Portada' },
-  { href: '/explorar/', label: 'Explorar' },
-  { href: '/acerca-de/', label: 'Acerca de' }
+  { href: '/explorar/', label: 'Explorar' }
 ] as const;
+
+const aboutRoute = { href: '/acerca-de/', label: 'Acerca de' } as const;
 
 function routeIsActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/';
@@ -54,7 +55,7 @@ export function GlobalHeader() {
           data-open={menuOpen ? 'true' : 'false'}
           aria-label="Navegación principal"
         >
-          {routes.slice(0, 2).map((route) => (
+          {primaryRoutes.map((route) => (
             <Link
               key={route.href}
               href={route.href}
@@ -65,10 +66,10 @@ export function GlobalHeader() {
           ))}
           <ZrpLauncher />
           <Link
-            href={routes[2].href}
-            aria-current={routeIsActive(pathname, routes[2].href) ? 'page' : undefined}
+            href={aboutRoute.href}
+            aria-current={routeIsActive(pathname, aboutRoute.href) ? 'page' : undefined}
           >
-            {routes[2].label}
+            {aboutRoute.label}
           </Link>
         </nav>
       </div>
