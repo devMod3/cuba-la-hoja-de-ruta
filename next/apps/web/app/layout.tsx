@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Source_Sans_3, Source_Serif_4 } from 'next/font/google';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { GlobalHeader } from '../components/global-header';
 import { ZrpLoader } from '../components/zrp-loader';
 import './globals.css';
@@ -17,6 +17,11 @@ const sourceSerif = Source_Serif_4({
   variable: '--font-source-serif'
 });
 
+const fontFamilies = {
+  '--sans': sourceSans.style.fontFamily,
+  '--serif': sourceSerif.style.fontFamily
+} as CSSProperties;
+
 export const metadata: Metadata = {
   title: { default: 'La hoja de ruta', template: '%s · La hoja de ruta' },
   description: 'Soberanía · Constitución · Estado'
@@ -25,7 +30,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="es" className={`${sourceSans.variable} ${sourceSerif.variable}`}>
-      <body>
+      <body style={fontFamilies}>
         <GlobalHeader />
         {children}
         <ZrpLoader />
