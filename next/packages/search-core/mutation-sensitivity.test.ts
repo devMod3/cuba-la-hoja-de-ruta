@@ -127,6 +127,41 @@ describe('search-core fault sensitivity', () => {
     ).toEqual([]);
   });
 
+  it('accepts an article reference when any norm points to it and rejects missing metadata safely', () => {
+    const multiNormArticle = article('multi', 'Documento multinorma', '2024-01-05T00:00:00.000Z');
+    const multiNormRegistry = MetadataRegistrySchema.parse({
+      records: {
+        multi: {
+          indexing: {
+            norms: [
+              { normId: 'Ley A', articles: [1] },
+              { normId: 'Ley B', articles: [40] }
+            ]
+          }
+        }
+      }
+    });
+
+    expect(
+      ids(
+        searchArticles({
+          articles: [multiNormArticle],
+          registry: multiNormRegistry,
+          query: 'artículo 40',
+          sort: 'relevance'
+        })
+      )
+    ).toEqual(['multi']);
+
+    expect(
+      searchArticles({
+        articles: [noMetadataArticle],
+        query: 'artículo 40',
+        sort: 'relevance'
+      })
+    ).toEqual([]);
+  });
+
   it('treats all filters as disabled and keeps year bounds inclusive', () => {
     const corpus = [metadataArticle, laterArticle, noMetadataArticle];
 
@@ -158,6 +193,19 @@ describe('search-core fault sensitivity', () => {
     ]);
   });
 
+  it('excludes records without metadata when a concrete type filter is active', () => {
+    expect(
+      ids(
+        searchArticles({
+          articles: [noMetadataArticle, metadataArticle, laterArticle],
+          registry,
+          filters: { type: 'Ley' },
+          sort: 'recent'
+        })
+      )
+    ).toEqual(['later', 'meta']);
+  });
+
   it('orders exact, prefix and contained title matches by relevance rather than recency', () => {
     const exact = article('exact', 'Constitución', '2024-01-01T00:00:00.000Z');
     const prefix = article('prefix', 'Constitución vigente', '2024-01-02T00:00:00.000Z');
@@ -168,15 +216,23 @@ describe('search-core fault sensitivity', () => {
     );
     const corpus = [exact, prefix, contained];
 
-    expect(ids(searchArticles({ articles: corpus, query: 'constitucion', sort: 'relevance' }))).toEqual([
-      'exact',
-      'prefix',
-      'contained'
-    ]);
+    const relevance = searchArticles({ articles: corpus, query: 'constitucion', sort: 'relevance' });
+    expect(ids(relevance)).toEqual(['exact', 'prefix', 'contained']);
+    expect(relevance.find((result) => result.article.id === 'contained')?.score).toBe(1260);
+
     expect(ids(searchArticles({ articles: corpus, query: 'constitucion', sort: 'recent' }))).toEqual([
       'contained',
       'prefix',
       'exact'
     ]);
+  });
+
+  it('uses publication recency as the deterministic tie-break for equal relevance scores', () => {
+    const older = article('older-tie', 'Constitución', '2024-01-01T00:00:00.000Z');
+    const newer = article('newer-tie', 'Constitución', '2024-01-02T00:00:00.000Z');
+
+    expect(
+      ids(searchArticles({ articles: [older, newer], query: 'constitucion', sort: 'relevance' }))
+    ).toEqual(['newer-tie', 'older-tie']);
   });
 });
