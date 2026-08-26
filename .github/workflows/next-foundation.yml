@@ -7,6 +7,7 @@ on:
       - 'next/**'
       - 'tools/quality/**'
       - 'docs/ENGINEERING-STANDARDS-50Y.md'
+      - 'docs/TESTING-STANDARDS.md'
       - '.github/workflows/next-foundation.yml'
   push:
     branches: [next-v1-foundation]
@@ -14,6 +15,7 @@ on:
       - 'next/**'
       - 'tools/quality/**'
       - 'docs/ENGINEERING-STANDARDS-50Y.md'
+      - 'docs/TESTING-STANDARDS.md'
       - '.github/workflows/next-foundation.yml'
 
 permissions:
@@ -83,6 +85,13 @@ jobs:
         if: steps.workspace.outputs.available == 'true'
         working-directory: next
         run: pnpm check
+      - name: Upload unit coverage evidence
+        if: steps.workspace.outputs.available == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: next-unit-coverage
+          path: next/coverage
+          if-no-files-found: error
       - name: Upload CycloneDX SBOM
         if: steps.workspace.outputs.available == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

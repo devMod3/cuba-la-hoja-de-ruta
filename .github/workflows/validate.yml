@@ -35,6 +35,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Legacy coverage non-regression
+        run: npm run test:coverage
+
       - name: About browser smoke
         run: |
           (google-chrome --version || chromium --version || chromium-browser --version)
