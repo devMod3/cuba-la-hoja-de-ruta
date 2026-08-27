@@ -324,6 +324,8 @@ export async function connectGitHubAuthoring(
   return Object.freeze({
     session,
     repository,
-    disconnect: () => repository.disconnect()
+    disconnect: () => {
+      repository.disconnect();
+    }
   });
 }

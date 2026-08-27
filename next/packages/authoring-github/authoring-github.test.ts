@@ -19,6 +19,17 @@ interface RecordedRequest {
   readonly init: RequestInit | undefined;
 }
 
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.href;
+  return input.url;
+}
+
+function requestBodyText(body: BodyInit | null | undefined): string {
+  if (typeof body !== 'string') throw new Error('Expected string request body');
+  return body;
+}
+
 function jsonResponse(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
     status,
@@ -32,7 +43,7 @@ function queuedFetch(...queued: Array<Response | Error>): {
 } {
   const requests: RecordedRequest[] = [];
   const fetchImpl = ((input: RequestInfo | URL, init?: RequestInit) => {
-    requests.push({ url: String(input), init });
+    requests.push({ url: requestUrl(input), init });
     const next = queued.shift();
     if (!next) return Promise.reject(new Error('Unexpected fetch'));
     return next instanceof Error ? Promise.reject(next) : Promise.resolve(next);
@@ -82,8 +93,11 @@ describe('connectGitHubAuthoring', () => {
       'https://api.github.test/user',
       'https://api.github.test/repos/devMod3/cuba-la-hoja-de-ruta'
     ]);
-    expect(requestHeaders(mock.requests[0]!).get('Authorization')).toBe(`Bearer ${TOKEN}`);
-    expect(requestHeaders(mock.requests[0]!).get('X-GitHub-Api-Version')).toBe('2022-11-28');
+    const identityRequest = mock.requests[0];
+    expect(identityRequest).toBeDefined();
+    if (!identityRequest) throw new Error('Expected identity request');
+    expect(requestHeaders(identityRequest).get('Authorization')).toBe(`Bearer ${TOKEN}`);
+    expect(requestHeaders(identityRequest).get('X-GitHub-Api-Version')).toBe('2022-11-28');
   });
 
   it('fails before network access for missing credentials or unsafe allowlist configuration', async () => {
@@ -186,9 +200,11 @@ describe('GitHub versioned JSON repository', () => {
 
     expect(written.version).toBe('sha-write-2');
     expect(mock.requests).toHaveLength(3);
-    const request = mock.requests[2]!;
+    const request = mock.requests[2];
+    expect(request).toBeDefined();
+    if (!request) throw new Error('Expected write request');
     expect(request.init?.method).toBe('PUT');
-    const body = JSON.parse(String(request.init?.body)) as Record<string, string>;
+    const body = JSON.parse(requestBodyText(request.init?.body)) as Record<string, string>;
     expect(body['message']).toBe('Update site profile');
     expect(body['sha']).toBe('sha-write-1');
     expect(atob(body['content'] ?? '')).toBe('{\n  "a": "profile",\n  "z": 1\n}\n');
@@ -229,7 +245,10 @@ describe('GitHub versioned JSON repository', () => {
       },
       validateRecord
     );
-    const body = JSON.parse(String(mock.requests[2]?.init?.body)) as Record<string, unknown>;
+    const body = JSON.parse(requestBodyText(mock.requests[2]?.init?.body)) as Record<
+      string,
+      unknown
+    >;
     expect(body).not.toHaveProperty('sha');
 
     await expect(

@@ -38,16 +38,16 @@ describe('canonicalJson', () => {
   });
 
   it('rejects non-JSON, sparse and cyclic values', () => {
-    expect(() => canonicalJson({ value: Number.NaN })).toThrowError(AuthoringError);
-    expect(() => canonicalJson({ value: undefined })).toThrowError(/Unsupported/);
+    expect(() => canonicalJson({ value: Number.NaN })).toThrow(AuthoringError);
+    expect(() => canonicalJson({ value: undefined })).toThrow(/Unsupported/);
 
     const sparse: unknown[] = [];
     sparse.length = 1;
-    expect(() => canonicalJson(sparse)).toThrowError(/sparse/);
+    expect(() => canonicalJson(sparse)).toThrow(/sparse/);
 
     const cyclic: Record<string, unknown> = {};
     cyclic['self'] = cyclic;
-    expect(() => canonicalJson(cyclic)).toThrowError(/cycles/);
+    expect(() => canonicalJson(cyclic)).toThrow(/cycles/);
   });
 });
 
