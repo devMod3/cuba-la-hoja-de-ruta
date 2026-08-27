@@ -1,6 +1,7 @@
 import { bloggerSnapshotArticles } from '@zenblog/content-snapshot';
 import type { Metadata } from 'next';
 import { ExploreClient } from '../../components/explore-client';
+import './explore.css';
 
 export const metadata: Metadata = {
   title: 'Explorar',
