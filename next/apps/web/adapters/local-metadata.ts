@@ -32,6 +32,8 @@ export class LocalMetadataSource {
   readonly #documentTarget: MetadataEventTarget | undefined;
   readonly #windowTarget: MetadataEventTarget | undefined;
   readonly #warn: (message: string, error: unknown) => void;
+  #cachedRaw: string | null | undefined;
+  #cachedRegistry: MetadataRegistry = EMPTY_METADATA_REGISTRY;
 
   constructor({
     storageKey = DEFAULT_METADATA_STORAGE_KEY,
@@ -50,16 +52,32 @@ export class LocalMetadataSource {
   }
 
   getRegistry(): MetadataRegistry {
+    let raw: string | null;
     try {
-      const raw = this.#storage?.getItem(this.#storageKey) ?? null;
-      const parsed: unknown = raw ? JSON.parse(raw) : null;
-      const result = MetadataRegistrySchema.safeParse(parsed);
-      if (result.success) return result.data;
+      raw = this.#storage?.getItem(this.#storageKey) ?? null;
     } catch (error) {
+      this.#warn('[ZenBlog] Metadata registry unavailable', error);
+      return EMPTY_METADATA_REGISTRY;
+    }
+
+    if (raw === this.#cachedRaw) return this.#cachedRegistry;
+    this.#cachedRaw = raw;
+
+    if (!raw) {
+      this.#cachedRegistry = EMPTY_METADATA_REGISTRY;
+      return this.#cachedRegistry;
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      const result = MetadataRegistrySchema.safeParse(parsed);
+      this.#cachedRegistry = result.success ? result.data : EMPTY_METADATA_REGISTRY;
+    } catch (error) {
+      this.#cachedRegistry = EMPTY_METADATA_REGISTRY;
       this.#warn('[ZenBlog] Metadata registry unavailable', error);
     }
 
-    return EMPTY_METADATA_REGISTRY;
+    return this.#cachedRegistry;
   }
 
   subscribe(listener: (registry: MetadataRegistry) => void): () => void {
