@@ -88,10 +88,10 @@ test('Explore advanced mode uses canonical metadata, documentary year and determ
   await expect(page.getByRole('searchbox', { name: 'Buscar por título' })).toHaveCount(0);
   await page.getByLabel('Pilar').selectOption('Constitución');
   await expect(page.getByRole('status')).toHaveText('1 artículo');
-  await expect(page.locator('.explore-results a')).toContainText([
-    'Análisis',
-    'Constitución de 1940'
-  ]);
+  const result = page.locator('.explore-results a');
+  await expect(result).toHaveCount(1);
+  await expect(result).toContainText('Análisis');
+  await expect(result).toContainText('Constitución de 1940');
 
   await page.getByLabel('Año documental').selectOption('range');
   await page.getByLabel('Desde').fill('1940');
@@ -117,7 +117,7 @@ test('Explore advanced mode falls back only to known Blogger pillars and never i
 
   await page.getByLabel('Pilar').selectOption('Estado');
   await expect(page.getByRole('status')).toHaveText('1 artículo');
-  await expect(page.locator('.explore-results a')).toContainText(['Que es Pueblo?']);
+  await expect(page.locator('.explore-results a')).toContainText('Que es Pueblo?');
 
   await page.getByLabel('Año documental').selectOption('range');
   await page.getByLabel('Desde').fill('1500');
