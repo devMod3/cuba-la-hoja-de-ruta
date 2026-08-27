@@ -125,8 +125,7 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
   const results = useMemo(() => {
     if (mode === 'simple') return searchArticlesByTitle(articles, query);
 
-    const filters =
-      yearMode === 'range' ? { pillar, type, yearFrom, yearTo } : { pillar, type };
+    const filters = yearMode === 'range' ? { pillar, type, yearFrom, yearTo } : { pillar, type };
 
     return searchArticles({
       articles,
