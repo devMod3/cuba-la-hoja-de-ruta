@@ -30,9 +30,7 @@ export default async function AboutPage() {
   const data = await readPublishedSiteProfile();
   const { profile } = data;
   const social = data.social.filter((item) => item.visible && item.url);
-  const resources = data.relatedResources.filter(
-    (item) => item.visible && item.title && item.url
-  );
+  const resources = data.relatedResources.filter((item) => item.visible && item.title && item.url);
   const location = [profile.location.city, profile.location.region, profile.location.country]
     .filter(Boolean)
     .join(', ');
@@ -47,19 +45,19 @@ export default async function AboutPage() {
   const hasQuestion = Boolean(profile.randomQuestion || profile.randomAnswer);
   const hasProfile = Boolean(
     profile.displayName ||
-      profile.photoUrl ||
-      profile.introduction ||
-      profile.occupation ||
-      profile.industry ||
-      profile.gender ||
-      location ||
-      profile.email ||
-      profile.website ||
-      profile.audioClipUrl ||
-      profile.wishlistUrl ||
-      profile.bloggerProfileUrl ||
-      profileLists.length > 0 ||
-      hasQuestion
+    profile.photoUrl ||
+    profile.introduction ||
+    profile.occupation ||
+    profile.industry ||
+    profile.gender ||
+    location ||
+    profile.email ||
+    profile.website ||
+    profile.audioClipUrl ||
+    profile.wishlistUrl ||
+    profile.bloggerProfileUrl ||
+    profileLists.length > 0 ||
+    hasQuestion
   );
 
   if (!hasProfile && social.length === 0 && resources.length === 0) {
@@ -84,9 +82,7 @@ export default async function AboutPage() {
     profile.audioClipUrl
       ? { label: 'Audio Clip ↗', href: profile.audioClipUrl, external: true }
       : null,
-    profile.wishlistUrl
-      ? { label: 'Wishlist ↗', href: profile.wishlistUrl, external: true }
-      : null,
+    profile.wishlistUrl ? { label: 'Wishlist ↗', href: profile.wishlistUrl, external: true } : null,
     profile.email
       ? { label: profile.email, href: `mailto:${profile.email}`, external: false }
       : null
@@ -185,7 +181,9 @@ export default async function AboutPage() {
                     <span className={styles.socialName}>
                       {item.label || socialPlatformLabel(item.platform)}
                     </span>
-                    {item.username ? <span className={styles.socialUser}>{item.username}</span> : null}
+                    {item.username ? (
+                      <span className={styles.socialUser}>{item.username}</span>
+                    ) : null}
                   </span>
                 </ExternalLink>
               ))}
