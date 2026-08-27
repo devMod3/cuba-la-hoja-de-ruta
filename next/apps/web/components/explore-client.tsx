@@ -25,20 +25,32 @@ const publicationDate = new Intl.DateTimeFormat('es', {
 
 type ExploreMode = 'simple' | 'advanced';
 type YearMode = 'all' | 'range';
+type Pillar = (typeof PILLARS)[number];
 
 function articleCountLabel(count: number): string {
   return `${String(count)} artículo${count === 1 ? '' : 's'}`;
 }
 
-function knownPillar(article: Article): (typeof PILLARS)[number] | null {
-  return PILLARS.find((pillar) => article.labels.includes(pillar)) ?? null;
+function knownPillars(article: Article): Pillar[] {
+  const pillars: Pillar[] = [];
+  const seen = new Set<Pillar>();
+
+  for (const label of article.labels) {
+    const pillar = PILLARS.find((candidate) => candidate === label);
+    if (pillar && !seen.has(pillar)) {
+      seen.add(pillar);
+      pillars.push(pillar);
+    }
+  }
+
+  return pillars;
 }
 
-function fallbackMetadataRecord(pillar: (typeof PILLARS)[number]): MetadataRecord {
+function fallbackMetadataRecord(primaryPillar: Pillar, relatedPillars: readonly Pillar[]): MetadataRecord {
   return {
     classification: {
-      primaryPillar: pillar,
-      relatedPillars: [],
+      primaryPillar,
+      relatedPillars: [...relatedPillars],
       type: null
     },
     temporal: { documentYear: null },
@@ -62,18 +74,26 @@ function withPillarFallback(
     const record = records[article.id];
     if (record?.classification.primaryPillar) continue;
 
-    const pillar = knownPillar(article);
-    if (!pillar) continue;
+    const [primaryPillar, ...relatedPillars] = knownPillars(article);
+    if (!primaryPillar) continue;
 
-    records[article.id] = record
-      ? {
-          ...record,
-          classification: {
-            ...record.classification,
-            primaryPillar: pillar
-          }
-        }
-      : fallbackMetadataRecord(pillar);
+    if (!record) {
+      records[article.id] = fallbackMetadataRecord(primaryPillar, relatedPillars);
+      continue;
+    }
+
+    const mergedRelatedPillars = [...new Set([...record.classification.relatedPillars, ...relatedPillars])].filter(
+      (pillar) => pillar !== primaryPillar
+    );
+
+    records[article.id] = {
+      ...record,
+      classification: {
+        ...record.classification,
+        primaryPillar,
+        relatedPillars: mergedRelatedPillars
+      }
+    };
   }
 
   return { ...registry, records };
