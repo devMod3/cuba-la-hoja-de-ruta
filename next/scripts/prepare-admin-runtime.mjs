@@ -14,9 +14,7 @@ if (args.has('--clean-public')) {
   globalThis.process.exit(0);
 }
 
-const targetRoot = args.has('--public')
-  ? publicRuntime
-  : path.join(webRoot, 'out', 'zen-admin');
+const targetRoot = args.has('--public') ? publicRuntime : path.join(webRoot, 'out', 'zen-admin');
 const basePath = (globalThis.process.env['ZENBLOG_BASE_PATH'] ?? '').replace(/\/$/, '');
 const siteHref = `${basePath}/` || '/';
 
