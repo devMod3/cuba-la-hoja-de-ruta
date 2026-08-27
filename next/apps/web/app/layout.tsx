@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Source_Sans_3, Source_Serif_4 } from 'next/font/google';
+import Script from 'next/script';
 import type { CSSProperties, ReactNode } from 'react';
 import { GlobalHeader } from '../components/global-header';
 import { MobileGestureNavigation } from '../components/mobile-gesture-navigation';
@@ -40,7 +41,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         {children}
         <MobileGestureNavigation />
         <ZrpLoader />
-        <script type="module" src={auxiliaryRuntimeSrc} />
+        <Script type="module" src={auxiliaryRuntimeSrc} strategy="afterInteractive" />
       </body>
     </html>
   );
