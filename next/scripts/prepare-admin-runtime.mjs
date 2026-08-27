@@ -18,11 +18,13 @@ const targetRoot = args.has('--public') ? publicRuntime : path.join(webRoot, 'ou
 const basePath = (globalThis.process.env['ZENBLOG_BASE_PATH'] ?? '').replace(/\/$/, '');
 const siteHref = `${basePath}/`;
 
-async function replaceFile(relativePath, transform) {
+async function replaceFile(relativePath, transform, { allowUnchanged = false } = {}) {
   const file = path.join(targetRoot, relativePath);
   const source = await readFile(file, 'utf8');
   const output = transform(source);
-  if (output === source) throw new Error(`Admin runtime patch made no change: ${relativePath}`);
+  if (!allowUnchanged && output === source) {
+    throw new Error(`Admin runtime patch made no change: ${relativePath}`);
+  }
   await writeFile(file, output, 'utf8');
 }
 
@@ -79,13 +81,17 @@ await replaceFile('tools/admin/bootstrap.js', (source) => {
   return output;
 });
 
-await replaceFile('tools/admin/AdminShell.js', (source) => {
-  const matches = source.match(/href="\/"/g) ?? [];
-  if (matches.length !== 3) {
-    throw new Error(`Expected 3 AdminShell site links, found ${String(matches.length)}`);
-  }
-  return source.replaceAll('href="/"', `href="${siteHref}"`);
-});
+await replaceFile(
+  'tools/admin/AdminShell.js',
+  (source) => {
+    const matches = source.match(/href="\/"/g) ?? [];
+    if (matches.length !== 3) {
+      throw new Error(`Expected 3 AdminShell site links, found ${String(matches.length)}`);
+    }
+    return source.replaceAll('href="/"', `href="${siteHref}"`);
+  },
+  { allowUnchanged: siteHref === '/' }
+);
 
 await replaceFile('tools/admin/PublicProfilePublishing.js', (source) =>
   replaceExact(
