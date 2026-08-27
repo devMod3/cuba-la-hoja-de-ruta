@@ -46,7 +46,10 @@ function knownPillars(article: Article): Pillar[] {
   return pillars;
 }
 
-function fallbackMetadataRecord(primaryPillar: Pillar, relatedPillars: readonly Pillar[]): MetadataRecord {
+function fallbackMetadataRecord(
+  primaryPillar: Pillar,
+  relatedPillars: readonly Pillar[]
+): MetadataRecord {
   return {
     classification: {
       primaryPillar,
@@ -82,9 +85,9 @@ function withPillarFallback(
       continue;
     }
 
-    const mergedRelatedPillars = [...new Set([...record.classification.relatedPillars, ...relatedPillars])].filter(
-      (pillar) => pillar !== primaryPillar
-    );
+    const mergedRelatedPillars = [
+      ...new Set([...record.classification.relatedPillars, ...relatedPillars])
+    ].filter((pillar) => pillar !== primaryPillar);
 
     records[article.id] = {
       ...record,
