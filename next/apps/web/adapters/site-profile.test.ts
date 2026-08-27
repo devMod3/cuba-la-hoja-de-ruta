@@ -71,7 +71,9 @@ function validProfile() {
 describe('published site profile adapter', () => {
   it('reads the canonical repository snapshot used by the public page', async () => {
     const repositorySnapshotPath = resolve(process.cwd(), '../config/site-profile.public.json');
-    const repositorySnapshot = JSON.parse(await readFile(repositorySnapshotPath, 'utf8')) as unknown;
+    const repositorySnapshot = JSON.parse(
+      await readFile(repositorySnapshotPath, 'utf8')
+    ) as unknown;
     const profile = await readPublishedSiteProfile();
 
     expect(profile).toEqual(parsePublishedSiteProfile(repositorySnapshot));
