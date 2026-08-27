@@ -63,7 +63,13 @@ function requiredDocumentPath(path: string): string {
 
 function safeApiBaseUrl(value: string | undefined): string {
   const parsed = new URL(value ?? DEFAULT_API_BASE_URL);
-  if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.search || parsed.hash) {
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.username ||
+    parsed.password ||
+    parsed.search ||
+    parsed.hash
+  ) {
     throw new AuthoringError('validation', 'GitHub API base URL must be a clean HTTPS origin/path');
   }
   return parsed.href.replace(/\/+$/, '');
@@ -100,7 +106,10 @@ function decodeBase64Utf8(value: string): string {
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch (error) {
     if (error instanceof AuthoringError) throw error;
-    throw new AuthoringError('validation', 'Shared GitHub document has invalid base64/UTF-8 content');
+    throw new AuthoringError(
+      'validation',
+      'Shared GitHub document has invalid base64/UTF-8 content'
+    );
   }
 }
 
@@ -114,8 +123,10 @@ function validateRemoteValue<T>(value: unknown, validate: JsonValidator<T>): T {
 }
 
 function responseFailure(status: number, context: string): AuthoringError {
-  if (status === 401) return new AuthoringError('unauthorized', `${context}: authentication failed`, status);
-  if (status === 403) return new AuthoringError('forbidden', `${context}: repository access denied`, status);
+  if (status === 401)
+    return new AuthoringError('unauthorized', `${context}: authentication failed`, status);
+  if (status === 403)
+    return new AuthoringError('forbidden', `${context}: repository access denied`, status);
   return new AuthoringError('transport', `${context}: GitHub HTTP ${String(status)}`, status);
 }
 
@@ -134,7 +145,8 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     this.#apiBaseUrl = safeApiBaseUrl(options.config.apiBaseUrl);
     this.#fetch = options.fetchImpl ?? globalThis.fetch;
     this.#token = options.token.trim() || null;
-    if (!this.#token) throw new AuthoringError('unauthorized', 'GitHub authoring credential is required');
+    if (!this.#token)
+      throw new AuthoringError('unauthorized', 'GitHub authoring credential is required');
 
     const paths = {} as Record<SharedDocumentKey, string>;
     for (const key of SHARED_DOCUMENT_KEYS) {
@@ -162,14 +174,22 @@ class GitHubContentsRepository implements VersionedJsonRepository {
 
     const repositoryResponse = await this.#request(this.#repositoryUrl());
     if (repositoryResponse.status === 404) {
-      throw new AuthoringError('forbidden', 'GitHub repository is not available to this identity', 404);
+      throw new AuthoringError(
+        'forbidden',
+        'GitHub repository is not available to this identity',
+        404
+      );
     }
-    if (!repositoryResponse.ok) throw responseFailure(repositoryResponse.status, 'GitHub repository');
+    if (!repositoryResponse.ok)
+      throw responseFailure(repositoryResponse.status, 'GitHub repository');
     const repositoryPayload: unknown = await repositoryResponse.json();
     const repositoryRecord = asRecord(repositoryPayload);
     const permissions = asRecord(repositoryRecord?.['permissions']);
     if (permissions?.['push'] !== true) {
-      throw new AuthoringError('forbidden', 'GitHub identity lacks shared-authoring write capability');
+      throw new AuthoringError(
+        'forbidden',
+        'GitHub identity lacks shared-authoring write capability'
+      );
     }
 
     this.#authorized = true;
@@ -225,7 +245,10 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     this.#assertAuthorized();
     const message = input.message.trim();
     if (!message || message.length > 200) {
-      throw new AuthoringError('validation', 'Shared-document commit message must contain 1-200 characters');
+      throw new AuthoringError(
+        'validation',
+        'Shared-document commit message must contain 1-200 characters'
+      );
     }
     const value = validateRemoteValue(structuredClone(input.value), validate);
     const body: Record<string, string> = {
@@ -239,7 +262,11 @@ class GitHubContentsRepository implements VersionedJsonRepository {
       body: JSON.stringify(body)
     });
     if (response.status === 409 || response.status === 422) {
-      throw new AuthoringError('conflict', `Shared document changed remotely: ${input.key}`, response.status);
+      throw new AuthoringError(
+        'conflict',
+        `Shared document changed remotely: ${input.key}`,
+        response.status
+      );
     }
     if (!response.ok) throw responseFailure(response.status, 'Shared-document write');
 
@@ -248,7 +275,10 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     const writtenContent = asRecord(record?.['content']);
     const sha = writtenContent?.['sha'];
     if (typeof sha !== 'string' || !sha) {
-      throw new AuthoringError('validation', 'GitHub write response did not contain a document version');
+      throw new AuthoringError(
+        'validation',
+        'GitHub write response did not contain a document version'
+      );
     }
     return Object.freeze({ key: input.key, value, version: sha });
   }
@@ -271,7 +301,8 @@ class GitHubContentsRepository implements VersionedJsonRepository {
 
   async #request(url: string, init: RequestInit = {}): Promise<Response> {
     const token = this.#token;
-    if (!token) throw new AuthoringError('unauthorized', 'GitHub authoring credential is not available');
+    if (!token)
+      throw new AuthoringError('unauthorized', 'GitHub authoring credential is not available');
     const headers = new Headers(init.headers);
     headers.set('Accept', 'application/vnd.github+json');
     headers.set('Authorization', `Bearer ${token}`);

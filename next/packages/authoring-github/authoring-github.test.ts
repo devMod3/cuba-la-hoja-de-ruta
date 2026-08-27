@@ -65,7 +65,11 @@ function requestHeaders(request: RecordedRequest): Headers {
 describe('connectGitHubAuthoring', () => {
   it('authenticates identity, checks write capability and keeps credentials non-serializable', async () => {
     const mock = queuedFetch(...authResponses());
-    const connection = await connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: mock.fetchImpl });
+    const connection = await connectGitHubAuthoring({
+      token: TOKEN,
+      config,
+      fetchImpl: mock.fetchImpl
+    });
 
     expect(connection.session).toMatchObject({
       status: 'authorized',
@@ -146,7 +150,11 @@ describe('GitHub versioned JSON repository', () => {
         content: encodedJson({ schemaVersion: '1.0.0', entries: [] })
       })
     );
-    const connection = await connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: mock.fetchImpl });
+    const connection = await connectGitHubAuthoring({
+      token: TOKEN,
+      config,
+      fetchImpl: mock.fetchImpl
+    });
     const document = await connection.repository.read('metadata-registry', validateRecord);
 
     expect(document).toEqual({
@@ -160,11 +168,12 @@ describe('GitHub versioned JSON repository', () => {
   });
 
   it('writes deterministic JSON with expected SHA and never retries a conflict', async () => {
-    const mock = queuedFetch(
-      ...authResponses(),
-      jsonResponse({ content: { sha: 'sha-write-2' } })
-    );
-    const connection = await connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: mock.fetchImpl });
+    const mock = queuedFetch(...authResponses(), jsonResponse({ content: { sha: 'sha-write-2' } }));
+    const connection = await connectGitHubAuthoring({
+      token: TOKEN,
+      config,
+      fetchImpl: mock.fetchImpl
+    });
     const written = await connection.repository.write(
       {
         key: 'site-profile',
@@ -206,7 +215,11 @@ describe('GitHub versioned JSON repository', () => {
 
   it('creates without a SHA and rejects unknown runtime keys before content fetch', async () => {
     const mock = queuedFetch(...authResponses(), jsonResponse({ content: { sha: 'sha-create' } }));
-    const connection = await connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: mock.fetchImpl });
+    const connection = await connectGitHubAuthoring({
+      token: TOKEN,
+      config,
+      fetchImpl: mock.fetchImpl
+    });
     await connection.repository.write(
       {
         key: 'metadata-registry',
@@ -251,7 +264,12 @@ describe('GitHub versioned JSON repository', () => {
 
     const schemaInvalid = queuedFetch(
       ...authResponses(),
-      jsonResponse({ type: 'file', encoding: 'base64', sha: 'bad-schema', content: encodedJson([]) })
+      jsonResponse({
+        type: 'file',
+        encoding: 'base64',
+        sha: 'bad-schema',
+        content: encodedJson([])
+      })
     );
     const schemaConnection = await connectGitHubAuthoring({
       token: TOKEN,
@@ -300,7 +318,11 @@ describe('GitHub versioned JSON repository', () => {
         content: encodedJson({ value: 'remote' })
       })
     );
-    const connection = await connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: mock.fetchImpl });
+    const connection = await connectGitHubAuthoring({
+      token: TOKEN,
+      config,
+      fetchImpl: mock.fetchImpl
+    });
     const error = await connection.repository
       .read('site-profile', () => {
         throw new Error(`schema failed near ${TOKEN}`);

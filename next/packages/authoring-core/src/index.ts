@@ -59,12 +59,7 @@ export interface VersionedJsonRepository {
 }
 
 export type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { [key: string]: JsonValue };
+  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
 export class AuthoringError extends Error {
   override readonly name = 'AuthoringError';
@@ -117,7 +112,8 @@ function normalizeJson(value: unknown, seen: WeakSet<object>): JsonValue {
     seen.add(value);
     const output: JsonValue[] = [];
     for (let index = 0; index < value.length; index += 1) {
-      if (!(index in value)) return validationError('Shared documents cannot contain sparse arrays');
+      if (!(index in value))
+        return validationError('Shared documents cannot contain sparse arrays');
       output.push(normalizeJson(value[index], seen));
     }
     seen.delete(value);
