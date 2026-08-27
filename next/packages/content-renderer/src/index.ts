@@ -42,39 +42,6 @@ const TEXT_EXTRACTION_POLICY: IOptions = {
 };
 
 const ARTICLE_HEADING_PATTERN = /<h([234])>([\s\S]*?)<\/h\1>/gu;
-const TEXT_ENTITY_PATTERN = /&(#x[0-9a-f]+|#\d+|[a-z][a-z0-9]+);/giu;
-const NAMED_TEXT_ENTITIES: Readonly<Record<string, string>> = {
-  amp: '&',
-  apos: "'",
-  gt: '>',
-  lt: '<',
-  nbsp: ' ',
-  quot: '"',
-  aacute: 'á',
-  eacute: 'é',
-  iacute: 'í',
-  oacute: 'ó',
-  uacute: 'ú',
-  ntilde: 'ñ',
-  uuml: 'ü',
-  iexcl: '¡',
-  iquest: '¿',
-  laquo: '«',
-  raquo: '»',
-  lsquo: '‘',
-  rsquo: '’',
-  ldquo: '“',
-  rdquo: '”',
-  ndash: '–',
-  mdash: '—',
-  hellip: '…',
-  bull: '•',
-  middot: '·',
-  copy: '©',
-  reg: '®',
-  trade: '™',
-  deg: '°'
-};
 
 export type ArticleHeading = Readonly<{
   id: string;
@@ -88,20 +55,8 @@ export type PreparedBloggerArticle = Readonly<{
   headings: readonly ArticleHeading[];
 }>;
 
-function decodeTextEntities(value: string): string {
-  return value.replace(TEXT_ENTITY_PATTERN, (match, rawToken: string) => {
-    const token = rawToken.toLowerCase();
-    if (!token.startsWith('#')) return NAMED_TEXT_ENTITIES[token] ?? match;
-
-    const hexadecimal = token.startsWith('#x');
-    const codePoint = Number.parseInt(token.slice(hexadecimal ? 2 : 1), hexadecimal ? 16 : 10);
-
-    try {
-      return String.fromCodePoint(codePoint);
-    } catch {
-      return '\uFFFD';
-    }
-  });
+function decodeSanitizedText(value: string): string {
+  return value.replaceAll('&amp;', '&').replaceAll('&gt;', '>').replaceAll('&lt;', '<');
 }
 
 function extractTextFromSanitizedHtml(sanitizedHtml: string): string {
@@ -115,7 +70,7 @@ function extractTextFromSanitizedHtml(sanitizedHtml: string): string {
     }
   });
 
-  return decodeTextEntities(textChunks.join(' ')).replace(/\s+/gu, ' ').trim();
+  return decodeSanitizedText(textChunks.join(' ')).replace(/\s+/gu, ' ').trim();
 }
 
 function slugifyHeading(value: string): string {
