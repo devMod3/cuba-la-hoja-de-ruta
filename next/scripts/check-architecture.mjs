@@ -15,6 +15,22 @@ const boundaries = [
     forbidNodeBuiltins: true
   },
   {
+    name: '@zenblog/authoring-core',
+    root: 'packages/authoring-core',
+    sourceRoots: ['src'],
+    allowedInternal: [],
+    forbiddenExternal: ['next', 'react', 'react-dom'],
+    forbidNodeBuiltins: true
+  },
+  {
+    name: '@zenblog/authoring-github',
+    root: 'packages/authoring-github',
+    sourceRoots: ['src'],
+    allowedInternal: ['@zenblog/authoring-core'],
+    forbiddenExternal: ['next', 'react', 'react-dom'],
+    forbidNodeBuiltins: true
+  },
+  {
     name: '@zenblog/content-snapshot',
     root: 'packages/content-snapshot',
     sourceRoots: ['src'],

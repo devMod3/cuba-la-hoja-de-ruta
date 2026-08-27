@@ -19,7 +19,30 @@ const errors = [];
 
 const lockfileSha256 = createHash('sha256').update(lockfileText).digest('hex');
 const integrityEntries = [...lockfileText.matchAll(/resolution: \{integrity: /g)].length;
-const exoticProtocols = ['git+', 'github:', 'http://', 'https://', 'ssh://', 'git://'];
+const exoticProtocol = String.raw`(?:git\+|github:|http://|https://|ssh://|git://)`;
+const externalSourceValuePattern = new RegExp(
+  String.raw`^\s*(?:specifier|version|resolution|tarball):[^\n]*${exoticProtocol}`,
+  'gm'
+);
+
+function findExternalSourceValues(text) {
+  return [...text.matchAll(externalSourceValuePattern)].map((match) => match[0].trim());
+}
+
+const policyCases = [
+  ['workspace importer name', '  packages/authoring-github:\n', 0],
+  ['GitHub specifier', '        specifier: github:owner/repository\n', 1],
+  ['HTTPS tarball resolution', '    resolution: {tarball: https://example.test/archive.tgz}\n', 1],
+  ['ordinary workspace link', '        version: link:../authoring-core\n', 0]
+];
+for (const [label, sample, expectedMatches] of policyCases) {
+  const actualMatches = findExternalSourceValues(sample).length;
+  if (actualMatches !== expectedMatches) {
+    errors.push(
+      `external-source policy self-test failed (${label}): expected ${expectedMatches}, found ${actualMatches}`
+    );
+  }
+}
 
 if (manifest.packageManager !== baseline.packageManager) {
   errors.push(
@@ -45,10 +68,9 @@ if (integrityEntries !== baseline.lockfileEntries) {
   );
 }
 
-for (const protocol of exoticProtocols) {
-  if (lockfileText.includes(protocol)) {
-    errors.push(`lockfile contains disallowed external source protocol: ${protocol}`);
-  }
+const externalSourceMatches = findExternalSourceValues(lockfileText);
+if (externalSourceMatches.length > 0) {
+  errors.push(`lockfile contains disallowed external source value: ${externalSourceMatches[0]}`);
 }
 
 const requiredWorkspaceSettings = [
