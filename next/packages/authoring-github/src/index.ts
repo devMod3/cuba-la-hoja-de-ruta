@@ -307,9 +307,7 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     headers.set('Accept', 'application/vnd.github+json');
     headers.set('Authorization', `Bearer ${token}`);
     headers.set('X-GitHub-Api-Version', API_VERSION);
-    if (typeof init.body === 'string' && !headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
+    if (typeof init.body === 'string') headers.set('Content-Type', 'application/json');
     try {
       return await this.#fetch(url, { ...init, headers });
     } catch {
