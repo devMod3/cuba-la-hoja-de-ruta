@@ -7,40 +7,38 @@ import {
 } from '../../adapters/site-profile';
 import styles from './about.module.css';
 
-interface AboutStyleMap {
-  readonly page: string;
-  readonly shell: string;
-  readonly fallback: string;
-  readonly lead: string;
-  readonly intro: string;
-  readonly profileTop: string;
-  readonly photoFrame: string;
-  readonly photo: string;
-  readonly identity: string;
-  readonly metaLine: string;
-  readonly quickLinks: string;
-  readonly link: string;
-  readonly divider: string;
-  readonly section: string;
-  readonly sectionHead: string;
-  readonly profileLists: string;
-  readonly profileList: string;
-  readonly question: string;
-  readonly answer: string;
-  readonly socialList: string;
-  readonly social: string;
-  readonly socialCopy: string;
-  readonly socialName: string;
-  readonly socialUser: string;
-  readonly resourceList: string;
-  readonly resource: string;
-  readonly resourceCopy: string;
-  readonly resourceTop: string;
-  readonly resourceType: string;
-  readonly resourceDescription: string;
-}
-
-const css = styles as unknown as AboutStyleMap;
+const css = {
+  page: styles['page'] ?? '',
+  shell: styles['shell'] ?? '',
+  fallback: styles['fallback'] ?? '',
+  lead: styles['lead'] ?? '',
+  intro: styles['intro'] ?? '',
+  profileTop: styles['profileTop'] ?? '',
+  photoFrame: styles['photoFrame'] ?? '',
+  photo: styles['photo'] ?? '',
+  identity: styles['identity'] ?? '',
+  metaLine: styles['metaLine'] ?? '',
+  quickLinks: styles['quickLinks'] ?? '',
+  link: styles['link'] ?? '',
+  divider: styles['divider'] ?? '',
+  section: styles['section'] ?? '',
+  sectionHead: styles['sectionHead'] ?? '',
+  profileLists: styles['profileLists'] ?? '',
+  profileList: styles['profileList'] ?? '',
+  question: styles['question'] ?? '',
+  answer: styles['answer'] ?? '',
+  socialList: styles['socialList'] ?? '',
+  social: styles['social'] ?? '',
+  socialCopy: styles['socialCopy'] ?? '',
+  socialName: styles['socialName'] ?? '',
+  socialUser: styles['socialUser'] ?? '',
+  resourceList: styles['resourceList'] ?? '',
+  resource: styles['resource'] ?? '',
+  resourceCopy: styles['resourceCopy'] ?? '',
+  resourceTop: styles['resourceTop'] ?? '',
+  resourceType: styles['resourceType'] ?? '',
+  resourceDescription: styles['resourceDescription'] ?? ''
+};
 
 export const metadata: Metadata = {
   title: 'Acerca de',
