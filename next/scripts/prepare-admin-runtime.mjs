@@ -16,7 +16,7 @@ if (args.has('--clean-public')) {
 
 const targetRoot = args.has('--public') ? publicRuntime : path.join(webRoot, 'out', 'zen-admin');
 const basePath = (globalThis.process.env['ZENBLOG_BASE_PATH'] ?? '').replace(/\/$/, '');
-const siteHref = `${basePath}/` || '/';
+const siteHref = `${basePath}/`;
 
 async function replaceFile(relativePath, transform) {
   const file = path.join(targetRoot, relativePath);
