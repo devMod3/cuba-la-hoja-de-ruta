@@ -107,15 +107,23 @@ describe('published site profile adapter', () => {
 
   it('rejects malformed schema and unsafe public fields', () => {
     const unsafe = validProfile();
+    const firstSocial = unsafe.social[0];
+    const secondSocial = unsafe.social[1];
+    const firstResource = unsafe.relatedResources[0];
+    const secondResource = unsafe.relatedResources[1];
+    if (!firstSocial || !secondSocial || !firstResource || !secondResource) {
+      throw new Error('Test fixture is incomplete');
+    }
+
     unsafe.schemaVersion = '2.0.0';
     unsafe.profile.photoUrl = 'data:image/svg+xml;base64,PHN2Zz4=';
     unsafe.profile.email = 'not-an-email';
     unsafe.profile.website = 'javascript:alert(1)';
-    unsafe.social[0]!.url = '';
-    unsafe.social[1]!.url = 'javascript:alert(1)';
-    unsafe.relatedResources[0]!.title = '';
-    unsafe.relatedResources[0]!.url = '';
-    unsafe.relatedResources[1]!.url = 'javascript:alert(1)';
+    firstSocial.url = '';
+    secondSocial.url = 'javascript:alert(1)';
+    firstResource.title = '';
+    firstResource.url = '';
+    secondResource.url = 'javascript:alert(1)';
 
     expect(() => parsePublishedSiteProfile(unsafe)).toThrow(
       /schemaVersion must be 1\.0\.0.*profile\.photoUrl.*profile\.email.*profile\.website.*social\[0\].*social\[1\].*relatedResources\[0\].*relatedResources\[1\]/
