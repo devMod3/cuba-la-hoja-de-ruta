@@ -13,12 +13,7 @@ export type SocialPlatform =
   | 'other';
 
 export type ResourceType =
-  | 'project'
-  | 'institution'
-  | 'archive'
-  | 'source'
-  | 'publication'
-  | 'other';
+  'project' | 'institution' | 'archive' | 'source' | 'publication' | 'other';
 
 export interface PublishedSiteProfile {
   readonly schemaVersion: '1.0.0';
