@@ -1,11 +1,11 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 function jsonBase64(value: unknown): string {
   return Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8').toString('base64');
 }
 
-async function makeMetadataMeaningful(page: import('@playwright/test').Page) {
+async function makeMetadataMeaningful(page: Page) {
   await expect(page.locator('#zmm-status')).toContainText(/\d+ artículos/);
   const firstArticle = page.locator('.zmm-title-btn').first();
   await expect(firstArticle).toBeVisible();
