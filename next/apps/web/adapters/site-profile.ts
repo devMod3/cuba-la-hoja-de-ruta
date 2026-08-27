@@ -1,4 +1,6 @@
 import { readFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export type SocialPlatform =
   | 'x'
@@ -88,6 +90,11 @@ const SOCIAL_PLATFORMS = new Set<SocialPlatform>(Object.keys(SOCIAL_LABELS) as S
 const RESOURCE_TYPES = new Set<ResourceType>(Object.keys(RESOURCE_LABELS) as ResourceType[]);
 const SAFE_IMAGE_DATA = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=\s]+$/i;
 const MAX_INLINE_IMAGE_LENGTH = 900_000;
+const ADAPTER_DIRECTORY = dirname(fileURLToPath(import.meta.url));
+const PUBLISHED_PROFILE_PATH = resolve(
+  ADAPTER_DIRECTORY,
+  '../../../../config/site-profile.public.json'
+);
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
@@ -239,8 +246,7 @@ export function parsePublishedSiteProfile(value: unknown): PublishedSiteProfile 
 }
 
 export async function readPublishedSiteProfile(): Promise<PublishedSiteProfile> {
-  const source = new URL('../../../../config/site-profile.public.json', import.meta.url);
-  const raw = await readFile(source, 'utf8');
+  const raw = await readFile(PUBLISHED_PROFILE_PATH, 'utf8');
   return parsePublishedSiteProfile(JSON.parse(raw) as unknown);
 }
 
