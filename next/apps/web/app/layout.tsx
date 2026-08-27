@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Source_Sans_3, Source_Serif_4 } from 'next/font/google';
-import Script from 'next/script';
 import type { CSSProperties, ReactNode } from 'react';
 import { GlobalHeader } from '../components/global-header';
 import { MobileGestureNavigation } from '../components/mobile-gesture-navigation';
@@ -27,6 +26,7 @@ const fontFamilies = {
 
 const basePath = process.env['ZENBLOG_BASE_PATH'] ?? '';
 const auxiliaryRuntimeSrc = `${basePath}/zen-admin/tools/runtime/bootstrap.js`;
+const auxiliaryRuntimeBootstrap = `globalThis.addEventListener('load',()=>void import(${JSON.stringify(auxiliaryRuntimeSrc)}),{once:true});`;
 
 export const metadata: Metadata = {
   title: { default: 'La hoja de ruta', template: '%s · La hoja de ruta' },
@@ -41,7 +41,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         {children}
         <MobileGestureNavigation />
         <ZrpLoader />
-        <Script type="module" src={auxiliaryRuntimeSrc} strategy="afterInteractive" />
+        <script type="module">{auxiliaryRuntimeBootstrap}</script>
       </body>
     </html>
   );
