@@ -47,17 +47,18 @@ function replaceSection(source, start, end, replacement, label) {
 await rm(targetRoot, { recursive: true, force: true });
 await mkdir(targetRoot, { recursive: true });
 
-for (const relativePath of [
-  'tools/admin',
-  'tools/about',
-  'tools/inspector',
-  'tools/runtime',
-  'src'
-]) {
+for (const relativePath of ['tools/admin', 'tools/about', 'tools/inspector', 'tools/runtime']) {
   await cp(path.join(repoRoot, relativePath), path.join(targetRoot, relativePath), {
     recursive: true
   });
 }
+
+await mkdir(path.join(targetRoot, 'src', 'contracts'), { recursive: true });
+await cp(
+  path.join(repoRoot, 'src', 'contracts', 'ContentSource.js'),
+  path.join(targetRoot, 'src', 'contracts', 'ContentSource.js')
+);
+await mkdir(path.join(targetRoot, 'src', 'adapters', 'blogger'), { recursive: true });
 
 await mkdir(path.join(targetRoot, 'content'), { recursive: true });
 await cp(
