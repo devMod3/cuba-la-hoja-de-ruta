@@ -76,9 +76,7 @@ describe('article text preparation', () => {
     );
 
     expect(prepared.html).toContain('<h2 id="constitucion-y-estado">Constitución y Estado</h2>');
-    expect(prepared.html).toContain(
-      '<h3 id="constitucion-y-estado-2">Constitución y Estado</h3>'
-    );
+    expect(prepared.html).toContain('<h3 id="constitucion-y-estado-2">Constitución y Estado</h3>');
     expect(prepared.html).toContain('<h4 id="section-3"><br /></h4>');
     expect(prepared.headings).toEqual([
       { id: 'constitucion-y-estado', text: 'Constitución y Estado', level: 2 },
