@@ -1,0 +1,87 @@
+name: R3A Branch Normalizer
+
+on:
+  push:
+    branches: [feat/r3a-authoring-control-plane]
+    paths:
+      - '.github/workflows/r3a-branch-normalizer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: r3a-branch-normalizer
+  cancel-in-progress: false
+
+jobs:
+  normalize:
+    if: github.repository == 'devMod3/cuba-la-hoja-de-ruta' && github.ref == 'refs/heads/feat/r3a-authoring-control-plane'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: feat/r3a-authoring-control-plane
+          fetch-depth: 2
+          persist-credentials: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+      - name: Install exact pnpm
+        run: npm install --global --ignore-scripts pnpm@11.22.0
+      - name: Restore minimal frozen workspace lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+          git show origin/main:next/pnpm-lock.yaml > next/pnpm-lock.yaml
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'next/pnpm-lock.yaml';
+          const source = fs.readFileSync(file, 'utf8');
+          const anchor = '\n  packages/cms-blogger:\n';
+          const block = "\n  packages/authoring-core: {}\n\n  packages/authoring-github:\n    dependencies:\n      '@zenblog/authoring-core':\n        specifier: workspace:*\n        version: link:../authoring-core\n";
+          if (!source.includes(anchor)) throw new Error('lock importer anchor missing');
+          if (source.includes('packages/authoring-core:')) throw new Error('authoring importers already present');
+          fs.writeFileSync(file, source.replace(anchor, block + anchor));
+          NODE
+          cd next
+          pnpm install --frozen-lockfile --ignore-scripts
+      - name: Apply deterministic formatting
+        working-directory: next
+        run: >-
+          pnpm exec prettier --write
+          packages/authoring-core/src/index.ts
+          packages/authoring-github/authoring-github.test.ts
+          packages/authoring-github/src/index.ts
+      - name: Verify exact mutation boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          expected=(
+            next/packages/authoring-core/src/index.ts
+            next/packages/authoring-github/authoring-github.test.ts
+            next/packages/authoring-github/src/index.ts
+            next/pnpm-lock.yaml
+          )
+          if [[ "${changed[*]}" != "${expected[*]}" ]]; then
+            printf 'Unexpected normalizer diff:\n%s\n' "${changed[*]}" >&2
+            exit 1
+          fi
+      - name: Commit normalized candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            next/packages/authoring-core/src/index.ts \
+            next/packages/authoring-github/authoring-github.test.ts \
+            next/packages/authoring-github/src/index.ts \
+            next/pnpm-lock.yaml
+          git diff --cached --check
+          git commit -m 'chore(r3a): normalize lock and formatting'
+          git push origin HEAD:refs/heads/feat/r3a-authoring-control-plane
