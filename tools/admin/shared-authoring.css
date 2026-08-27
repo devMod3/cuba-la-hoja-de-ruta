@@ -1,0 +1,234 @@
+.zsa-launcher {
+  min-height: 36px;
+  border: 1px solid #434a50;
+  background: #171a1d;
+  color: #b4b6b8;
+  padding: 0 12px;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.zsa-launcher:hover,
+.zsa-launcher:focus-visible {
+  border-color: #c5ae7a;
+  color: #f1f0eb;
+}
+
+.zsa-launcher[data-state='authorized'] {
+  border-color: #c5ae7a;
+  color: #c5ae7a;
+}
+
+.zsa-launcher[data-state='authenticating'] {
+  cursor: progress;
+}
+
+.zsa-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(820px, calc(100dvh - 32px));
+  margin: auto;
+  padding: 0;
+  border: 1px solid #434a50;
+  background: #171a1d;
+  color: #f1f0eb;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.45);
+}
+
+.zsa-dialog::backdrop {
+  background: rgb(0 0 0 / 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.zsa-panel {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  font-family: 'Source Sans 3', system-ui, sans-serif;
+}
+
+.zsa-head,
+.zsa-session,
+.zsa-document-head,
+.zsa-document-actions,
+.zsa-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zsa-head small,
+.zsa-foot,
+.zsa-session span {
+  color: #858a8f;
+}
+
+.zsa-head h2 {
+  margin: 3px 0 0;
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.zsa-close {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: #b4b6b8;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.zsa-intro,
+.zsa-document p {
+  margin: 0;
+  color: #b4b6b8;
+  line-height: 1.55;
+}
+
+.zsa-status {
+  border-left: 3px solid #434a50;
+  background: #121416;
+  padding: 10px 12px;
+  color: #b4b6b8;
+}
+
+.zsa-status[data-kind='ok'] {
+  border-left-color: #c5ae7a;
+  color: #f1f0eb;
+}
+
+.zsa-status[data-kind='error'] {
+  border-left-color: #d16f72;
+  color: #f1f0eb;
+}
+
+.zsa-connect {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.zsa-connect label {
+  display: grid;
+  gap: 6px;
+  color: #b4b6b8;
+}
+
+.zsa-connect input {
+  min-height: 42px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #434a50;
+  background: #121416;
+  color: #f1f0eb;
+  padding: 0 10px;
+  font: inherit;
+}
+
+.zsa-dialog button {
+  min-height: 38px;
+  border: 1px solid #434a50;
+  background: #1d2125;
+  color: #f1f0eb;
+  padding: 0 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.zsa-dialog button:hover:not(:disabled),
+.zsa-dialog button:focus-visible:not(:disabled),
+.zsa-connect input:focus-visible {
+  outline: 2px solid #c5ae7a;
+  outline-offset: 2px;
+}
+
+.zsa-dialog button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.zsa-dialog .zsa-primary {
+  border-color: #c5ae7a;
+  color: #121416;
+  background: #c5ae7a;
+  font-weight: 700;
+}
+
+.zsa-session {
+  border-top: 1px solid #2d3338;
+  border-bottom: 1px solid #2d3338;
+  padding: 12px 0;
+}
+
+.zsa-session > div {
+  display: grid;
+  gap: 2px;
+}
+
+.zsa-documents {
+  display: grid;
+  gap: 12px;
+}
+
+.zsa-document {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #2d3338;
+  background: #121416;
+  padding: 14px;
+}
+
+.zsa-document-head span {
+  border: 1px solid #434a50;
+  padding: 2px 7px;
+  color: #b4b6b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.zsa-document-head span[data-state='equal'] {
+  border-color: #c5ae7a;
+  color: #c5ae7a;
+}
+
+.zsa-document-head span[data-state='conflict'],
+.zsa-document-head span[data-state='divergent'] {
+  border-color: #d16f72;
+  color: #d16f72;
+}
+
+.zsa-document-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.zsa-foot {
+  border-top: 1px solid #2d3338;
+  padding-top: 12px;
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .zsa-launcher {
+    padding: 0 9px;
+    font-size: 12px;
+  }
+
+  .zsa-panel {
+    padding: 16px;
+  }
+
+  .zsa-connect {
+    grid-template-columns: 1fr;
+  }
+
+  .zsa-actions,
+  .zsa-session {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
