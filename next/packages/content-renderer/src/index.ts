@@ -93,7 +93,7 @@ export function prepareBloggerArticleHtml(html: string): PreparedBloggerArticle 
   let anchoredHtml = sanitizedHtml;
 
   for (const match of sanitizedHtml.matchAll(ARTICLE_HEADING_PATTERN)) {
-    const level = Number(match[1] as string) as 2 | 3 | 4;
+    const level = Number(match[1]) as 2 | 3 | 4;
     const innerHtml = match[2] as string;
     const text = extractTextFromSanitizedHtml(innerHtml);
     const baseSlug = slugifyHeading(text) || `section-${String(headings.length + 1)}`;
