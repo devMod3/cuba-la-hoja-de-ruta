@@ -63,7 +63,7 @@ export default async function AboutPage() {
   if (!hasProfile && social.length === 0 && resources.length === 0) {
     return (
       <main data-component="About" className={styles.page}>
-        <div className={`${styles.shell} ${styles.fallback}`}>
+        <div className={[styles.shell, styles.fallback].join(' ')}>
           <h1>La hoja de ruta</h1>
           <p className={styles.lead}>
             Plataforma editorial y documental para organizar, leer y recuperar conocimiento sobre
