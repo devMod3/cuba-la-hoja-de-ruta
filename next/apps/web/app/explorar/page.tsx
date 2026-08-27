@@ -4,13 +4,12 @@ import { ExploreClient } from '../../components/explore-client';
 
 export const metadata: Metadata = {
   title: 'Explorar',
-  description: 'Explorar los artículos de La hoja de ruta por título.'
+  description: 'Localizar artículos por título y criterios documentales en La hoja de ruta.'
 };
 
 export default function ExplorePage() {
   return (
-    <main data-component="Explore">
-      <h1>Explorar</h1>
+    <main className="explore-page" data-component="Explore">
       <ExploreClient articles={bloggerSnapshotArticles} />
     </main>
   );
