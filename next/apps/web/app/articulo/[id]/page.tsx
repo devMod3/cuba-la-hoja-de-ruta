@@ -1,12 +1,12 @@
-import {
-  extractBloggerArticleText,
-  prepareBloggerArticleHtml
-} from '@zenblog/content-renderer';
+import { extractBloggerArticleText, prepareBloggerArticleHtml } from '@zenblog/content-renderer';
 import { bloggerSnapshotArticles, getBloggerSnapshotArticleById } from '@zenblog/content-snapshot';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArticleReaderActions, ArticleReaderProgress } from '../../../components/article-reader-tools';
+import {
+  ArticleReaderActions,
+  ArticleReaderProgress
+} from '../../../components/article-reader-tools';
 import {
   buildArticleReference,
   createArticleDeck,
