@@ -1,7 +1,9 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-test('Admin mounts the existing four-tool shell and persists metadata locally', async ({ page }) => {
+test('Admin mounts the existing four-tool shell and persists metadata locally', async ({
+  page
+}) => {
   await page.goto('/admin/');
 
   const shell = page.locator('#zen-admin-shell');
@@ -23,7 +25,9 @@ test('Admin mounts the existing four-tool shell and persists metadata locally', 
   await page.locator('#zmm-save').click();
   await expect(page.locator('#zmm-status')).toContainText('Metadata guardada');
 
-  const stored = await page.evaluate(() => globalThis.localStorage.getItem('zenMetadataRegistry.v2'));
+  const stored = await page.evaluate(() =>
+    globalThis.localStorage.getItem('zenMetadataRegistry.v2')
+  );
   expect(stored).not.toBeNull();
   expect(JSON.parse(stored ?? '{}')).toMatchObject({ schemaVersion: '1.0.0' });
 });
