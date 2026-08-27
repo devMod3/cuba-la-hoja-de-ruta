@@ -1,0 +1,138 @@
+name: R3A Strict Lint Fixer
+
+on:
+  push:
+    branches: [feat/r3a-authoring-control-plane]
+    paths:
+      - '.github/workflows/r3a-lint-fixer.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: r3a-lint-fixer
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    if: github.repository == 'devMod3/cuba-la-hoja-de-ruta' && github.ref == 'refs/heads/feat/r3a-authoring-control-plane'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: feat/r3a-authoring-control-plane
+          fetch-depth: 2
+          persist-credentials: true
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+      - name: Install exact pnpm
+        run: npm install --global --ignore-scripts pnpm@11.22.0
+      - name: Install frozen workspace
+        working-directory: next
+        run: pnpm install --frozen-lockfile
+      - name: Apply explicit strict-lint corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function replaceExact(source, before, after, label) {
+            const first = source.indexOf(before);
+            if (first < 0) throw new Error(`missing marker: ${label}`);
+            if (source.indexOf(before, first + before.length) >= 0) {
+              throw new Error(`ambiguous marker: ${label}`);
+            }
+            return source.slice(0, first) + after + source.slice(first + before.length);
+          }
+
+          const corePath = 'next/packages/authoring-core/authoring-core.test.ts';
+          let core = fs.readFileSync(corePath, 'utf8');
+          const deprecatedCount = core.split('.toThrowError(').length - 1;
+          if (deprecatedCount !== 4) throw new Error(`expected 4 toThrowError calls, found ${deprecatedCount}`);
+          core = core.replaceAll('.toThrowError(', '.toThrow(');
+          fs.writeFileSync(corePath, core);
+
+          const testPath = 'next/packages/authoring-github/authoring-github.test.ts';
+          let test = fs.readFileSync(testPath, 'utf8');
+          test = replaceExact(
+            test,
+            "interface RecordedRequest {\n  readonly url: string;\n  readonly init: RequestInit | undefined;\n}\n\n",
+            "interface RecordedRequest {\n  readonly url: string;\n  readonly init: RequestInit | undefined;\n}\n\nfunction requestUrl(input: RequestInfo | URL): string {\n  if (typeof input === 'string') return input;\n  if (input instanceof URL) return input.href;\n  return input.url;\n}\n\nfunction requestBodyText(body: BodyInit | null | undefined): string {\n  if (typeof body !== 'string') throw new Error('Expected string request body');\n  return body;\n}\n\n",
+            'request helpers'
+          );
+          test = replaceExact(
+            test,
+            '    requests.push({ url: String(input), init });',
+            '    requests.push({ url: requestUrl(input), init });',
+            'safe request URL'
+          );
+          test = replaceExact(
+            test,
+            "    expect(requestHeaders(mock.requests[0]!).get('Authorization')).toBe(`Bearer ${TOKEN}`);\n    expect(requestHeaders(mock.requests[0]!).get('X-GitHub-Api-Version')).toBe('2022-11-28');",
+            "    const identityRequest = mock.requests[0];\n    expect(identityRequest).toBeDefined();\n    if (!identityRequest) throw new Error('Expected identity request');\n    expect(requestHeaders(identityRequest).get('Authorization')).toBe(`Bearer ${TOKEN}`);\n    expect(requestHeaders(identityRequest).get('X-GitHub-Api-Version')).toBe('2022-11-28');",
+            'identity request guard'
+          );
+          test = replaceExact(
+            test,
+            "    const request = mock.requests[2]!;\n    expect(request.init?.method).toBe('PUT');\n    const body = JSON.parse(String(request.init?.body)) as Record<string, string>;",
+            "    const request = mock.requests[2];\n    expect(request).toBeDefined();\n    if (!request) throw new Error('Expected write request');\n    expect(request.init?.method).toBe('PUT');\n    const body = JSON.parse(requestBodyText(request.init?.body)) as Record<string, string>;",
+            'write request guard'
+          );
+          test = replaceExact(
+            test,
+            "    const body = JSON.parse(String(mock.requests[2]?.init?.body)) as Record<string, unknown>;",
+            "    const body = JSON.parse(requestBodyText(mock.requests[2]?.init?.body)) as Record<\n      string,\n      unknown\n    >;",
+            'create request body'
+          );
+          fs.writeFileSync(testPath, test);
+
+          const sourcePath = 'next/packages/authoring-github/src/index.ts';
+          let source = fs.readFileSync(sourcePath, 'utf8');
+          source = replaceExact(
+            source,
+            '    disconnect: () => repository.disconnect()',
+            '    disconnect: () => {\n      repository.disconnect();\n    }',
+            'explicit disconnect block'
+          );
+          fs.writeFileSync(sourcePath, source);
+          NODE
+      - name: Format and lint complete workspace
+        working-directory: next
+        run: |
+          pnpm exec prettier --write \
+            packages/authoring-core/authoring-core.test.ts \
+            packages/authoring-github/authoring-github.test.ts \
+            packages/authoring-github/src/index.ts
+          pnpm lint
+      - name: Verify exact mutation boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          expected=(
+            next/packages/authoring-core/authoring-core.test.ts
+            next/packages/authoring-github/authoring-github.test.ts
+            next/packages/authoring-github/src/index.ts
+          )
+          if [[ "${changed[*]}" != "${expected[*]}" ]]; then
+            printf 'Unexpected lint-fixer diff:\n%s\n' "${changed[*]}" >&2
+            exit 1
+          fi
+      - name: Commit strict-lint corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            next/packages/authoring-core/authoring-core.test.ts \
+            next/packages/authoring-github/authoring-github.test.ts \
+            next/packages/authoring-github/src/index.ts
+          git diff --cached --check
+          git commit -m 'fix(r3a): satisfy strict authoring lint contracts'
+          git push origin HEAD:refs/heads/feat/r3a-authoring-control-plane
