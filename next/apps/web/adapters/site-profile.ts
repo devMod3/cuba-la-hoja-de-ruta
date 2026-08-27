@@ -172,7 +172,7 @@ export function parsePublishedSiteProfile(value: unknown): PublishedSiteProfile 
       .map((item, index) => {
         const record = asRecord(item);
         return {
-          id: text(record['id']) || `social-${index + 1}`,
+          id: text(record['id']) || `social-${String(index + 1)}`,
           platform: socialPlatform(record['platform']),
           label: text(record['label']),
           username: text(record['username']),
@@ -186,7 +186,7 @@ export function parsePublishedSiteProfile(value: unknown): PublishedSiteProfile 
       .map((item, index) => {
         const record = asRecord(item);
         return {
-          id: text(record['id']) || `resource-${index + 1}`,
+          id: text(record['id']) || `resource-${String(index + 1)}`,
           title: text(record['title']),
           url: text(record['url']),
           description: text(record['description']),
@@ -217,15 +217,17 @@ export function parsePublishedSiteProfile(value: unknown): PublishedSiteProfile 
   }
 
   data.social.forEach((item, index) => {
-    if (!item.url) errors.push(`social[${index}].url is required`);
-    else if (!isSafeExternalUrl(item.url)) errors.push(`social[${index}].url is unsafe`);
+    const path = `social[${String(index)}].url`;
+    if (!item.url) errors.push(`${path} is required`);
+    else if (!isSafeExternalUrl(item.url)) errors.push(`${path} is unsafe`);
   });
 
   data.relatedResources.forEach((item, index) => {
-    if (!item.title) errors.push(`relatedResources[${index}].title is required`);
-    if (!item.url) errors.push(`relatedResources[${index}].url is required`);
+    const path = `relatedResources[${String(index)}]`;
+    if (!item.title) errors.push(`${path}.title is required`);
+    if (!item.url) errors.push(`${path}.url is required`);
     else if (!isSafeExternalUrl(item.url)) {
-      errors.push(`relatedResources[${index}].url is unsafe`);
+      errors.push(`${path}.url is unsafe`);
     }
   });
 
