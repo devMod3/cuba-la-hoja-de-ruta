@@ -201,7 +201,9 @@ export default async function AboutPage() {
             <div className={css.sectionHead}>
               <h2 id="about-question-heading">Pregunta y respuesta</h2>
             </div>
-            {profile.randomQuestion ? <h3 className={css.question}>{profile.randomQuestion}</h3> : null}
+            {profile.randomQuestion ? (
+              <h3 className={css.question}>{profile.randomQuestion}</h3>
+            ) : null}
             {profile.randomAnswer ? <p className={css.answer}>{profile.randomAnswer}</p> : null}
           </section>
         ) : null}
