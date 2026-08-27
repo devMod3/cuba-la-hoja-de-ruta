@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test';
 const PEOPLE_ARTICLE_ID = '1102067444728853158';
 const CONSTITUTION_ARTICLE_ID = '7981496041809796805';
 
-test('Explore simple mode is snapshot-backed, title-only and routes internally', async ({ page }) => {
+test('Explore simple mode is snapshot-backed, title-only and routes internally', async ({
+  page
+}) => {
   const bloggerRequests: string[] = [];
   page.on('request', (request) => {
     if (request.url().startsWith('https://cubalahojaderuta.blogspot.com/')) {
@@ -86,7 +88,10 @@ test('Explore advanced mode uses canonical metadata, documentary year and determ
   await expect(page.getByRole('searchbox', { name: 'Buscar por título' })).toHaveCount(0);
   await page.getByLabel('Pilar').selectOption('Constitución');
   await expect(page.getByRole('status')).toHaveText('1 artículo');
-  await expect(page.locator('.explore-results a')).toContainText(['Análisis', 'Constitución de 1940']);
+  await expect(page.locator('.explore-results a')).toContainText([
+    'Análisis',
+    'Constitución de 1940'
+  ]);
 
   await page.getByLabel('Año documental').selectOption('range');
   await page.getByLabel('Desde').fill('1940');
