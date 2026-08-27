@@ -42,6 +42,15 @@ const TEXT_EXTRACTION_POLICY: IOptions = {
 };
 
 const ARTICLE_HEADING_PATTERN = /<h([234])>([\s\S]*?)<\/h\1>/gu;
+const TEXT_ENTITY_PATTERN = /&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/giu;
+const NAMED_TEXT_ENTITIES: Readonly<Record<string, string>> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' '
+};
 
 export type ArticleHeading = Readonly<{
   id: string;
@@ -55,6 +64,24 @@ export type PreparedBloggerArticle = Readonly<{
   headings: readonly ArticleHeading[];
 }>;
 
+function decodeTextEntities(value: string): string {
+  return value.replace(TEXT_ENTITY_PATTERN, (match, rawToken: string) => {
+    const token = rawToken.toLowerCase();
+    if (!token.startsWith('#')) return NAMED_TEXT_ENTITIES[token] ?? match;
+
+    const hexadecimal = token.startsWith('#x');
+    const digits = token.slice(hexadecimal ? 2 : 1);
+    const codePoint = Number.parseInt(digits, hexadecimal ? 16 : 10);
+    const validCodePoint =
+      Number.isInteger(codePoint) &&
+      codePoint >= 0 &&
+      codePoint <= 0x10ffff &&
+      !(codePoint >= 0xd800 && codePoint <= 0xdfff);
+
+    return validCodePoint ? String.fromCodePoint(codePoint) : '\uFFFD';
+  });
+}
+
 function extractTextFromSanitizedHtml(sanitizedHtml: string): string {
   const textChunks: string[] = [];
 
@@ -66,7 +93,7 @@ function extractTextFromSanitizedHtml(sanitizedHtml: string): string {
     }
   });
 
-  return textChunks.join(' ').replace(/\s+/gu, ' ').trim();
+  return decodeTextEntities(textChunks.join(' ')).replace(/\s+/gu, ' ').trim();
 }
 
 function slugifyHeading(value: string): string {
