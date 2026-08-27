@@ -67,7 +67,11 @@ async function emitAuthoringModule(packageName, outputName, transform = (source)
     });
     throw new Error(`Admin authoring transpilation failed for ${packageName}:\n${message}`);
   }
-  await writeFile(path.join(targetRoot, 'authoring', outputName), transform(result.outputText), 'utf8');
+  await writeFile(
+    path.join(targetRoot, 'authoring', outputName),
+    transform(result.outputText),
+    'utf8'
+  );
 }
 
 await rm(targetRoot, { recursive: true, force: true });
@@ -123,7 +127,7 @@ await replaceFile('tools/admin/bootstrap.js', (source) => {
   );
   output = replaceExact(
     output,
-    "  const adminShell = await new AdminShell({\n    metadataManager: window.ZenMetadataManager,\n    searchLab,\n    aboutManager,\n    inspectorController\n  }).mount();\n\n  window.ZenBlogAdmin = Object.freeze({",
+    '  const adminShell = await new AdminShell({\n    metadataManager: window.ZenMetadataManager,\n    searchLab,\n    aboutManager,\n    inspectorController\n  }).mount();\n\n  window.ZenBlogAdmin = Object.freeze({',
     "  const adminShell = await new AdminShell({\n    metadataManager: window.ZenMetadataManager,\n    searchLab,\n    aboutManager,\n    inspectorController\n  }).mount();\n\n  const { SharedAuthoringController } = await import(new URL('./SharedAuthoringController.js', import.meta.url).href);\n  const sharedAuthoring = new SharedAuthoringController({\n    metadataManager: window.ZenMetadataManager,\n    aboutManager,\n    coreModuleUrl: new URL('../../authoring/authoring-core.js', import.meta.url).href,\n    githubModuleUrl: new URL('../../authoring/authoring-github.js', import.meta.url).href\n  }).mount();\n\n  window.ZenBlogAdmin = Object.freeze({",
     'Pages shared authoring controller mount'
   );
@@ -135,8 +139,8 @@ await replaceFile('tools/admin/bootstrap.js', (source) => {
   );
   output = replaceExact(
     output,
-    "    inspectorController,\n    adminShell",
-    "    inspectorController,\n    adminShell,\n    sharedAuthoring",
+    '    inspectorController,\n    adminShell',
+    '    inspectorController,\n    adminShell,\n    sharedAuthoring',
     'Pages shared authoring public handle'
   );
   return output;
