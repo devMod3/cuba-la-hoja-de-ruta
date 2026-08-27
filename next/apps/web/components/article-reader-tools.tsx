@@ -61,11 +61,6 @@ export function ArticleReaderActions({ referenceText }: { readonly referenceText
   const [copyState, setCopyState] = useState<CopyState>('idle');
 
   const copyReference = () => {
-    if (!navigator.clipboard) {
-      setCopyState('error');
-      return;
-    }
-
     void navigator.clipboard.writeText(referenceText).then(
       () => {
         setCopyState('copied');
