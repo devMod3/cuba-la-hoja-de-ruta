@@ -125,15 +125,13 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
   const results = useMemo(() => {
     if (mode === 'simple') return searchArticlesByTitle(articles, query);
 
+    const filters =
+      yearMode === 'range' ? { pillar, type, yearFrom, yearTo } : { pillar, type };
+
     return searchArticles({
       articles,
       registry: effectiveRegistry,
-      filters: {
-        pillar,
-        type,
-        yearFrom: yearMode === 'range' ? yearFrom : undefined,
-        yearTo: yearMode === 'range' ? yearTo : undefined
-      },
+      filters,
       sort
     }).map((result) => result.article);
   }, [articles, effectiveRegistry, mode, pillar, query, sort, type, yearFrom, yearMode, yearTo]);
