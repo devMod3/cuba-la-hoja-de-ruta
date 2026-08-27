@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import type { Article, MetadataRecord, MetadataRegistry } from '@zenblog/domain';
 import { searchArticles, searchArticlesByTitle, type SearchSort } from '@zenblog/search-core';
 import { EMPTY_METADATA_REGISTRY, LocalMetadataSource } from '../adapters/local-metadata';
@@ -89,9 +89,25 @@ function formattedPublicationDate(article: Article): string {
   return Number.isNaN(date.getTime()) ? 'Sin fecha' : publicationDate.format(date);
 }
 
+function emptyMetadataSnapshot(): MetadataRegistry {
+  return EMPTY_METADATA_REGISTRY;
+}
+
 export function ExploreClient({ articles }: { readonly articles: readonly Article[] }) {
   const metadataSource = useMemo(() => new LocalMetadataSource(), []);
-  const [registry, setRegistry] = useState<MetadataRegistry>(EMPTY_METADATA_REGISTRY);
+  const subscribeToMetadata = useCallback(
+    (onStoreChange: () => void) =>
+      metadataSource.subscribe(() => {
+        onStoreChange();
+      }),
+    [metadataSource]
+  );
+  const getMetadataSnapshot = useCallback(() => metadataSource.getRegistry(), [metadataSource]);
+  const registry = useSyncExternalStore(
+    subscribeToMetadata,
+    getMetadataSnapshot,
+    emptyMetadataSnapshot
+  );
   const [mode, setMode] = useState<ExploreMode>('simple');
   const [query, setQuery] = useState('');
   const [pillar, setPillar] = useState('all');
@@ -100,11 +116,6 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
   const [yearFrom, setYearFrom] = useState('');
   const [yearTo, setYearTo] = useState('');
   const [sort, setSort] = useState<SearchSort>('recent');
-
-  useEffect(() => {
-    setRegistry(metadataSource.getRegistry());
-    return metadataSource.subscribe(setRegistry);
-  }, [metadataSource]);
 
   const effectiveRegistry = useMemo(
     () => withPillarFallback(articles, registry),
