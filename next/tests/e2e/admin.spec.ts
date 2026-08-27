@@ -81,7 +81,10 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
     const request = route.request();
     const url = new URL(request.url());
     if (url.pathname === '/user') {
-      await route.fulfill({ status: 200, json: { id: 101433401, login: 'devMod3', name: 'Maintainer' } });
+      await route.fulfill({
+        status: 200,
+        json: { id: 101433401, login: 'devMod3', name: 'Maintainer' }
+      });
       return;
     }
     if (url.pathname === '/repos/devMod3/cuba-la-hoja-de-ruta') {
@@ -98,7 +101,12 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
       if (metadataContent) {
         await route.fulfill({
           status: 200,
-          json: { sha: 'metadata-sha-1', content: metadataContent, encoding: 'base64', type: 'file' }
+          json: {
+            sha: 'metadata-sha-1',
+            content: metadataContent,
+            encoding: 'base64',
+            type: 'file'
+          }
         });
         return;
       }
