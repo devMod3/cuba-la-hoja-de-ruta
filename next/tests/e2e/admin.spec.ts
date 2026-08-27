@@ -50,7 +50,7 @@ test('Admin Search Lab, About Manager and Inspector remain functional', async ({
   await shell.getByRole('tab', { name: 'Inspector' }).click();
   const inspector = page.locator('#zas-inspector-switch');
   await expect(inspector).not.toBeChecked();
-  await inspector.check();
+  await page.locator('label[for="zas-inspector-switch"]').click();
   await expect(inspector).toBeChecked();
   await expect(page.locator('#zas-inspector-state')).toHaveText('ON');
   await expect
