@@ -34,7 +34,7 @@ test('About remains responsive without changing the global shell', async ({ page
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto('/acerca-de/');
 
-  await expect(page.getByRole('link', { name: /La hoja de ruta/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ir a la portada' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Abrir navegación' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: 'lα_яєѕιѕтєηċια' })).toBeVisible();
 
