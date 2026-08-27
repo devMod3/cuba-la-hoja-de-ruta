@@ -15,6 +15,7 @@ import {
 const DEFAULT_API_BASE_URL = 'https://api.github.com';
 const API_VERSION = '2022-11-28';
 const SAFE_REPOSITORY_PART = /^[A-Za-z0-9_.-]+$/;
+const MAX_SHARED_DOCUMENT_BYTES = 2_000_000;
 
 export interface GitHubAuthoringConfig {
   readonly owner: string;
@@ -75,7 +76,14 @@ function encodePath(path: string): string {
     .join('/');
 }
 
+function assertDocumentSize(value: string): void {
+  if (new TextEncoder().encode(value).byteLength > MAX_SHARED_DOCUMENT_BYTES) {
+    throw new AuthoringError('validation', 'Shared document exceeds the 2 MB authoring limit');
+  }
+}
+
 function encodeBase64Utf8(value: string): string {
+  assertDocumentSize(value);
   const bytes = new TextEncoder().encode(value);
   let binary = '';
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -85,9 +93,13 @@ function encodeBase64Utf8(value: string): string {
 function decodeBase64Utf8(value: string): string {
   try {
     const binary = atob(value.replace(/\s+/g, ''));
+    if (binary.length > MAX_SHARED_DOCUMENT_BYTES) {
+      throw new AuthoringError('validation', 'Shared document exceeds the 2 MB authoring limit');
+    }
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
+  } catch (error) {
+    if (error instanceof AuthoringError) throw error;
     throw new AuthoringError('validation', 'Shared GitHub document has invalid base64/UTF-8 content');
   }
 }
@@ -125,7 +137,9 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     if (!this.#token) throw new AuthoringError('unauthorized', 'GitHub authoring credential is required');
 
     const paths = {} as Record<SharedDocumentKey, string>;
-    for (const key of SHARED_DOCUMENT_KEYS) paths[key] = requiredDocumentPath(options.config.documents[key]);
+    for (const key of SHARED_DOCUMENT_KEYS) {
+      paths[key] = requiredDocumentPath(options.config.documents[key]);
+    }
     this.#paths = Object.freeze(paths);
   }
 
@@ -258,16 +272,12 @@ class GitHubContentsRepository implements VersionedJsonRepository {
   async #request(url: string, init: RequestInit = {}): Promise<Response> {
     const token = this.#token;
     if (!token) throw new AuthoringError('unauthorized', 'GitHub authoring credential is not available');
+    const headers = new Headers(init.headers);
+    headers.set('Accept', 'application/vnd.github+json');
+    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('X-GitHub-Api-Version', API_VERSION);
     try {
-      return await this.#fetch(url, {
-        ...init,
-        headers: {
-          Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${token}`,
-          'X-GitHub-Api-Version': API_VERSION,
-          ...(init.headers ?? {})
-        }
-      });
+      return await this.#fetch(url, { ...init, headers });
     } catch {
       throw new AuthoringError('transport', 'GitHub authoring request failed');
     }
