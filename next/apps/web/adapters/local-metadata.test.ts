@@ -117,7 +117,7 @@ describe('LocalMetadataSource', () => {
       { records: { '42': { classification: { relatedPillars: ['Estado', 1] } } } },
       { records: { '42': { temporal: { documentYear: 1940.5 } } } },
       { records: { '42': { indexing: { concepts: 'Pueblo' } } } },
-      { records: { '42': { indexing: { norms: [{ articles: [{}] }] } } },
+      { records: { '42': { indexing: { norms: [{ articles: [{}] }] } } } },
       { records: { '42': { editorial: { status: false } } } }
     ];
 
