@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 const nextRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(nextRoot, '..');
@@ -44,6 +45,31 @@ function replaceSection(source, start, end, replacement, label) {
   return source.slice(0, startIndex) + replacement + source.slice(endIndex);
 }
 
+async function emitAuthoringModule(packageName, outputName, transform = (source) => source) {
+  const sourcePath = path.join(nextRoot, 'packages', packageName, 'src', 'index.ts');
+  const source = await readFile(sourcePath, 'utf8');
+  const result = ts.transpileModule(source, {
+    fileName: sourcePath,
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ES2022,
+      verbatimModuleSyntax: true,
+      removeComments: false
+    },
+    reportDiagnostics: true
+  });
+  const diagnostics = result.diagnostics ?? [];
+  if (diagnostics.some((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error)) {
+    const message = ts.formatDiagnosticsWithColorAndContext(diagnostics, {
+      getCanonicalFileName: (value) => value,
+      getCurrentDirectory: () => nextRoot,
+      getNewLine: () => '\n'
+    });
+    throw new Error(`Admin authoring transpilation failed for ${packageName}:\n${message}`);
+  }
+  await writeFile(path.join(targetRoot, 'authoring', outputName), transform(result.outputText), 'utf8');
+}
+
 await rm(targetRoot, { recursive: true, force: true });
 await mkdir(targetRoot, { recursive: true });
 
@@ -52,6 +78,16 @@ for (const relativePath of ['tools/admin', 'tools/about', 'tools/inspector', 'to
     recursive: true
   });
 }
+await mkdir(path.join(targetRoot, 'authoring'), { recursive: true });
+await emitAuthoringModule('authoring-core', 'authoring-core.js');
+await emitAuthoringModule('authoring-github', 'authoring-github.js', (source) =>
+  replaceExact(
+    source,
+    "from '@zenblog/authoring-core'",
+    "from './authoring-core.js'",
+    'authoring-github browser import'
+  )
+);
 
 await mkdir(path.join(targetRoot, 'src', 'contracts'), { recursive: true });
 await cp(
@@ -78,6 +114,30 @@ await replaceFile('tools/admin/bootstrap.js', (source) => {
     "  if (location.pathname !== '/admin' || location.hash) {\n    history.replaceState(history.state ?? {}, '', `/admin${location.search}`);\n  }",
     "  if (location.hash) {\n    history.replaceState(history.state ?? {}, '', `${location.pathname}${location.search}`);\n  }",
     'Pages-safe admin history normalization'
+  );
+  output = replaceExact(
+    output,
+    "  loadStylesheet(new URL('./admin-shell.css', import.meta.url).href, 'zen-admin-shell-css');",
+    "  loadStylesheet(new URL('./admin-shell.css', import.meta.url).href, 'zen-admin-shell-css');\n  loadStylesheet(new URL('./shared-authoring.css', import.meta.url).href, 'zen-shared-authoring-css');",
+    'shared authoring stylesheet'
+  );
+  output = replaceExact(
+    output,
+    "  const adminShell = await new AdminShell({\n    metadataManager: window.ZenMetadataManager,\n    searchLab,\n    aboutManager,\n    inspectorController\n  }).mount();\n\n  window.ZenBlogAdmin = Object.freeze({",
+    "  const adminShell = await new AdminShell({\n    metadataManager: window.ZenMetadataManager,\n    searchLab,\n    aboutManager,\n    inspectorController\n  }).mount();\n\n  const { SharedAuthoringController } = await import(new URL('./SharedAuthoringController.js', import.meta.url).href);\n  const sharedAuthoring = new SharedAuthoringController({\n    metadataManager: window.ZenMetadataManager,\n    aboutManager,\n    coreModuleUrl: new URL('../../authoring/authoring-core.js', import.meta.url).href,\n    githubModuleUrl: new URL('../../authoring/authoring-github.js', import.meta.url).href\n  }).mount();\n\n  window.ZenBlogAdmin = Object.freeze({",
+    'Pages shared authoring controller mount'
+  );
+  output = replaceExact(
+    output,
+    "    modules: Object.freeze(['metadata', 'search-lab', 'about', 'inspector']),",
+    "    modules: Object.freeze(['metadata', 'search-lab', 'about', 'inspector', 'shared-authoring']),",
+    'Pages shared authoring module registry'
+  );
+  output = replaceExact(
+    output,
+    "    inspectorController,\n    adminShell",
+    "    inspectorController,\n    adminShell,\n    sharedAuthoring",
+    'Pages shared authoring public handle'
   );
   return output;
 });
@@ -178,3 +238,4 @@ await writeFile(
 globalThis.console.log('ZEN_ADMIN_RUNTIME=PASS');
 globalThis.console.log(`ZEN_ADMIN_RUNTIME_TARGET=${path.relative(nextRoot, targetRoot)}`);
 globalThis.console.log(`ZEN_ADMIN_SITE_HREF=${siteHref}`);
+globalThis.console.log('ZEN_ADMIN_SHARED_AUTHORING=PASS');
