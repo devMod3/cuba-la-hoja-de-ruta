@@ -58,11 +58,46 @@ describe('LocalMetadataSource', () => {
     expect(source.getRegistry().records['42']?.classification.primaryPillar).toBe('Constitución');
   });
 
-  it('falls back safely when local storage contains invalid JSON', () => {
+  it('returns a stable external-store snapshot until raw storage changes', () => {
+    const storage = new MemoryStorage(JSON.stringify({ records: {} }));
+    const source = new LocalMetadataSource({ storage });
+
+    const first = source.getRegistry();
+    expect(source.getRegistry()).toBe(first);
+
+    storage.set(
+      JSON.stringify({
+        records: {
+          '42': {
+            classification: {
+              primaryPillar: 'Constitución',
+              relatedPillars: [],
+              type: 'Análisis'
+            },
+            temporal: { documentYear: 1940 }
+          }
+        }
+      })
+    );
+
+    const second = source.getRegistry();
+    expect(second).not.toBe(first);
+    expect(second.records['42']?.classification.type).toBe('Análisis');
+    expect(source.getRegistry()).toBe(second);
+  });
+
+  it('falls back safely and caches invalid JSON until the raw value changes', () => {
     const warn = vi.fn();
-    const source = new LocalMetadataSource({ storage: new MemoryStorage('{broken'), warn });
+    const storage = new MemoryStorage('{broken');
+    const source = new LocalMetadataSource({ storage, warn });
+
     expect(source.getRegistry()).toEqual(EMPTY_METADATA_REGISTRY);
+    expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
     expect(warn).toHaveBeenCalledOnce();
+
+    storage.set('{still-broken');
+    expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
+    expect(warn).toHaveBeenCalledTimes(2);
   });
 
   it('uses the default console warning for storage parse failures', () => {
