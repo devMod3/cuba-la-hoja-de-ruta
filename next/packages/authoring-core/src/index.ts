@@ -155,38 +155,39 @@ export class InMemoryVersionedJsonRepository implements VersionedJsonRepository 
   readonly #documents = new Map<SharedDocumentKey, StoredDocument>();
   #revision = 0;
 
-  async read<T>(
-    key: SharedDocumentKey,
-    validate: JsonValidator<T>
-  ): Promise<VersionedJsonDocument<T>> {
-    const stored = this.#documents.get(key);
-    if (!stored) throw new AuthoringError('not-found', `Shared document not found: ${key}`);
-    const value = validate(structuredClone(stored.value));
-    return Object.freeze({ key, value, version: stored.version });
+  read<T>(key: SharedDocumentKey, validate: JsonValidator<T>): Promise<VersionedJsonDocument<T>> {
+    return Promise.resolve().then(() => {
+      const stored = this.#documents.get(key);
+      if (!stored) throw new AuthoringError('not-found', `Shared document not found: ${key}`);
+      const value = validate(structuredClone(stored.value));
+      return Object.freeze({ key, value, version: stored.version });
+    });
   }
 
-  async write<T>(
+  write<T>(
     input: WriteVersionedJsonInput<T>,
     validate: JsonValidator<T>
   ): Promise<VersionedJsonDocument<T>> {
-    if (!input.message.trim()) {
-      throw new AuthoringError('validation', 'Shared-document commit message is required');
-    }
+    return Promise.resolve().then(() => {
+      if (!input.message.trim()) {
+        throw new AuthoringError('validation', 'Shared-document commit message is required');
+      }
 
-    const value = validate(structuredClone(input.value));
-    canonicalJson(value);
-    const current = this.#documents.get(input.key);
+      const value = validate(structuredClone(input.value));
+      canonicalJson(value);
+      const current = this.#documents.get(input.key);
 
-    if (current && input.expectedVersion !== current.version) {
-      throw new AuthoringError('conflict', `Shared document changed remotely: ${input.key}`);
-    }
-    if (!current && input.expectedVersion !== null) {
-      throw new AuthoringError('conflict', `Shared document no longer exists: ${input.key}`);
-    }
+      if (current && input.expectedVersion !== current.version) {
+        throw new AuthoringError('conflict', `Shared document changed remotely: ${input.key}`);
+      }
+      if (!current && input.expectedVersion !== null) {
+        throw new AuthoringError('conflict', `Shared document no longer exists: ${input.key}`);
+      }
 
-    this.#revision += 1;
-    const version = `memory:${String(this.#revision)}`;
-    this.#documents.set(input.key, { value: structuredClone(value), version });
-    return Object.freeze({ key: input.key, value, version });
+      this.#revision += 1;
+      const version = `memory:${String(this.#revision)}`;
+      this.#documents.set(input.key, { value: structuredClone(value), version });
+      return Object.freeze({ key: input.key, value, version });
+    });
   }
 }
