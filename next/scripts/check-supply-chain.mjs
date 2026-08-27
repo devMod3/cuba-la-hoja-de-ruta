@@ -19,7 +19,11 @@ const errors = [];
 
 const lockfileSha256 = createHash('sha256').update(lockfileText).digest('hex');
 const integrityEntries = [...lockfileText.matchAll(/resolution: \{integrity: /g)].length;
-const exoticProtocols = ['git+', 'github:', 'http://', 'https://', 'ssh://', 'git://'];
+const exoticProtocol = String.raw`(?:git\+|github:|http://|https://|ssh://|git://)`;
+const externalSourceValuePattern = new RegExp(
+  String.raw`^\s*(?:specifier|version|resolution|tarball):[^\n]*${exoticProtocol}`,
+  'gm'
+);
 
 if (manifest.packageManager !== baseline.packageManager) {
   errors.push(
@@ -45,10 +49,11 @@ if (integrityEntries !== baseline.lockfileEntries) {
   );
 }
 
-for (const protocol of exoticProtocols) {
-  if (lockfileText.includes(protocol)) {
-    errors.push(`lockfile contains disallowed external source protocol: ${protocol}`);
-  }
+const externalSourceMatches = [...lockfileText.matchAll(externalSourceValuePattern)].map((match) =>
+  match[0].trim()
+);
+if (externalSourceMatches.length > 0) {
+  errors.push(`lockfile contains disallowed external source value: ${externalSourceMatches[0]}`);
 }
 
 const requiredWorkspaceSettings = [
