@@ -117,12 +117,14 @@ describe('LocalMetadataSource', () => {
       { records: { '42': { classification: { relatedPillars: ['Estado', 1] } } } },
       { records: { '42': { temporal: { documentYear: 1940.5 } } } },
       { records: { '42': { indexing: { concepts: 'Pueblo' } } } },
-      { records: { '42': { indexing: { norms: [{ articles: [{}] }] } } } },
+      { records: { '42': { indexing: { norms: [{ articles: [{}] }] } } },
       { records: { '42': { editorial: { status: false } } } }
     ];
 
     for (const registry of malformedRegistries) {
-      const source = new LocalMetadataSource({ storage: new MemoryStorage(JSON.stringify(registry)) });
+      const source = new LocalMetadataSource({
+        storage: new MemoryStorage(JSON.stringify(registry))
+      });
       expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
     }
   });
