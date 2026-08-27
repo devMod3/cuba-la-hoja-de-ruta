@@ -42,14 +42,38 @@ const TEXT_EXTRACTION_POLICY: IOptions = {
 };
 
 const ARTICLE_HEADING_PATTERN = /<h([234])>([\s\S]*?)<\/h\1>/gu;
-const TEXT_ENTITY_PATTERN = /&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/giu;
+const TEXT_ENTITY_PATTERN = /&(#x[0-9a-f]+|#\d+|[a-z][a-z0-9]+);/giu;
 const NAMED_TEXT_ENTITIES: Readonly<Record<string, string>> = {
   amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
   apos: "'",
-  nbsp: ' '
+  gt: '>',
+  lt: '<',
+  nbsp: ' ',
+  quot: '"',
+  aacute: 'á',
+  eacute: 'é',
+  iacute: 'í',
+  oacute: 'ó',
+  uacute: 'ú',
+  ntilde: 'ñ',
+  uuml: 'ü',
+  iexcl: '¡',
+  iquest: '¿',
+  laquo: '«',
+  raquo: '»',
+  lsquo: '‘',
+  rsquo: '’',
+  ldquo: '“',
+  rdquo: '”',
+  ndash: '–',
+  mdash: '—',
+  hellip: '…',
+  bull: '•',
+  middot: '·',
+  copy: '©',
+  reg: '®',
+  trade: '™',
+  deg: '°'
 };
 
 export type ArticleHeading = Readonly<{
@@ -70,15 +94,13 @@ function decodeTextEntities(value: string): string {
     if (!token.startsWith('#')) return NAMED_TEXT_ENTITIES[token] ?? match;
 
     const hexadecimal = token.startsWith('#x');
-    const digits = token.slice(hexadecimal ? 2 : 1);
-    const codePoint = Number.parseInt(digits, hexadecimal ? 16 : 10);
-    const validCodePoint =
-      Number.isInteger(codePoint) &&
-      codePoint >= 0 &&
-      codePoint <= 0x10ffff &&
-      !(codePoint >= 0xd800 && codePoint <= 0xdfff);
+    const codePoint = Number.parseInt(token.slice(hexadecimal ? 2 : 1), hexadecimal ? 16 : 10);
 
-    return validCodePoint ? String.fromCodePoint(codePoint) : '\uFFFD';
+    try {
+      return String.fromCodePoint(codePoint);
+    } catch {
+      return '\uFFFD';
+    }
   });
 }
 
