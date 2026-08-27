@@ -26,7 +26,7 @@ const fontFamilies = {
 
 const basePath = process.env['ZENBLOG_BASE_PATH'] ?? '';
 const auxiliaryRuntimeSrc = `${basePath}/zen-admin/tools/runtime/bootstrap.js`;
-const auxiliaryRuntimeBootstrap = `globalThis.addEventListener('load',()=>void import(${JSON.stringify(auxiliaryRuntimeSrc)}),{once:true});`;
+const auxiliaryRuntimeBootstrap = `if(!/(?:^|\\/)admin\\/?$/.test(location.pathname)){globalThis.addEventListener('load',()=>void import(${JSON.stringify(auxiliaryRuntimeSrc)}),{once:true});}`;
 
 export const metadata: Metadata = {
   title: { default: 'La hoja de ruta', template: '%s · La hoja de ruta' },
