@@ -24,6 +24,10 @@ const fontFamilies = {
   '--serif': sourceSerif.style.fontFamily
 } as CSSProperties;
 
+const basePath = process.env['ZENBLOG_BASE_PATH'] ?? '';
+const auxiliaryRuntimeSrc = `${basePath}/zen-admin/tools/runtime/bootstrap.js`;
+const auxiliaryRuntimeBootstrap = `if(!/(?:^|\\/)admin\\/?$/.test(location.pathname)){globalThis.addEventListener('load',()=>void import(${JSON.stringify(auxiliaryRuntimeSrc)}),{once:true});}`;
+
 export const metadata: Metadata = {
   title: { default: 'La hoja de ruta', template: '%s · La hoja de ruta' },
   description: 'Soberanía · Constitución · Estado'
@@ -37,6 +41,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         {children}
         <MobileGestureNavigation />
         <ZrpLoader />
+        <script type="module">{auxiliaryRuntimeBootstrap}</script>
       </body>
     </html>
   );
