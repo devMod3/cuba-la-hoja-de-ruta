@@ -147,7 +147,7 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
       <header className="explore-heading">
         <div>
           <p className="kicker">Archivo documental</p>
-          <h2 id="explore-search-heading">Explorar</h2>
+          <h1 id="explore-search-heading">Explorar</h1>
         </div>
         <p className="explore-status" role="status" aria-live="polite">
           {articleCountLabel(results.length)}
