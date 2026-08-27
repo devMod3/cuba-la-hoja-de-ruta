@@ -59,6 +59,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git add -N -- next/pnpm-lock.yaml
           git diff --check
           mapfile -t changed < <(git diff --name-only | sort)
           expected=(
