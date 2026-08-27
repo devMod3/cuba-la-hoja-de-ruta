@@ -25,6 +25,25 @@ const externalSourceValuePattern = new RegExp(
   'gm'
 );
 
+function findExternalSourceValues(text) {
+  return [...text.matchAll(externalSourceValuePattern)].map((match) => match[0].trim());
+}
+
+const policyCases = [
+  ['workspace importer name', '  packages/authoring-github:\n', 0],
+  ['GitHub specifier', '        specifier: github:owner/repository\n', 1],
+  ['HTTPS tarball resolution', '    resolution: {tarball: https://example.test/archive.tgz}\n', 1],
+  ['ordinary workspace link', '        version: link:../authoring-core\n', 0]
+];
+for (const [label, sample, expectedMatches] of policyCases) {
+  const actualMatches = findExternalSourceValues(sample).length;
+  if (actualMatches !== expectedMatches) {
+    errors.push(
+      `external-source policy self-test failed (${label}): expected ${expectedMatches}, found ${actualMatches}`
+    );
+  }
+}
+
 if (manifest.packageManager !== baseline.packageManager) {
   errors.push(
     `packageManager changed: expected ${baseline.packageManager}, found ${String(manifest.packageManager)}`
@@ -49,9 +68,7 @@ if (integrityEntries !== baseline.lockfileEntries) {
   );
 }
 
-const externalSourceMatches = [...lockfileText.matchAll(externalSourceValuePattern)].map((match) =>
-  match[0].trim()
-);
+const externalSourceMatches = findExternalSourceValues(lockfileText);
 if (externalSourceMatches.length > 0) {
   errors.push(`lockfile contains disallowed external source value: ${externalSourceMatches[0]}`);
 }
