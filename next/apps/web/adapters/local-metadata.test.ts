@@ -22,6 +22,12 @@ class MemoryStorage implements MetadataStorage {
   }
 }
 
+class ThrowingStorage implements MetadataStorage {
+  getItem(): string | null {
+    throw new Error('storage unavailable');
+  }
+}
+
 class KeyedEvent extends Event {
   readonly key: string | null;
 
@@ -40,22 +46,90 @@ describe('LocalMetadataSource', () => {
     expect(DEFAULT_METADATA_STORAGE_KEY).toBe('zenMetadataRegistry.v2');
   });
 
-  it('reads and validates the current metadata registry', () => {
+  it('reads valid metadata with domain-compatible defaults and coercions', () => {
     const storage = new MemoryStorage(
       JSON.stringify({
         schemaVersion: '1.0.0',
-        vocabularyVersion: '1.0.0',
         records: {
           '42': {
-            classification: { primaryPillar: 'Constitución', relatedPillars: [], type: 'Ley' },
-            temporal: { documentYear: 1940 }
-          }
+            classification: {
+              primaryPillar: 'Constitución',
+              relatedPillars: ['Estado'],
+              type: 'Análisis'
+            },
+            temporal: { documentYear: '1940' },
+            indexing: {
+              concepts: ['Poder constituyente'],
+              norms: [{ normId: 'c40', articles: [40, '41'] }]
+            },
+            editorial: { status: 'Verificado' },
+            ignoredFutureField: true
+          },
+          '43': {}
         },
-        migrationIssues: {}
+        ignoredTopLevelField: 'compatible'
       })
     );
-    const source = new LocalMetadataSource({ storage });
-    expect(source.getRegistry().records['42']?.classification.primaryPillar).toBe('Constitución');
+
+    const registry = new LocalMetadataSource({ storage }).getRegistry();
+    expect(registry.records['42']).toEqual({
+      classification: {
+        primaryPillar: 'Constitución',
+        relatedPillars: ['Estado'],
+        type: 'Análisis'
+      },
+      temporal: { documentYear: 1940 },
+      indexing: {
+        concepts: ['Poder constituyente'],
+        aliases: [],
+        keywords: [],
+        norms: [{ normId: 'c40', articles: ['40', '41'] }]
+      },
+      editorial: { status: 'Verificado' }
+    });
+    expect(registry.records['43']).toEqual({
+      classification: { primaryPillar: null, relatedPillars: [], type: null },
+      temporal: { documentYear: null },
+      indexing: { concepts: [], aliases: [], keywords: [], norms: [] },
+      editorial: { status: null }
+    });
+  });
+
+  it('normalizes non-positive and non-numeric documentary years to null', () => {
+    for (const documentYear of [null, '', 0, -1940, 'not-a-year']) {
+      const storage = new MemoryStorage(
+        JSON.stringify({ records: { '42': { temporal: { documentYear } } } })
+      );
+      expect(new LocalMetadataSource({ storage }).getRegistry().records['42']?.temporal).toEqual({
+        documentYear: null
+      });
+    }
+  });
+
+  it('fails closed for malformed structures rather than trusting partial metadata', () => {
+    const malformedRegistries = [
+      null,
+      [],
+      { records: null },
+      { records: { '42': null } },
+      { records: { '42': { classification: 'Constitución' } } },
+      { records: { '42': { classification: { primaryPillar: 1940 } } } },
+      { records: { '42': { classification: { relatedPillars: ['Estado', 1] } } } },
+      { records: { '42': { temporal: { documentYear: 1940.5 } } } },
+      { records: { '42': { indexing: { concepts: 'Pueblo' } } } },
+      { records: { '42': { indexing: { norms: [{ articles: [{}] }] } } } },
+      { records: { '42': { editorial: { status: false } } } }
+    ];
+
+    for (const registry of malformedRegistries) {
+      const source = new LocalMetadataSource({ storage: new MemoryStorage(JSON.stringify(registry)) });
+      expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
+    }
+  });
+
+  it('accepts a missing records property as an empty registry', () => {
+    const source = new LocalMetadataSource({ storage: new MemoryStorage('{"future":true}') });
+    expect(source.getRegistry()).toEqual(EMPTY_METADATA_REGISTRY);
   });
 
   it('returns a stable external-store snapshot until raw storage changes', () => {
@@ -98,6 +172,14 @@ describe('LocalMetadataSource', () => {
     storage.set('{still-broken');
     expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
     expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it('warns and fails closed when the storage boundary throws', () => {
+    const warn = vi.fn();
+    const source = new LocalMetadataSource({ storage: new ThrowingStorage(), warn });
+
+    expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
+    expect(warn).toHaveBeenCalledWith('[ZenBlog] Metadata registry unavailable', expect.any(Error));
   });
 
   it('uses the default console warning for storage parse failures', () => {
