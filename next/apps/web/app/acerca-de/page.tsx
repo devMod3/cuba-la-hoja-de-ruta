@@ -7,6 +7,41 @@ import {
 } from '../../adapters/site-profile';
 import styles from './about.module.css';
 
+interface AboutStyleMap {
+  readonly page: string;
+  readonly shell: string;
+  readonly fallback: string;
+  readonly lead: string;
+  readonly intro: string;
+  readonly profileTop: string;
+  readonly photoFrame: string;
+  readonly photo: string;
+  readonly identity: string;
+  readonly metaLine: string;
+  readonly quickLinks: string;
+  readonly link: string;
+  readonly divider: string;
+  readonly section: string;
+  readonly sectionHead: string;
+  readonly profileLists: string;
+  readonly profileList: string;
+  readonly question: string;
+  readonly answer: string;
+  readonly socialList: string;
+  readonly social: string;
+  readonly socialCopy: string;
+  readonly socialName: string;
+  readonly socialUser: string;
+  readonly resourceList: string;
+  readonly resource: string;
+  readonly resourceCopy: string;
+  readonly resourceTop: string;
+  readonly resourceType: string;
+  readonly resourceDescription: string;
+}
+
+const css = styles as unknown as AboutStyleMap;
+
 export const metadata: Metadata = {
   title: 'Acerca de',
   description: 'Perfil público de La hoja de ruta.'
@@ -36,12 +71,18 @@ export default async function AboutPage() {
     .join(', ');
   const professional = [profile.occupation, profile.industry].filter(Boolean).join(' · ');
   const identityMeta = [profile.gender, professional, location].filter(Boolean);
-  const profileLists: readonly (readonly [string, readonly string[]])[] = [
-    ['Intereses', profile.interests],
-    ['Películas favoritas', profile.favoriteMovies],
-    ['Música favorita', profile.favoriteMusic],
-    ['Libros favoritos', profile.favoriteBooks]
-  ].filter((entry) => entry[1].length > 0);
+  const profileLists: Array<readonly [string, readonly string[]]> = [];
+  if (profile.interests.length > 0) profileLists.push(['Intereses', profile.interests]);
+  if (profile.favoriteMovies.length > 0) {
+    profileLists.push(['Películas favoritas', profile.favoriteMovies]);
+  }
+  if (profile.favoriteMusic.length > 0) {
+    profileLists.push(['Música favorita', profile.favoriteMusic]);
+  }
+  if (profile.favoriteBooks.length > 0) {
+    profileLists.push(['Libros favoritos', profile.favoriteBooks]);
+  }
+
   const hasQuestion = Boolean(profile.randomQuestion || profile.randomAnswer);
   const hasProfile = Boolean(
     profile.displayName ||
@@ -62,10 +103,10 @@ export default async function AboutPage() {
 
   if (!hasProfile && social.length === 0 && resources.length === 0) {
     return (
-      <main data-component="About" className={styles.page}>
-        <div className={[styles.shell, styles.fallback].join(' ')}>
+      <main data-component="About" className={css.page}>
+        <div className={[css.shell, css.fallback].join(' ')}>
           <h1>La hoja de ruta</h1>
-          <p className={styles.lead}>
+          <p className={css.lead}>
             Plataforma editorial y documental para organizar, leer y recuperar conocimiento sobre
             soberanía, Constitución y Estado.
           </p>
@@ -89,14 +130,14 @@ export default async function AboutPage() {
   ].filter((item) => item !== null);
 
   return (
-    <main data-component="About" className={styles.page}>
-      <div className={styles.shell}>
-        <header className={styles.intro}>
-          <div className={styles.profileTop}>
+    <main data-component="About" className={css.page}>
+      <div className={css.shell}>
+        <header className={css.intro}>
+          <div className={css.profileTop}>
             {profile.photoUrl ? (
-              <div className={styles.photoFrame}>
+              <div className={css.photoFrame}>
                 <Image
-                  className={styles.photo}
+                  className={css.photo}
                   src={profile.photoUrl}
                   alt={profile.displayName ? `Foto de ${profile.displayName}` : 'Foto de perfil'}
                   width={132}
@@ -107,22 +148,22 @@ export default async function AboutPage() {
               </div>
             ) : null}
 
-            <div className={styles.identity}>
+            <div className={css.identity}>
               <h1>{profile.displayName || 'La hoja de ruta'}</h1>
               {identityMeta.length > 0 ? (
-                <p className={styles.metaLine}>{identityMeta.join(' · ')}</p>
+                <p className={css.metaLine}>{identityMeta.join(' · ')}</p>
               ) : null}
-              {profile.introduction ? <p className={styles.lead}>{profile.introduction}</p> : null}
+              {profile.introduction ? <p className={css.lead}>{profile.introduction}</p> : null}
 
               {quickLinks.length > 0 ? (
-                <div className={styles.quickLinks} aria-label="Enlaces de perfil">
+                <div className={css.quickLinks} aria-label="Enlaces de perfil">
                   {quickLinks.map((item) =>
                     item.external ? (
-                      <ExternalLink key={item.href} className={styles.link} href={item.href}>
+                      <ExternalLink key={item.href} className={css.link} href={item.href}>
                         {item.label}
                       </ExternalLink>
                     ) : (
-                      <a key={item.href} className={styles.link} href={item.href}>
+                      <a key={item.href} className={css.link} href={item.href}>
                         {item.label}
                       </a>
                     )
@@ -134,17 +175,17 @@ export default async function AboutPage() {
         </header>
 
         {profileLists.length > 0 || hasQuestion || social.length > 0 || resources.length > 0 ? (
-          <div className={styles.divider} aria-hidden="true" />
+          <div className={css.divider} aria-hidden="true" />
         ) : null}
 
         {profileLists.length > 0 ? (
-          <section className={styles.section} aria-labelledby="about-profile-heading">
-            <div className={styles.sectionHead}>
+          <section className={css.section} aria-labelledby="about-profile-heading">
+            <div className={css.sectionHead}>
               <h2 id="about-profile-heading">Perfil</h2>
             </div>
-            <div className={styles.profileLists}>
+            <div className={css.profileLists}>
               {profileLists.map(([title, items]) => (
-                <section className={styles.profileList} key={title}>
+                <section className={css.profileList} key={title}>
                   <h3>{title}</h3>
                   <ul>
                     {items.map((item) => (
@@ -158,32 +199,28 @@ export default async function AboutPage() {
         ) : null}
 
         {hasQuestion ? (
-          <section className={styles.section} aria-labelledby="about-question-heading">
-            <div className={styles.sectionHead}>
+          <section className={css.section} aria-labelledby="about-question-heading">
+            <div className={css.sectionHead}>
               <h2 id="about-question-heading">Pregunta y respuesta</h2>
             </div>
-            {profile.randomQuestion ? (
-              <h3 className={styles.question}>{profile.randomQuestion}</h3>
-            ) : null}
-            {profile.randomAnswer ? <p className={styles.answer}>{profile.randomAnswer}</p> : null}
+            {profile.randomQuestion ? <h3 className={css.question}>{profile.randomQuestion}</h3> : null}
+            {profile.randomAnswer ? <p className={css.answer}>{profile.randomAnswer}</p> : null}
           </section>
         ) : null}
 
         {social.length > 0 ? (
-          <section className={styles.section} aria-labelledby="about-social-heading">
-            <div className={styles.sectionHead}>
+          <section className={css.section} aria-labelledby="about-social-heading">
+            <div className={css.sectionHead}>
               <h2 id="about-social-heading">Redes sociales</h2>
             </div>
-            <div className={styles.socialList}>
+            <div className={css.socialList}>
               {social.map((item) => (
-                <ExternalLink key={item.id} className={styles.social} href={item.url}>
-                  <span className={styles.socialCopy}>
-                    <span className={styles.socialName}>
+                <ExternalLink key={item.id} className={css.social} href={item.url}>
+                  <span className={css.socialCopy}>
+                    <span className={css.socialName}>
                       {item.label || socialPlatformLabel(item.platform)}
                     </span>
-                    {item.username ? (
-                      <span className={styles.socialUser}>{item.username}</span>
-                    ) : null}
+                    {item.username ? <span className={css.socialUser}>{item.username}</span> : null}
                   </span>
                 </ExternalLink>
               ))}
@@ -192,20 +229,20 @@ export default async function AboutPage() {
         ) : null}
 
         {resources.length > 0 ? (
-          <section className={styles.section} aria-labelledby="about-resources-heading">
-            <div className={styles.sectionHead}>
+          <section className={css.section} aria-labelledby="about-resources-heading">
+            <div className={css.sectionHead}>
               <h2 id="about-resources-heading">Recursos relacionados</h2>
             </div>
-            <div className={styles.resourceList}>
+            <div className={css.resourceList}>
               {resources.map((item) => (
-                <ExternalLink key={item.id} className={styles.resource} href={item.url}>
-                  <span className={styles.resourceCopy}>
-                    <span className={styles.resourceTop}>
+                <ExternalLink key={item.id} className={css.resource} href={item.url}>
+                  <span className={css.resourceCopy}>
+                    <span className={css.resourceTop}>
                       <strong>{item.title}</strong>
-                      <span className={styles.resourceType}>{resourceTypeLabel(item.type)}</span>
+                      <span className={css.resourceType}>{resourceTypeLabel(item.type)}</span>
                     </span>
                     {item.description ? (
-                      <span className={styles.resourceDescription}>{item.description}</span>
+                      <span className={css.resourceDescription}>{item.description}</span>
                     ) : null}
                   </span>
                 </ExternalLink>
