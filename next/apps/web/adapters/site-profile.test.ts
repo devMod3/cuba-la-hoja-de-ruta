@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   isSafeExternalUrl,
@@ -68,29 +70,12 @@ function validProfile() {
 
 describe('published site profile adapter', () => {
   it('reads the canonical repository snapshot used by the public page', async () => {
+    const repositorySnapshotPath = resolve(process.cwd(), '../config/site-profile.public.json');
+    const repositorySnapshot = JSON.parse(await readFile(repositorySnapshotPath, 'utf8')) as unknown;
     const profile = await readPublishedSiteProfile();
 
+    expect(profile).toEqual(parsePublishedSiteProfile(repositorySnapshot));
     expect(profile.schemaVersion).toBe('1.0.0');
-    expect(profile.profile.displayName).toBe('lα_яєѕιѕтєηċια');
-    expect(profile.profile.interests).toEqual(['Constitucionalismo', 'Tecnologías']);
-    expect(profile.social).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          platform: 'x',
-          username: '@la_RsisTncia',
-          url: 'https://x.com/la_RsisTncia'
-        })
-      ])
-    );
-    expect(profile.relatedResources).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          title: 'Movimiento C40  - (Movimiento constitucionalista Cubano)',
-          url: 'https://movimientoc40.com/',
-          type: 'source'
-        })
-      ])
-    );
   });
 
   it('canonicalizes text, collections, ordering and unknown enum values', () => {
