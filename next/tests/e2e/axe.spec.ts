@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-const routes = ['/', '/explorar/', '/acerca-de/'] as const;
+const routes = ['/', '/explorar/', '/acerca-de/', '/articulo/1102067444728853158/'] as const;
 
 for (const route of routes) {
   test(`axe WCAG A/AA: ${route}`, async ({ page }) => {

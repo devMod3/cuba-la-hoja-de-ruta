@@ -5,6 +5,7 @@ import { GlobalHeader } from '../components/global-header';
 import { MobileGestureNavigation } from '../components/mobile-gesture-navigation';
 import { ZrpLoader } from '../components/zrp-loader';
 import './globals.css';
+import './reader.css';
 
 const sourceSans = Source_Sans_3({
   subsets: ['latin'],

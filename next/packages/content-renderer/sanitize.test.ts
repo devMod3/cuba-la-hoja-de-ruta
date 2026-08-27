@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeBloggerArticleHtml } from './src/index';
+import {
+  extractBloggerArticleText,
+  prepareBloggerArticleHtml,
+  sanitizeBloggerArticleHtml
+} from './src/index';
 
 describe('sanitizeBloggerArticleHtml', () => {
   it('preserves editorial structure while removing Blogger presentation attributes', () => {
@@ -53,5 +57,32 @@ describe('sanitizeBloggerArticleHtml', () => {
     expect(output).not.toContain('target=');
     expect(output).not.toContain('rel=');
     expect(output).not.toContain('href="//evil.example"');
+  });
+});
+
+describe('article text preparation', () => {
+  it('extracts normalized decoded text only after executable content has been removed', () => {
+    const output = extractBloggerArticleText(
+      '<h1>Título</h1><p>Pueblo &amp; Estado\n con   espacios.</p><script>texto ejecutable</script>'
+    );
+
+    expect(output).toBe('Título Pueblo & Estado con espacios.');
+    expect(output).not.toContain('texto ejecutable');
+  });
+
+  it('adds deterministic unique anchors and a source-backed heading model', () => {
+    const prepared = prepareBloggerArticleHtml(
+      '<h2>Constitución y Estado</h2><p>Texto.</p><h3>Constitución y Estado</h3><h4><br></h4>'
+    );
+
+    expect(prepared.html).toContain('<h2 id="constitucion-y-estado">Constitución y Estado</h2>');
+    expect(prepared.html).toContain('<h3 id="constitucion-y-estado-2">Constitución y Estado</h3>');
+    expect(prepared.html).toContain('<h4 id="section-3"><br /></h4>');
+    expect(prepared.headings).toEqual([
+      { id: 'constitucion-y-estado', text: 'Constitución y Estado', level: 2 },
+      { id: 'constitucion-y-estado-2', text: 'Constitución y Estado', level: 3 },
+      { id: 'section-3', text: 'Sección 3', level: 4 }
+    ]);
+    expect(prepared.text).toBe('Constitución y Estado Texto. Constitución y Estado');
   });
 });
