@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test('About renders the published profile instead of migration placeholder content', async ({ page }) => {
+test('About renders the published profile instead of migration placeholder content', async ({
+  page
+}) => {
   await page.goto('/acerca-de/');
 
   await expect(page.getByRole('heading', { level: 1, name: 'lα_яєѕιѕтєηċια' })).toBeVisible();
