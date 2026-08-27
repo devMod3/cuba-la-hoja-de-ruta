@@ -101,8 +101,8 @@ describe('published site profile adapter', () => {
     expect(profile.profile.interests).toEqual(['Constitucionalismo', 'Tecnologías']);
     expect(profile.social.map((item) => item.platform)).toEqual(['other', 'x']);
     expect(profile.social[0]).toMatchObject({ id: 'social-2', visible: true, order: 1 });
-    expect(profile.relatedResources.map((item) => item.type)).toEqual(['archive', 'other']);
-    expect(profile.relatedResources[1]).toMatchObject({ id: 'resource-2', order: 1 });
+    expect(profile.relatedResources.map((item) => item.type)).toEqual(['other', 'archive']);
+    expect(profile.relatedResources[0]).toMatchObject({ id: 'resource-2', order: 1 });
   });
 
   it('rejects malformed schema and unsafe public fields', () => {
