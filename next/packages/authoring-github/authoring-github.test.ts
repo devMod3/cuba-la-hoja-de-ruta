@@ -97,7 +97,7 @@ describe('connectGitHubAuthoring', () => {
     expect(identityRequest).toBeDefined();
     if (!identityRequest) throw new Error('Expected identity request');
     expect(requestHeaders(identityRequest).get('Authorization')).toBe(`Bearer ${TOKEN}`);
-    expect(requestHeaders(identityRequest).get('X-GitHub-Api-Version')).toBe('2022-11-28');
+    expect(requestHeaders(identityRequest).get('X-GitHub-Api-Version')).toBeNull();
   });
 
   it('fails before network access for missing credentials or unsafe allowlist configuration', async () => {
