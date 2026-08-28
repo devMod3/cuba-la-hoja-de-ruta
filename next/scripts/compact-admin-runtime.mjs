@@ -25,27 +25,59 @@ function replaceExactCount(source, before, after, expectedCount, label) {
   return source.replaceAll(before, after);
 }
 
+function assertGeneratedBindings(source, names) {
+  const sourceFile = ts.createSourceFile(
+    'authoring-runtime.js',
+    source,
+    ts.ScriptTarget.ES2022,
+    true,
+    ts.ScriptKind.JS
+  );
+  const found = new Set();
+  for (const statement of sourceFile.statements) {
+    if (ts.isFunctionDeclaration(statement) && statement.name) found.add(statement.name.text);
+  }
+  const missing = names.filter((name) => !found.has(name));
+  if (missing.length) {
+    throw new Error(`Admin runtime bundled binding missing: ${missing.join(', ')}`);
+  }
+}
+
 function specializeControllerBody(source) {
   let output = replaceExactCount(
     source,
+    '    coreModuleUrl,\n',
+    '',
+    1,
+    'controller core module URL parameter'
+  );
+  output = replaceExactCount(
+    output,
     '    githubModuleUrl,\n',
     '',
     1,
-    'controller redundant module URL parameter'
+    'controller GitHub module URL parameter'
+  );
+  output = replaceExactCount(
+    output,
+    '    this.coreModuleUrl = coreModuleUrl;\n',
+    '',
+    1,
+    'controller core module URL assignment'
   );
   output = replaceExactCount(
     output,
     '    this.githubModuleUrl = githubModuleUrl;\n',
     '',
     1,
-    'controller redundant module URL assignment'
+    'controller GitHub module URL assignment'
   );
   output = replaceExactCount(
     output,
     "  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    if (!this.coreModuleUrl || !this.githubModuleUrl) {\n      throw new Error('Shared authoring module URLs are unavailable');\n    }\n    const [core, github] = await Promise.all([\n      import(this.coreModuleUrl),\n      import(this.githubModuleUrl)\n    ]);\n    this.core = core;\n    this.github = github;\n  }\n\n",
-    "  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    if(!this.coreModuleUrl)throw new Error('Unavailable');\n    const authoring=await import(this.coreModuleUrl);\n    this.core=this.github=authoring;\n  }\n\n",
+    '  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    this.core = { canonicalJson };\n    this.github = { connectGitHubAuthoring };\n  }\n\n',
     1,
-    'controller bundled authoring loader'
+    'controller bundled authoring namespaces'
   );
   return output;
 }
@@ -83,6 +115,7 @@ const [controllerSource, authoringSource, bootstrapSource] = await Promise.all([
   readFile(authoringPath, 'utf8'),
   readFile(bootstrapPath, 'utf8')
 ]);
+assertGeneratedBindings(authoringSource, ['canonicalJson', 'connectGitHubAuthoring']);
 const controller = splitControllerModule(controllerSource);
 const bundledSource = `${controller.importsSource}\n${authoringSource.trim()}\nconst SharedAuthoringController = (() => {\n${controller.body}\nreturn SharedAuthoringController;\n})();\nexport { SharedAuthoringController };\n`;
 await writeFile(bundledPath, bundledSource, 'utf8');
@@ -97,7 +130,7 @@ let bootstrap = replaceExactCount(
 bootstrap = replaceExactCount(
   bootstrap,
   "    coreModuleUrl: new URL('../../authoring/authoring-runtime.js', import.meta.url).href,\n    githubModuleUrl: new URL('../../authoring/authoring-runtime.js', import.meta.url).href\n",
-  "    coreModuleUrl: new URL('./shared-authoring-runtime.js', import.meta.url).href\n",
+  '',
   1,
   'bundled authoring module URL options'
 );
