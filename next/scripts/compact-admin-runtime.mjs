@@ -43,7 +43,7 @@ function specializeControllerBody(source) {
   output = replaceExactCount(
     output,
     "  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    if (!this.coreModuleUrl || !this.githubModuleUrl) {\n      throw new Error('Shared authoring module URLs are unavailable');\n    }\n    const [core, github] = await Promise.all([\n      import(this.coreModuleUrl),\n      import(this.githubModuleUrl)\n    ]);\n    this.core = core;\n    this.github = github;\n  }\n\n",
-    "  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    if (!this.coreModuleUrl) throw new Error('Authoring unavailable');\n    const authoring = await import(this.coreModuleUrl);\n    this.core = authoring;\n    this.github = authoring;\n  }\n\n",
+    "  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    if(!this.coreModuleUrl)throw new Error('Unavailable');\n    const authoring=await import(this.coreModuleUrl);\n    this.core=this.github=authoring;\n  }\n\n",
     1,
     'controller bundled authoring loader'
   );
