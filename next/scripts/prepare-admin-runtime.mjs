@@ -45,7 +45,7 @@ function replaceSection(source, start, end, replacement, label) {
   return source.slice(0, startIndex) + replacement + source.slice(endIndex);
 }
 
-async function emitAuthoringModule(packageName, outputName, transform = (source) => source) {
+async function transpileAuthoringModule(packageName) {
   const sourcePath = path.join(nextRoot, 'packages', packageName, 'src', 'index.ts');
   const source = await readFile(sourcePath, 'utf8');
   const result = ts.transpileModule(source, {
@@ -67,11 +67,56 @@ async function emitAuthoringModule(packageName, outputName, transform = (source)
     });
     throw new Error(`Admin authoring transpilation failed for ${packageName}:\n${message}`);
   }
-  await writeFile(
-    path.join(targetRoot, 'authoring', outputName),
-    transform(result.outputText),
-    'utf8'
+  return result.outputText;
+}
+
+function generatedDeclarationName(statement) {
+  if (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) {
+    return statement.name?.text ?? null;
+  }
+  if (ts.isVariableStatement(statement) && statement.declarationList.declarations.length === 1) {
+    const declaration = statement.declarationList.declarations[0];
+    return ts.isIdentifier(declaration.name) ? declaration.name.text : null;
+  }
+  return null;
+}
+
+function removeGeneratedDeclarations(source, names, label) {
+  const sourceFile = ts.createSourceFile(`${label}.js`, source, ts.ScriptTarget.ES2022, true, ts.ScriptKind.JS);
+  const expected = new Set(names);
+  const found = new Set();
+  const ranges = [];
+  for (const statement of sourceFile.statements) {
+    const name = generatedDeclarationName(statement);
+    if (!name || !expected.has(name)) continue;
+    if (found.has(name)) throw new Error(`Admin runtime duplicate generated declaration: ${name}`);
+    found.add(name);
+    ranges.push([statement.getFullStart(), statement.end]);
+  }
+  const missing = names.filter((name) => !found.has(name));
+  if (missing.length) {
+    throw new Error(`Admin runtime generated declaration missing (${label}): ${missing.join(', ')}`);
+  }
+  let output = source;
+  for (const [start, end] of ranges.sort((left, right) => right[0] - left[0])) {
+    output = output.slice(0, start) + output.slice(end);
+  }
+  return output;
+}
+
+function removeGeneratedImport(source, moduleName, label) {
+  const sourceFile = ts.createSourceFile(`${label}.js`, source, ts.ScriptTarget.ES2022, true, ts.ScriptKind.JS);
+  const matches = sourceFile.statements.filter(
+    (statement) =>
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === moduleName
   );
+  if (matches.length !== 1) {
+    throw new Error(`Admin runtime expected one generated import (${label}), found ${String(matches.length)}`);
+  }
+  const statement = matches[0];
+  return source.slice(0, statement.getFullStart()) + source.slice(statement.end);
 }
 
 await rm(targetRoot, { recursive: true, force: true });
@@ -83,14 +128,26 @@ for (const relativePath of ['tools/admin', 'tools/about', 'tools/inspector', 'to
   });
 }
 await mkdir(path.join(targetRoot, 'authoring'), { recursive: true });
-await emitAuthoringModule('authoring-core', 'authoring-core.js');
-await emitAuthoringModule('authoring-github', 'authoring-github.js', (source) =>
-  replaceExact(
-    source,
-    "from '@zenblog/authoring-core'",
-    "from './authoring-core.js'",
-    'authoring-github browser import'
-  )
+const authoringCoreRuntime = removeGeneratedDeclarations(
+  await transpileAuthoringModule('authoring-core'),
+  [
+    'AUTHORING_CAPABILITIES',
+    'AUTHORING_FAILURE_CODES',
+    'disconnectedSession',
+    'hasAuthoringCapability',
+    'InMemoryVersionedJsonRepository'
+  ],
+  'authoring-core browser runtime'
+);
+const authoringGitHubRuntime = removeGeneratedImport(
+  await transpileAuthoringModule('authoring-github'),
+  '@zenblog/authoring-core',
+  'authoring-github browser import'
+);
+await writeFile(
+  path.join(targetRoot, 'authoring', 'authoring-runtime.js'),
+  `${authoringCoreRuntime.trimEnd()}\n${authoringGitHubRuntime.trimStart()}`,
+  'utf8'
 );
 
 await mkdir(path.join(targetRoot, 'src', 'contracts'), { recursive: true });
@@ -128,7 +185,7 @@ await replaceFile('tools/admin/bootstrap.js', (source) => {
   output = replaceExact(
     output,
     '  const adminShell = await new AdminShell({\n    metadataManager: window.ZenMetadataManager,\n    searchLab,\n    aboutManager,\n    inspectorController\n  }).mount();\n\n  window.ZenBlogAdmin = Object.freeze({',
-    "  const adminShell = await new AdminShell({\n    metadataManager: window.ZenMetadataManager,\n    searchLab,\n    aboutManager,\n    inspectorController\n  }).mount();\n\n  const { SharedAuthoringController } = await import(new URL('./SharedAuthoringController.js', import.meta.url).href);\n  const sharedAuthoring = new SharedAuthoringController({\n    metadataManager: window.ZenMetadataManager,\n    aboutManager,\n    coreModuleUrl: new URL('../../authoring/authoring-core.js', import.meta.url).href,\n    githubModuleUrl: new URL('../../authoring/authoring-github.js', import.meta.url).href\n  }).mount();\n\n  window.ZenBlogAdmin = Object.freeze({",
+    "  const adminShell = await new AdminShell({\n    metadataManager: window.ZenMetadataManager,\n    searchLab,\n    aboutManager,\n    inspectorController\n  }).mount();\n\n  const { SharedAuthoringController } = await import(new URL('./SharedAuthoringController.js', import.meta.url).href);\n  const sharedAuthoring = new SharedAuthoringController({\n    metadataManager: window.ZenMetadataManager,\n    aboutManager,\n    coreModuleUrl: new URL('../../authoring/authoring-runtime.js', import.meta.url).href,\n    githubModuleUrl: new URL('../../authoring/authoring-runtime.js', import.meta.url).href\n  }).mount();\n\n  window.ZenBlogAdmin = Object.freeze({",
     'Pages shared authoring controller mount'
   );
   output = replaceExact(
