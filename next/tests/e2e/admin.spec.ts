@@ -1,30 +1,14 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Route } from '@playwright/test';
 
 const GITHUB_CORS_HEADERS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-headers': 'Authorization, Content-Type, X-GitHub-Api-Version',
+  'access-control-allow-headers': 'Authorization, Content-Type',
   'access-control-allow-methods': 'GET, PUT, OPTIONS'
 } as const;
 
 function jsonBase64(value: unknown): string {
   return Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8').toString('base64');
-}
-
-function traceGitHubRoute(route: Route): void {
-  const request = route.request();
-  const url = new URL(request.url());
-  console.log(`GITHUB_MOCK_REQUEST=${request.method()} ${url.pathname}`);
-}
-
-function traceGitHubRequestFailures(page: Page): void {
-  page.on('requestfailed', (request) => {
-    const url = new URL(request.url());
-    if (url.hostname !== 'api.github.com') return;
-    console.log(
-      `GITHUB_REQUEST_FAILED=${request.method()} ${url.pathname} ${request.failure()?.errorText ?? ''}`
-    );
-  });
 }
 
 async function fulfillGitHubPreflight(route: Route): Promise<boolean> {
@@ -37,7 +21,7 @@ async function fulfillGitHubJson(route: Route, status: number, json: unknown): P
   await route.fulfill({ status, headers: GITHUB_CORS_HEADERS, json });
 }
 
-async function makeMetadataMeaningful(page: Page) {
+async function makeMetadataMeaningful(page: import('@playwright/test').Page) {
   await expect(page.locator('#zmm-status')).toContainText(/\d+ artículos/);
   const firstArticle = page.locator('.zmm-title-btn').first();
   await expect(firstArticle).toBeVisible();
@@ -108,10 +92,8 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
 }) => {
   const tokenSentinel = 'github_pat_ZENBLOG_TEST_SENTINEL';
   let metadataContent: string | null = null;
-  traceGitHubRequestFailures(page);
 
   await page.route('https://api.github.com/**', async (route) => {
-    traceGitHubRoute(route);
     if (await fulfillGitHubPreflight(route)) return;
     const request = route.request();
     const url = new URL(request.url());
@@ -156,8 +138,8 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
   await page.goto('/admin/');
   await makeMetadataMeaningful(page);
 
-  const launcher = page.getByRole('button', { name: 'Compartido · desconectado' });
-  await expect(launcher).toBeVisible();
+  const launcher = page.locator('.zsa-launcher');
+  await expect(launcher).toHaveAccessibleName('Compartido · desconectado');
   await launcher.click();
 
   const dialog = page.getByRole('dialog', { name: 'Estado compartido' });
@@ -165,11 +147,9 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
   const tokenInput = dialog.getByLabel('Credencial temporal');
   await tokenInput.fill(tokenSentinel);
   await dialog.getByRole('button', { name: 'Conectar' }).click();
-  await expect.poll(() => launcher.getAttribute('data-state')).not.toBe('authenticating');
-  const authorizationStatus = await dialog.locator('[data-zsa-status]').textContent();
-  console.log(`SHARED_AUTHORING_AUTH_STATUS=${authorizationStatus ?? ''}`);
 
-  await expect(page.getByRole('button', { name: 'Compartido · @devMod3' })).toBeVisible();
+  await expect(launcher).toHaveAttribute('data-state', 'authorized');
+  await expect(launcher).toHaveAccessibleName('Compartido · @devMod3');
   await expect(dialog.getByText('@devMod3')).toBeVisible();
   await expect(tokenInput).toHaveValue('');
 
@@ -193,7 +173,7 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
   expect(accessibility.violations, JSON.stringify(accessibility.violations, null, 2)).toEqual([]);
 
   await dialog.getByRole('button', { name: 'Desconectar' }).click();
-  await expect(page.getByRole('button', { name: 'Compartido · desconectado' })).toBeVisible();
+  await expect(launcher).toHaveAccessibleName('Compartido · desconectado');
 });
 
 test('Pages Admin exposes stale-write conflict without destructive retry', async ({ page }) => {
@@ -206,10 +186,8 @@ test('Pages Admin exposes stale-write conflict without destructive retry', async
   };
   let metadataGets = 0;
   let metadataPuts = 0;
-  traceGitHubRequestFailures(page);
 
   await page.route('https://api.github.com/**', async (route) => {
-    traceGitHubRoute(route);
     if (await fulfillGitHubPreflight(route)) return;
     const request = route.request();
     const url = new URL(request.url());
@@ -245,15 +223,13 @@ test('Pages Admin exposes stale-write conflict without destructive retry', async
 
   await page.goto('/admin/');
   await makeMetadataMeaningful(page);
-  const launcher = page.getByRole('button', { name: 'Compartido · desconectado' });
+  const launcher = page.locator('.zsa-launcher');
   await launcher.click();
   const dialog = page.getByRole('dialog', { name: 'Estado compartido' });
   await dialog.getByLabel('Credencial temporal').fill('github_pat_conflict_sentinel');
   await dialog.getByRole('button', { name: 'Conectar' }).click();
-  await expect.poll(() => launcher.getAttribute('data-state')).not.toBe('authenticating');
-  const authorizationStatus = await dialog.locator('[data-zsa-status]').textContent();
-  console.log(`SHARED_AUTHORING_CONFLICT_AUTH_STATUS=${authorizationStatus ?? ''}`);
 
+  await expect(launcher).toHaveAttribute('data-state', 'authorized');
   const metadataCard = dialog.locator('[data-zsa-key="metadata-registry"]');
   await expect(metadataCard).toContainText('divergente');
   page.once('dialog', (confirmation) => confirmation.accept());
