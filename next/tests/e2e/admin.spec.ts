@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Route } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
 
 const GITHUB_CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -21,7 +21,7 @@ async function fulfillGitHubJson(route: Route, status: number, json: unknown): P
   await route.fulfill({ status, headers: GITHUB_CORS_HEADERS, json });
 }
 
-async function makeMetadataMeaningful(page: import('@playwright/test').Page) {
+async function makeMetadataMeaningful(page: Page) {
   await expect(page.locator('#zmm-status')).toContainText(/\d+ artículos/);
   const firstArticle = page.locator('.zmm-title-btn').first();
   await expect(firstArticle).toBeVisible();
