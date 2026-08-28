@@ -15,9 +15,11 @@ it('invokes the injected fetch implementation without rebinding its receiver', a
   let requestCount = 0;
   const fetchImpl = function (
     this: unknown,
-    _input: RequestInfo | URL,
-    _init?: RequestInit
+    input: RequestInfo | URL,
+    init?: RequestInit
   ): Promise<Response> {
+    void input;
+    void init;
     if (this !== undefined) {
       return Promise.reject(new TypeError('Illegal invocation'));
     }
