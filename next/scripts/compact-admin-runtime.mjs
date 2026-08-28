@@ -28,54 +28,25 @@ function replaceExactCount(source, before, after, expectedCount, label) {
 function specializeControllerBody(source) {
   let output = replaceExactCount(
     source,
-    '    coreModuleUrl,\n    githubModuleUrl,\n',
+    '    githubModuleUrl,\n',
     '',
     1,
-    'controller module URL parameters'
+    'controller redundant module URL parameter'
   );
   output = replaceExactCount(
     output,
-    '    this.coreModuleUrl = coreModuleUrl;\n    this.githubModuleUrl = githubModuleUrl;\n',
+    '    this.githubModuleUrl = githubModuleUrl;\n',
     '',
     1,
-    'controller module URL assignments'
-  );
-  output = replaceExactCount(
-    output,
-    '    this.core = null;\n    this.github = null;\n',
-    '',
-    1,
-    'controller module namespace state'
+    'controller redundant module URL assignment'
   );
   output = replaceExactCount(
     output,
     "  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    if (!this.coreModuleUrl || !this.githubModuleUrl) {\n      throw new Error('Shared authoring module URLs are unavailable');\n    }\n    const [core, github] = await Promise.all([\n      import(this.coreModuleUrl),\n      import(this.githubModuleUrl)\n    ]);\n    this.core = core;\n    this.github = github;\n  }\n\n",
-    '',
+    "  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    if (!this.coreModuleUrl) {\n      throw new Error('Shared authoring module URL is unavailable');\n    }\n    const authoring = await import(this.coreModuleUrl);\n    this.core = authoring;\n    this.github = authoring;\n  }\n\n",
     1,
-    'controller dynamic authoring loader'
+    'controller bundled authoring loader'
   );
-  output = replaceExactCount(
-    output,
-    '      await this.loadAuthoringModules();\n',
-    '',
-    1,
-    'controller authoring loader call'
-  );
-  output = replaceExactCount(
-    output,
-    'this.github.connectGitHubAuthoring',
-    'connectGitHubAuthoring',
-    1,
-    'controller GitHub authoring binding'
-  );
-  const canonicalCount = output.split('this.core.canonicalJson').length - 1;
-  if (canonicalCount < 1) {
-    throw new Error('Admin runtime compaction expected canonicalJson controller bindings');
-  }
-  output = output.replaceAll('this.core.canonicalJson', 'canonicalJson');
-  if (output.includes('this.core.') || output.includes('this.github.')) {
-    throw new Error('Admin runtime compaction left dynamic authoring namespace references');
-  }
   return output;
 }
 
@@ -126,7 +97,7 @@ let bootstrap = replaceExactCount(
 bootstrap = replaceExactCount(
   bootstrap,
   "    coreModuleUrl: new URL('../../authoring/authoring-runtime.js', import.meta.url).href,\n    githubModuleUrl: new URL('../../authoring/authoring-runtime.js', import.meta.url).href\n",
-  '',
+  "    coreModuleUrl: new URL('./shared-authoring-runtime.js', import.meta.url).href\n",
   1,
   'bundled authoring module URL options'
 );
