@@ -14,6 +14,7 @@ const authoringRoot = path.join(targetRoot, 'authoring');
 const authoringPath = path.join(authoringRoot, 'authoring-runtime.js');
 const bundledPath = path.join(targetRoot, 'tools', 'admin', 'shared-authoring-runtime.js');
 const bootstrapPath = path.join(targetRoot, 'tools', 'admin', 'bootstrap.js');
+const auxiliaryRuntimePath = path.join(targetRoot, 'tools', 'runtime', 'bootstrap.js');
 
 function replaceExactCount(source, before, after, expectedCount, label) {
   const count = source.split(before).length - 1;
@@ -23,6 +24,46 @@ function replaceExactCount(source, before, after, expectedCount, label) {
     );
   }
   return source.replaceAll(before, after);
+}
+
+function generatedDeclarationName(statement) {
+  if (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) {
+    return statement.name?.text ?? null;
+  }
+  if (ts.isVariableStatement(statement) && statement.declarationList.declarations.length === 1) {
+    const declaration = statement.declarationList.declarations[0];
+    return ts.isIdentifier(declaration.name) ? declaration.name.text : null;
+  }
+  return null;
+}
+
+function removeExactDeclarations(source, names, label) {
+  const sourceFile = ts.createSourceFile(
+    `${label}.js`,
+    source,
+    ts.ScriptTarget.ES2022,
+    true,
+    ts.ScriptKind.JS
+  );
+  const expected = new Set(names);
+  const found = new Set();
+  const ranges = [];
+  for (const statement of sourceFile.statements) {
+    const name = generatedDeclarationName(statement);
+    if (!name || !expected.has(name)) continue;
+    if (found.has(name)) throw new Error(`Admin runtime duplicate declaration: ${name}`);
+    found.add(name);
+    ranges.push([statement.getFullStart(), statement.end]);
+  }
+  const missing = names.filter((name) => !found.has(name));
+  if (missing.length) {
+    throw new Error(`Admin runtime declaration missing (${label}): ${missing.join(', ')}`);
+  }
+  let output = source;
+  for (const [start, end] of ranges.sort((left, right) => right[0] - left[0])) {
+    output = output.slice(0, start) + output.slice(end);
+  }
+  return output;
 }
 
 function splitControllerModule(source) {
@@ -52,11 +93,29 @@ function splitControllerModule(source) {
   return { importsSource, body };
 }
 
-const [controllerSource, authoringSource, bootstrapSource] = await Promise.all([
-  readFile(controllerPath, 'utf8'),
-  readFile(authoringPath, 'utf8'),
-  readFile(bootstrapPath, 'utf8')
-]);
+function compactAuxiliaryRuntime(source) {
+  let output = removeExactDeclarations(
+    source,
+    ['BLOGGER_ADMIN_PAGE', 'normalizeAdminSegment', 'isAdminLocation'],
+    'Next auxiliary runtime'
+  );
+  output = replaceExactCount(
+    output,
+    "async function boot() {\n  if (isAdminLocation()) {\n    await import(releaseUrl('../admin/bootstrap.js'));\n    return;\n  }\n\n",
+    'async function boot() {\n',
+    1,
+    'Next-dead auxiliary Admin branch'
+  );
+  return output;
+}
+
+const [controllerSource, authoringSource, bootstrapSource, auxiliaryRuntimeSource] =
+  await Promise.all([
+    readFile(controllerPath, 'utf8'),
+    readFile(authoringPath, 'utf8'),
+    readFile(bootstrapPath, 'utf8'),
+    readFile(auxiliaryRuntimePath, 'utf8')
+  ]);
 const controller = splitControllerModule(controllerSource);
 const bundledSource = `${controller.importsSource}\n${authoringSource.trim()}\nconst SharedAuthoringController = (() => {\n${controller.body}\nreturn SharedAuthoringController;\n})();\nexport { SharedAuthoringController };\n`;
 await writeFile(bundledPath, bundledSource, 'utf8');
@@ -75,9 +134,13 @@ bootstrap = replaceExactCount(
   2,
   'authoring module URL'
 );
-await writeFile(bootstrapPath, bootstrap, 'utf8');
+await Promise.all([
+  writeFile(bootstrapPath, bootstrap, 'utf8'),
+  writeFile(auxiliaryRuntimePath, compactAuxiliaryRuntime(auxiliaryRuntimeSource), 'utf8')
+]);
 await rm(controllerPath);
 await rm(authoringRoot, { recursive: true, force: true });
 
 globalThis.console.log('ZEN_ADMIN_RUNTIME_COMPACT=PASS');
 globalThis.console.log(`ZEN_ADMIN_RUNTIME_COMPACT_TARGET=${path.relative(nextRoot, targetRoot)}`);
+globalThis.console.log('ZEN_ADMIN_AUXILIARY_RUNTIME=PUBLIC_ONLY');
