@@ -18,7 +18,9 @@ const bootstrapPath = path.join(targetRoot, 'tools', 'admin', 'bootstrap.js');
 function replaceExactCount(source, before, after, expectedCount, label) {
   const count = source.split(before).length - 1;
   if (count !== expectedCount) {
-    throw new Error(`Admin runtime compaction expected ${expectedCount} marker(s) for ${label}, found ${count}`);
+    throw new Error(
+      `Admin runtime compaction expected ${expectedCount} marker(s) for ${label}, found ${count}`
+    );
   }
   return source.replaceAll(before, after);
 }
@@ -33,7 +35,9 @@ function splitControllerModule(source) {
   );
   const imports = sourceFile.statements.filter((statement) => ts.isImportDeclaration(statement));
   if (imports.length !== 1) {
-    throw new Error(`Admin runtime compaction expected one controller import, found ${imports.length}`);
+    throw new Error(
+      `Admin runtime compaction expected one controller import, found ${imports.length}`
+    );
   }
   const statement = imports[0];
   const importsSource = source.slice(statement.getFullStart(), statement.end).trim();
