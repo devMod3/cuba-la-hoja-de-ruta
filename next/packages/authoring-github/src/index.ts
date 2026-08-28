@@ -13,7 +13,6 @@ import {
 } from '@zenblog/authoring-core';
 
 const DEFAULT_API_BASE_URL = 'https://api.github.com';
-const API_VERSION = '2022-11-28';
 const SAFE_REPOSITORY_PART = /^[A-Za-z0-9_.-]+$/;
 const MAX_SHARED_DOCUMENT_BYTES = 2_000_000;
 
@@ -306,7 +305,6 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     const headers = new Headers(init.headers);
     headers.set('Accept', 'application/vnd.github+json');
     headers.set('Authorization', `Bearer ${token}`);
-    headers.set('X-GitHub-Api-Version', API_VERSION);
     if (typeof init.body === 'string') headers.set('Content-Type', 'application/json');
     try {
       return await this.#fetch(url, { ...init, headers });
