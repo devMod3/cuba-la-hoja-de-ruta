@@ -142,7 +142,9 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     this.#owner = requiredRepositoryPart(options.config.owner, 'owner');
     this.#repository = requiredRepositoryPart(options.config.repository, 'repository');
     this.#apiBaseUrl = safeApiBaseUrl(options.config.apiBaseUrl);
-    this.#fetch = options.fetchImpl ?? globalThis.fetch;
+    const fetchImpl = options.fetchImpl;
+    this.#fetch = (input, init) =>
+      fetchImpl ? fetchImpl(input, init) : globalThis.fetch(input, init);
     this.#token = options.token.trim() || null;
     if (!this.#token)
       throw new AuthoringError('unauthorized', 'GitHub authoring credential is required');
