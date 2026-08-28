@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "updatedAt": "2026-08-28T09:53:55.308Z",
+  "updatedAt": "2026-08-28T09:55:23.112Z",
   "profile": {
     "displayName": "lα_яєѕιѕтєηċια",
     "photoUrl": "",
@@ -36,5 +36,15 @@
       "order": 0
     }
   ],
-  "relatedResources": []
+  "relatedResources": [
+    {
+      "id": "resource-ba664b4e-3427-4c7b-902d-33b9524aafda",
+      "title": "Movimiento C40  - (Movimiento constitucionalista Cubano)",
+      "url": "https://movimientoc40.com/",
+      "description": "",
+      "type": "source",
+      "visible": true,
+      "order": 0
+    }
+  ]
 }
