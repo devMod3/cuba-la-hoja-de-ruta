@@ -82,7 +82,13 @@ function generatedDeclarationName(statement) {
 }
 
 function removeGeneratedDeclarations(source, names, label) {
-  const sourceFile = ts.createSourceFile(`${label}.js`, source, ts.ScriptTarget.ES2022, true, ts.ScriptKind.JS);
+  const sourceFile = ts.createSourceFile(
+    `${label}.js`,
+    source,
+    ts.ScriptTarget.ES2022,
+    true,
+    ts.ScriptKind.JS
+  );
   const expected = new Set(names);
   const found = new Set();
   const ranges = [];
@@ -95,7 +101,9 @@ function removeGeneratedDeclarations(source, names, label) {
   }
   const missing = names.filter((name) => !found.has(name));
   if (missing.length) {
-    throw new Error(`Admin runtime generated declaration missing (${label}): ${missing.join(', ')}`);
+    throw new Error(
+      `Admin runtime generated declaration missing (${label}): ${missing.join(', ')}`
+    );
   }
   let output = source;
   for (const [start, end] of ranges.sort((left, right) => right[0] - left[0])) {
@@ -105,7 +113,13 @@ function removeGeneratedDeclarations(source, names, label) {
 }
 
 function removeGeneratedImport(source, moduleName, label) {
-  const sourceFile = ts.createSourceFile(`${label}.js`, source, ts.ScriptTarget.ES2022, true, ts.ScriptKind.JS);
+  const sourceFile = ts.createSourceFile(
+    `${label}.js`,
+    source,
+    ts.ScriptTarget.ES2022,
+    true,
+    ts.ScriptKind.JS
+  );
   const matches = sourceFile.statements.filter(
     (statement) =>
       ts.isImportDeclaration(statement) &&
@@ -113,7 +127,9 @@ function removeGeneratedImport(source, moduleName, label) {
       statement.moduleSpecifier.text === moduleName
   );
   if (matches.length !== 1) {
-    throw new Error(`Admin runtime expected one generated import (${label}), found ${String(matches.length)}`);
+    throw new Error(
+      `Admin runtime expected one generated import (${label}), found ${String(matches.length)}`
+    );
   }
   const statement = matches[0];
   return source.slice(0, statement.getFullStart()) + source.slice(statement.end);
