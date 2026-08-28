@@ -1,4 +1,6 @@
 .zsa-launcher {
+  position: relative;
+  z-index: 2;
   min-height: 36px;
   border: 1px solid #434a50;
   background: #171a1d;
