@@ -25,6 +25,60 @@ function replaceExactCount(source, before, after, expectedCount, label) {
   return source.replaceAll(before, after);
 }
 
+function specializeControllerBody(source) {
+  let output = replaceExactCount(
+    source,
+    '    coreModuleUrl,\n    githubModuleUrl,\n',
+    '',
+    1,
+    'controller module URL parameters'
+  );
+  output = replaceExactCount(
+    output,
+    '    this.coreModuleUrl = coreModuleUrl;\n    this.githubModuleUrl = githubModuleUrl;\n',
+    '',
+    1,
+    'controller module URL assignments'
+  );
+  output = replaceExactCount(
+    output,
+    '    this.core = null;\n    this.github = null;\n',
+    '',
+    1,
+    'controller module namespace state'
+  );
+  output = replaceExactCount(
+    output,
+    "  async loadAuthoringModules() {\n    if (this.core && this.github) return;\n    if (!this.coreModuleUrl || !this.githubModuleUrl) {\n      throw new Error('Shared authoring module URLs are unavailable');\n    }\n    const [core, github] = await Promise.all([\n      import(this.coreModuleUrl),\n      import(this.githubModuleUrl)\n    ]);\n    this.core = core;\n    this.github = github;\n  }\n\n",
+    '',
+    1,
+    'controller dynamic authoring loader'
+  );
+  output = replaceExactCount(
+    output,
+    '      await this.loadAuthoringModules();\n',
+    '',
+    1,
+    'controller authoring loader call'
+  );
+  output = replaceExactCount(
+    output,
+    'this.github.connectGitHubAuthoring',
+    'connectGitHubAuthoring',
+    1,
+    'controller GitHub authoring binding'
+  );
+  const canonicalCount = output.split('this.core.canonicalJson').length - 1;
+  if (canonicalCount < 1) {
+    throw new Error('Admin runtime compaction expected canonicalJson controller bindings');
+  }
+  output = output.replaceAll('this.core.canonicalJson', 'canonicalJson');
+  if (output.includes('this.core.') || output.includes('this.github.')) {
+    throw new Error('Admin runtime compaction left dynamic authoring namespace references');
+  }
+  return output;
+}
+
 function splitControllerModule(source) {
   const sourceFile = ts.createSourceFile(
     'SharedAuthoringController.js',
@@ -48,7 +102,8 @@ function splitControllerModule(source) {
     'class SharedAuthoringController',
     1,
     'controller export'
-  ).trim();
+  );
+  body = specializeControllerBody(body).trim();
   return { importsSource, body };
 }
 
@@ -70,10 +125,10 @@ let bootstrap = replaceExactCount(
 );
 bootstrap = replaceExactCount(
   bootstrap,
-  '../../authoring/authoring-runtime.js',
-  './shared-authoring-runtime.js',
-  2,
-  'authoring module URL'
+  "    coreModuleUrl: new URL('../../authoring/authoring-runtime.js', import.meta.url).href,\n    githubModuleUrl: new URL('../../authoring/authoring-runtime.js', import.meta.url).href\n",
+  '',
+  1,
+  'bundled authoring module URL options'
 );
 await writeFile(bootstrapPath, bootstrap, 'utf8');
 await rm(controllerPath);
