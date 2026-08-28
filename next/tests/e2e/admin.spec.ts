@@ -1,8 +1,24 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
+
+const GITHUB_CORS_HEADERS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': 'Authorization, Content-Type, X-GitHub-Api-Version',
+  'access-control-allow-methods': 'GET, PUT, OPTIONS'
+} as const;
 
 function jsonBase64(value: unknown): string {
   return Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8').toString('base64');
+}
+
+async function fulfillGitHubPreflight(route: Route): Promise<boolean> {
+  if (route.request().method() !== 'OPTIONS') return false;
+  await route.fulfill({ status: 204, headers: GITHUB_CORS_HEADERS });
+  return true;
+}
+
+async function fulfillGitHubJson(route: Route, status: number, json: unknown): Promise<void> {
+  await route.fulfill({ status, headers: GITHUB_CORS_HEADERS, json });
 }
 
 async function makeMetadataMeaningful(page: Page) {
@@ -78,43 +94,42 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
   let metadataContent: string | null = null;
 
   await page.route('https://api.github.com/**', async (route) => {
+    if (await fulfillGitHubPreflight(route)) return;
     const request = route.request();
     const url = new URL(request.url());
     if (url.pathname === '/user') {
-      await route.fulfill({
-        status: 200,
-        json: { id: 101433401, login: 'devMod3', name: 'Maintainer' }
+      await fulfillGitHubJson(route, 200, {
+        id: 101433401,
+        login: 'devMod3',
+        name: 'Maintainer'
       });
       return;
     }
     if (url.pathname === '/repos/devMod3/cuba-la-hoja-de-ruta') {
-      await route.fulfill({ status: 200, json: { permissions: { push: true } } });
+      await fulfillGitHubJson(route, 200, { permissions: { push: true } });
       return;
     }
     if (url.pathname.endsWith('/contents/config/authoring/metadata-registry.json')) {
       if (request.method() === 'PUT') {
         const body = request.postDataJSON() as { content: string };
         metadataContent = body.content;
-        await route.fulfill({ status: 200, json: { content: { sha: 'metadata-sha-1' } } });
+        await fulfillGitHubJson(route, 200, { content: { sha: 'metadata-sha-1' } });
         return;
       }
       if (metadataContent) {
-        await route.fulfill({
-          status: 200,
-          json: {
-            sha: 'metadata-sha-1',
-            content: metadataContent,
-            encoding: 'base64',
-            type: 'file'
-          }
+        await fulfillGitHubJson(route, 200, {
+          sha: 'metadata-sha-1',
+          content: metadataContent,
+          encoding: 'base64',
+          type: 'file'
         });
         return;
       }
-      await route.fulfill({ status: 404, json: { message: 'Not Found' } });
+      await fulfillGitHubJson(route, 404, { message: 'Not Found' });
       return;
     }
     if (url.pathname.endsWith('/contents/config/authoring/site-profile.json')) {
-      await route.fulfill({ status: 404, json: { message: 'Not Found' } });
+      await fulfillGitHubJson(route, 404, { message: 'Not Found' });
       return;
     }
     await route.abort();
@@ -172,36 +187,34 @@ test('Pages Admin exposes stale-write conflict without destructive retry', async
   let metadataPuts = 0;
 
   await page.route('https://api.github.com/**', async (route) => {
+    if (await fulfillGitHubPreflight(route)) return;
     const request = route.request();
     const url = new URL(request.url());
     if (url.pathname === '/user') {
-      await route.fulfill({ status: 200, json: { id: 101433401, login: 'devMod3', name: null } });
+      await fulfillGitHubJson(route, 200, { id: 101433401, login: 'devMod3', name: null });
       return;
     }
     if (url.pathname === '/repos/devMod3/cuba-la-hoja-de-ruta') {
-      await route.fulfill({ status: 200, json: { permissions: { push: true } } });
+      await fulfillGitHubJson(route, 200, { permissions: { push: true } });
       return;
     }
     if (url.pathname.endsWith('/contents/config/authoring/metadata-registry.json')) {
       if (request.method() === 'PUT') {
         metadataPuts += 1;
-        await route.fulfill({ status: 409, json: { message: 'sha does not match' } });
+        await fulfillGitHubJson(route, 409, { message: 'sha does not match' });
         return;
       }
       metadataGets += 1;
-      await route.fulfill({
-        status: 200,
-        json: {
-          sha: metadataGets > 1 ? 'metadata-sha-new' : 'metadata-sha-old',
-          content: jsonBase64(remoteMetadata),
-          encoding: 'base64',
-          type: 'file'
-        }
+      await fulfillGitHubJson(route, 200, {
+        sha: metadataGets > 1 ? 'metadata-sha-new' : 'metadata-sha-old',
+        content: jsonBase64(remoteMetadata),
+        encoding: 'base64',
+        type: 'file'
       });
       return;
     }
     if (url.pathname.endsWith('/contents/config/authoring/site-profile.json')) {
-      await route.fulfill({ status: 404, json: { message: 'Not Found' } });
+      await fulfillGitHubJson(route, 404, { message: 'Not Found' });
       return;
     }
     await route.abort();
