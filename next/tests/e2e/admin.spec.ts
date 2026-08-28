@@ -11,6 +11,22 @@ function jsonBase64(value: unknown): string {
   return Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8').toString('base64');
 }
 
+function traceGitHubRoute(route: Route): void {
+  const request = route.request();
+  const url = new URL(request.url());
+  console.log(`GITHUB_MOCK_REQUEST=${request.method()} ${url.pathname}`);
+}
+
+function traceGitHubRequestFailures(page: Page): void {
+  page.on('requestfailed', (request) => {
+    const url = new URL(request.url());
+    if (url.hostname !== 'api.github.com') return;
+    console.log(
+      `GITHUB_REQUEST_FAILED=${request.method()} ${url.pathname} ${request.failure()?.errorText ?? ''}`
+    );
+  });
+}
+
 async function fulfillGitHubPreflight(route: Route): Promise<boolean> {
   if (route.request().method() !== 'OPTIONS') return false;
   await route.fulfill({ status: 204, headers: GITHUB_CORS_HEADERS });
@@ -92,8 +108,10 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
 }) => {
   const tokenSentinel = 'github_pat_ZENBLOG_TEST_SENTINEL';
   let metadataContent: string | null = null;
+  traceGitHubRequestFailures(page);
 
   await page.route('https://api.github.com/**', async (route) => {
+    traceGitHubRoute(route);
     if (await fulfillGitHubPreflight(route)) return;
     const request = route.request();
     const url = new URL(request.url());
@@ -188,8 +206,10 @@ test('Pages Admin exposes stale-write conflict without destructive retry', async
   };
   let metadataGets = 0;
   let metadataPuts = 0;
+  traceGitHubRequestFailures(page);
 
   await page.route('https://api.github.com/**', async (route) => {
+    traceGitHubRoute(route);
     if (await fulfillGitHubPreflight(route)) return;
     const request = route.request();
     const url = new URL(request.url());
