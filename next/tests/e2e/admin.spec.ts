@@ -147,6 +147,9 @@ test('Pages Admin authorizes in memory and verifies Metadata by remote read-back
   const tokenInput = dialog.getByLabel('Credencial temporal');
   await tokenInput.fill(tokenSentinel);
   await dialog.getByRole('button', { name: 'Conectar' }).click();
+  await expect.poll(() => launcher.getAttribute('data-state')).not.toBe('authenticating');
+  const authorizationStatus = await dialog.locator('[data-zsa-status]').textContent();
+  console.log(`SHARED_AUTHORING_AUTH_STATUS=${authorizationStatus ?? ''}`);
 
   await expect(page.getByRole('button', { name: 'Compartido · @devMod3' })).toBeVisible();
   await expect(dialog.getByText('@devMod3')).toBeVisible();
@@ -222,10 +225,14 @@ test('Pages Admin exposes stale-write conflict without destructive retry', async
 
   await page.goto('/admin/');
   await makeMetadataMeaningful(page);
-  await page.getByRole('button', { name: 'Compartido · desconectado' }).click();
+  const launcher = page.getByRole('button', { name: 'Compartido · desconectado' });
+  await launcher.click();
   const dialog = page.getByRole('dialog', { name: 'Estado compartido' });
   await dialog.getByLabel('Credencial temporal').fill('github_pat_conflict_sentinel');
   await dialog.getByRole('button', { name: 'Conectar' }).click();
+  await expect.poll(() => launcher.getAttribute('data-state')).not.toBe('authenticating');
+  const authorizationStatus = await dialog.locator('[data-zsa-status]').textContent();
+  console.log(`SHARED_AUTHORING_CONFLICT_AUTH_STATUS=${authorizationStatus ?? ''}`);
 
   const metadataCard = dialog.locator('[data-zsa-key="metadata-registry"]');
   await expect(metadataCard).toContainText('divergente');
