@@ -3,11 +3,11 @@
   "version": "0.1.0-alpha.0",
   "private": true,
   "scripts": {
-    "predev": "node ../../scripts/prepare-admin-runtime.mjs --public",
+    "predev": "node ../../scripts/prepare-admin-runtime.mjs --public && node ../../scripts/compact-admin-runtime.mjs --public",
     "dev": "next dev",
     "prebuild": "node ../../scripts/prepare-admin-runtime.mjs --clean-public",
     "build": "next build",
-    "postbuild": "node ../../scripts/prepare-admin-runtime.mjs",
+    "postbuild": "node ../../scripts/prepare-admin-runtime.mjs && node ../../scripts/compact-admin-runtime.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
