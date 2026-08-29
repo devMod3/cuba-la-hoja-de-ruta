@@ -8,11 +8,13 @@ import {
   socialPlatformLabel,
   type PublishedSiteProfile
 } from '@zenblog/site-config';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { createProfileFavicon, normalizeProfilePhoto } from './profile-photo';
 
 interface AboutManagerProps {
   readonly profile: PublishedSiteProfile;
   readonly onChange: (profile: PublishedSiteProfile) => void;
+  readonly onPublishRequest: () => void;
 }
 
 type SocialEntry = PublishedSiteProfile['social'][number];
@@ -51,7 +53,26 @@ function uid(prefix: string): string {
   return `${prefix}-${globalThis.crypto.randomUUID()}`;
 }
 
-export function AboutManager({ profile: initialProfile, onChange }: AboutManagerProps) {
+const MAX_PROFILE_IMPORT_BYTES = 2_000_000;
+
+function downloadTextFile(filename: string, content: string, type: string): void {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function AboutManager({
+  profile: initialProfile,
+  onChange,
+  onPublishRequest
+}: AboutManagerProps) {
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PublishedSiteProfile | null>(null);
   const [status, setStatus] = useState('Borrador local listo');
   const profile = draft ?? initialProfile;
@@ -105,7 +126,7 @@ export function AboutManager({ profile: initialProfile, onChange }: AboutManager
     }));
   }
 
-  function save(): void {
+  function persistDraft(message = 'Perfil guardado localmente'): PublishedSiteProfile | null {
     try {
       const canonical = parsePublishedSiteProfile({
         ...profile,
@@ -113,31 +134,87 @@ export function AboutManager({ profile: initialProfile, onChange }: AboutManager
       });
       onChange(canonical);
       setDraft(null);
-      setStatus('Perfil guardado localmente');
+      setStatus(message);
+      return canonical;
     } catch (error) {
       setStatus(
         error instanceof Error ? `No se guardó: ${error.message}` : 'No se guardó el perfil.'
       );
+      return null;
     }
   }
 
-  function importPhoto(file: File | null): void {
+  function publish(): void {
+    const saved = persistDraft(
+      'Borrador guardado. Autoriza y sincroniza «Perfil público» para publicar.'
+    );
+    if (saved) onPublishRequest();
+  }
+
+  function openPublicPreview(): void {
+    globalThis.open('../acerca-de/', '_blank', 'noopener,noreferrer');
+  }
+
+  function exportProfile(): void {
+    try {
+      const canonical = parsePublishedSiteProfile(profile);
+      downloadTextFile(
+        'site-profile.json',
+        `${JSON.stringify(canonical, null, 2)}\n`,
+        'application/json;charset=utf-8'
+      );
+      setStatus('Perfil exportado como JSON.');
+    } catch (error) {
+      setStatus(error instanceof Error ? `No se exportó: ${error.message}` : 'No se exportó.');
+    }
+  }
+
+  async function importProfile(file: File | null): Promise<void> {
     if (!file) return;
-    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-      setStatus('La foto debe ser PNG, JPEG o WebP.');
+    if (file.size > MAX_PROFILE_IMPORT_BYTES) {
+      setStatus('No se importó: el archivo supera 2 MB.');
       return;
     }
-    const reader = new FileReader();
-    reader.addEventListener(
-      'load',
-      () => {
-        if (typeof reader.result !== 'string') return;
-        updateText('photoUrl', reader.result);
-        setStatus('Foto cargada en el borrador; guarda para conservarla.');
-      },
-      { once: true }
-    );
-    reader.readAsDataURL(file);
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      const canonical = parsePublishedSiteProfile(parsed);
+      setDraft(canonical);
+      setStatus('Perfil importado al borrador; guarda para conservarlo.');
+    } catch (error) {
+      setStatus(error instanceof Error ? `No se importó: ${error.message}` : 'No se importó.');
+    }
+  }
+
+  async function importPhoto(file: File | null): Promise<void> {
+    if (!file) return;
+    try {
+      setStatus('Procesando foto…');
+      const normalized = await normalizeProfilePhoto(file);
+      updateText('photoUrl', normalized);
+      setStatus('Foto optimizada y cargada en el borrador; guarda para conservarla.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'No se pudo procesar la foto.');
+    }
+  }
+
+  async function downloadFavicon(): Promise<void> {
+    const source = profile.profile.photoUrl.trim();
+    if (!source) {
+      setStatus('Primero añade una foto de perfil.');
+      return;
+    }
+    try {
+      const data = await createProfileFavicon(source);
+      const anchor = document.createElement('a');
+      anchor.href = data;
+      anchor.download = 'la-hoja-de-ruta-favicon.png';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setStatus('Favicon descargado.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'No se pudo generar el favicon.');
+    }
   }
 
   const p = profile.profile;
@@ -149,14 +226,47 @@ export function AboutManager({ profile: initialProfile, onChange }: AboutManager
             <small>Herramienta de autoría</small>
             <strong>Acerca de</strong>
           </div>
-          <button type="button" className="primary" onClick={save}>
-            Guardar
-          </button>
+          <div className="zam-header-actions">
+            <button type="button" onClick={openPublicPreview}>
+              Vista pública ↗
+            </button>
+            <button type="button" onClick={exportProfile}>
+              Exportar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                importInputRef.current?.click();
+              }}
+            >
+              Importar
+            </button>
+            <button type="button" onClick={() => persistDraft()}>
+              Guardar borrador
+            </button>
+            <button type="button" className="primary" onClick={publish}>
+              Publicar
+            </button>
+          </div>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,application/json"
+            hidden
+            aria-label="Importar perfil JSON"
+            onChange={(event) => {
+              const input = event.currentTarget;
+              void importProfile(input.files?.[0] ?? null).finally(() => {
+                input.value = '';
+              });
+            }}
+          />
         </header>
         <div
           className="zam-status"
           role="status"
-          data-kind={status.startsWith('No ') ? 'error' : 'ok'}
+          aria-live="polite"
+          data-kind={/^(No |La foto|La imagen|Primero)/u.test(status) ? 'error' : 'ok'}
         >
           {status}
         </div>
@@ -184,25 +294,75 @@ export function AboutManager({ profile: initialProfile, onChange }: AboutManager
                   }}
                 />
               </label>
-              <label className="zam-field">
-                <span>Foto (URL o data URL)</span>
+              <div className="zam-photo-upload">
+                <div className="zam-photo-preview" aria-label="Vista previa de foto">
+                  {p.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- browser-only preview accepts data URLs and arbitrary author-provided URLs.
+                    <img src={p.photoUrl} alt="Vista previa de foto de perfil" />
+                  ) : (
+                    <span aria-hidden="true">Foto</span>
+                  )}
+                </div>
+                <div className="zam-photo-copy">
+                  <strong>Foto de perfil</strong>
+                  <small>
+                    Se recorta al centro y se optimiza automáticamente antes de guardarse en el
+                    perfil compartido.
+                  </small>
+                  <div className="zam-photo-actions">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        photoInputRef.current?.click();
+                      }}
+                    >
+                      Subir foto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void downloadFavicon();
+                      }}
+                    >
+                      Descargar favicon
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateText('photoUrl', '');
+                        setStatus('Foto eliminada del borrador; guarda para conservar el cambio.');
+                      }}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                  <details className="zam-photo-advanced">
+                    <summary>Usar URL en su lugar</summary>
+                    <label className="zam-field zam-photo-url-field">
+                      <span>Foto (URL o data URL)</span>
+                      <input
+                        value={p.photoUrl}
+                        onChange={(event) => {
+                          updateText('photoUrl', event.target.value);
+                        }}
+                      />
+                    </label>
+                  </details>
+                </div>
                 <input
-                  value={p.photoUrl}
-                  onChange={(event) => {
-                    updateText('photoUrl', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Cargar foto</span>
-                <input
+                  ref={photoInputRef}
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
+                  hidden
+                  aria-label="Seleccionar foto de perfil"
                   onChange={(event) => {
-                    importPhoto(event.target.files?.[0] ?? null);
+                    const input = event.currentTarget;
+                    void importPhoto(input.files?.[0] ?? null).finally(() => {
+                      input.value = '';
+                    });
                   }}
                 />
-              </label>
+              </div>
               <label className="zam-field">
                 <span>Introducción</span>
                 <textarea

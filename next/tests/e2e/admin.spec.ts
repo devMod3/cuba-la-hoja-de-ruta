@@ -296,7 +296,13 @@ test('Admin About editor persists repository-owned profile data locally', async 
   await page.getByLabel('Nombre').fill('Perfil editorial');
   await page.getByLabel('Introducción').fill('Descripción mantenida desde el entorno Next.js.');
   await page.getByLabel('Ciudad').fill('La Habana');
-  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Vista pública ↗' })).toBeVisible();
+  await expect(shell.getByRole('link', { name: 'Sitio ↗' })).toHaveAttribute('href', '../');
+  await expect(page.getByRole('button', { name: 'Exportar' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Importar' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Publicar' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Guardar borrador', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('guardado');
 
   const stored = await page.evaluate(() => globalThis.localStorage.getItem('zenSiteProfile.v1'));
@@ -308,4 +314,188 @@ test('Admin About editor persists repository-owned profile data locally', async 
       location: { city: 'La Habana' }
     }
   });
+});
+
+test('Admin About restores JSON import/export and optimized photo authoring', async ({ page }) => {
+  await page.goto('/admin/');
+  const shell = page.locator('#zen-admin-shell');
+  await shell.getByRole('tab', { name: 'Acerca de' }).click();
+
+  const importedProfile = {
+    schemaVersion: '1.0.0',
+    updatedAt: '2026-08-29T00:00:00.000Z',
+    profile: {
+      displayName: 'Perfil importado',
+      photoUrl: '',
+      email: '',
+      website: '',
+      audioClipUrl: '',
+      wishlistUrl: '',
+      randomQuestion: '',
+      randomAnswer: '',
+      gender: '',
+      industry: '',
+      occupation: '',
+      location: { city: 'La Habana', region: '', country: 'Cuba' },
+      introduction: 'Importado desde JSON.',
+      interests: [],
+      favoriteMovies: [],
+      favoriteMusic: [],
+      favoriteBooks: []
+    },
+    social: [],
+    relatedResources: []
+  };
+
+  await page.getByLabel('Importar perfil JSON').setInputFiles({
+    name: 'site-profile.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(importedProfile), 'utf8')
+  });
+  await expect(page.getByLabel('Nombre')).toHaveValue('Perfil importado');
+  await expect(page.getByRole('status')).toContainText('importado al borrador');
+
+  const png1x1 = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    'base64'
+  );
+  await page.getByLabel('Seleccionar foto de perfil').setInputFiles({
+    name: 'profile.png',
+    mimeType: 'image/png',
+    buffer: png1x1
+  });
+  await expect(page.getByRole('status')).toContainText('Foto optimizada');
+  await expect(page.getByAltText('Vista previa de foto de perfil')).toHaveAttribute(
+    'src',
+    /^data:image\/(webp|jpeg);base64,/u
+  );
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exportar' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('site-profile.json');
+
+  await page.getByRole('button', { name: 'Guardar borrador' }).click();
+  const stored = await page.evaluate(() => globalThis.localStorage.getItem('zenSiteProfile.v1'));
+  const saved = JSON.parse(stored ?? '{}') as { profile?: { photoUrl?: string } };
+  expect(saved.profile?.photoUrl).toMatch(/^data:image\/(webp|jpeg);base64,/u);
+  expect(saved.profile?.photoUrl?.length ?? Number.POSITIVE_INFINITY).toBeLessThan(880_000);
+});
+
+test('Admin About publishes the saved profile through versioned shared authoring', async ({
+  page
+}) => {
+  const tokenSentinel = 'github_pat_ABOUT_PUBLICATION_SENTINEL';
+  const remoteProfile = {
+    schemaVersion: '1.0.0',
+    updatedAt: '2026-08-27T10:22:01.214Z',
+    profile: {
+      displayName: 'Perfil remoto anterior',
+      photoUrl: '',
+      email: '',
+      website: '',
+      audioClipUrl: '',
+      wishlistUrl: '',
+      randomQuestion: '',
+      randomAnswer: '',
+      gender: '',
+      industry: '',
+      occupation: '',
+      location: { city: '', region: '', country: '' },
+      introduction: '',
+      interests: [],
+      favoriteMovies: [],
+      favoriteMusic: [],
+      favoriteBooks: []
+    },
+    social: [],
+    relatedResources: []
+  };
+  let profileContent = jsonBase64(remoteProfile);
+  let profileVersion = 'profile-sha-old';
+  const profilePuts: Array<{ content?: string; message?: string; sha?: string }> = [];
+
+  await page.route('https://api.github.com/**', async (route) => {
+    if (await fulfillGitHubPreflight(route)) return;
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.pathname === '/user') {
+      await fulfillGitHubJson(route, 200, {
+        id: 101433401,
+        login: 'devMod3',
+        name: 'Maintainer'
+      });
+      return;
+    }
+    if (url.pathname === '/repos/devMod3/cuba-la-hoja-de-ruta') {
+      await fulfillGitHubJson(route, 200, { permissions: { push: true } });
+      return;
+    }
+    if (url.pathname.endsWith('/contents/next/packages/site-config/data/metadata-registry.json')) {
+      await fulfillGitHubJson(route, 404, { message: 'Not Found' });
+      return;
+    }
+    if (url.pathname.endsWith('/contents/next/packages/site-config/data/site-profile.json')) {
+      if (request.method() === 'PUT') {
+        const profilePut = request.postDataJSON() as {
+          content?: string;
+          message?: string;
+          sha?: string;
+        };
+        profilePuts.push(profilePut);
+        profileContent = profilePut.content ?? '';
+        profileVersion = 'profile-sha-new';
+        await fulfillGitHubJson(route, 200, { content: { sha: profileVersion } });
+        return;
+      }
+      await fulfillGitHubJson(route, 200, {
+        sha: profileVersion,
+        content: profileContent,
+        encoding: 'base64',
+        type: 'file'
+      });
+      return;
+    }
+    await route.abort();
+  });
+
+  await page.goto('/admin/');
+  const shell = page.locator('#zen-admin-shell');
+  await shell.getByRole('tab', { name: 'Acerca de' }).click();
+  await page.getByLabel('Nombre').fill('Perfil publicado desde Admin');
+  await page.getByLabel('Introducción').fill('Publicación versionada con read-back.');
+  await page.getByRole('button', { name: 'Publicar', exact: true }).click();
+
+  const dialog = page.getByRole('dialog', { name: 'Estado compartido' });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel('Credencial temporal').fill(tokenSentinel);
+  await dialog.getByRole('button', { name: 'Conectar' }).click();
+
+  const profileCard = dialog.locator('[data-zsa-key="site-profile"]');
+  await expect(profileCard).toContainText('divergente');
+  page.once('dialog', (confirmation) => confirmation.accept());
+  await profileCard.getByRole('button', { name: 'Publicar borrador' }).click();
+
+  await expect(profileCard).toContainText('sincronizado');
+  await expect(dialog.getByRole('status')).toContainText('Perfil publicado en main');
+  const profilePut = profilePuts.at(0);
+  expect(profilePut).toBeDefined();
+  if (!profilePut) throw new Error('Expected a versioned profile publication request.');
+  expect(profilePut.message).toBe('content: publish About profile');
+  expect(profilePut.sha).toBe('profile-sha-old');
+
+  const published = JSON.parse(Buffer.from(profilePut.content ?? '', 'base64').toString('utf8')) as {
+    profile?: { displayName?: string; introduction?: string };
+  };
+  expect(published.profile).toMatchObject({
+    displayName: 'Perfil publicado desde Admin',
+    introduction: 'Publicación versionada con read-back.'
+  });
+
+  const browserStorage = await page.evaluate(() => ({
+    local: Object.fromEntries(Object.entries(globalThis.localStorage)),
+    session: Object.fromEntries(Object.entries(globalThis.sessionStorage))
+  }));
+  expect(JSON.stringify(browserStorage)).not.toContain(tokenSentinel);
+  await expect(page.locator('body')).not.toContainText(tokenSentinel);
 });
