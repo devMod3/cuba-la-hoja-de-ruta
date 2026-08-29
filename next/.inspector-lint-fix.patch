@@ -1,0 +1,124 @@
+diff --git a/next/apps/inspector-extension/src/content.ts b/next/apps/inspector-extension/src/content.ts
+--- a/next/apps/inspector-extension/src/content.ts
++++ b/next/apps/inspector-extension/src/content.ts
+@@ -13,13 +13,24 @@ interface ZenInspectorRuntimeApi {
+         message: unknown,
+         sender: unknown,
+         sendResponse: (response: ZenInspectorToggleResponse) => void
+-      ) => boolean | void
++      ) => boolean | undefined
+     ): void;
+   };
+ }
+ 
+ declare const chrome: Readonly<{ runtime: ZenInspectorRuntimeApi }>;
+ 
+ type ZenInspectorTag = keyof HTMLElementTagNameMap;
++
++function isZenInspectorToggleMessage(message: unknown): message is ZenInspectorToggleMessage {
++  if (typeof message !== 'object' || message === null || !('type' in message)) return false;
++  const candidate = message as Readonly<{ type?: unknown }>;
++  return candidate.type === 'zen-inspector:toggle';
++}
+ 
+ (() => {
+@@ -273,8 +284,7 @@ type ZenInspectorTag = keyof HTMLElementTagNameMap;
+     } catch {
+       logField.focus();
+       logField.select();
+-      const copied = document.execCommand('copy');
+-      copyStatus.textContent = copied ? 'Copiado' : 'Seleccionado para copiar';
++      copyStatus.textContent = 'No se pudo copiar; log seleccionado';
+     }
+   }
+@@ -307,14 +317,7 @@ type ZenInspectorTag = keyof HTMLElementTagNameMap;
+ 
+   if (typeof chrome !== 'undefined') {
+     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+-      if (
+-        typeof message !== 'object' ||
+-        message === null ||
+-        !('type' in message) ||
+-        (message as ZenInspectorToggleMessage).type !== 'zen-inspector:toggle'
+-      ) {
+-        return false;
+-      }
++      if (!isZenInspectorToggleMessage(message)) return false;
+       setActive(!active);
+       sendResponse({ active });
+       return false;
+diff --git a/next/apps/inspector-extension/src/diagnostics.ts b/next/apps/inspector-extension/src/diagnostics.ts
+--- a/next/apps/inspector-extension/src/diagnostics.ts
++++ b/next/apps/inspector-extension/src/diagnostics.ts
+@@ -6,7 +6,7 @@ interface ZenInspectorTargetInfo {
+ }
+ 
+ function zenInspectorEscapeCss(value: string): string {
+-  if (typeof globalThis.CSS?.escape === 'function') return globalThis.CSS.escape(value);
++  if (typeof globalThis.CSS.escape === 'function') return globalThis.CSS.escape(value);
+   return value.replace(
+     /[^a-zA-Z0-9_-]/gu,
+     (character) => `\\${character.codePointAt(0)?.toString(16) ?? '0'} `
+@@ -143,9 +143,7 @@ function zenInspectorTextPreview(element: Element): string {
+   ) {
+     return '[contenido de formulario no capturado]';
+   }
+-  return (
+-    (element.textContent ?? '').replace(/\s+/gu, ' ').trim().slice(0, 320) || 'Sin texto visible'
+-  );
++  return element.textContent.replace(/\s+/gu, ' ').trim().slice(0, 320) || 'Sin texto visible';
+ }
+@@ -236,3 +234,5 @@ function zenInspectorBuildLog(element: Element): string {
+     .filter((line, index, all) => !(line === '' && all[index - 1] === ''))
+     .join('\n');
+ }
++
++Object.assign(globalThis, { zenInspectorBuildLog });
+diff --git a/next/apps/web/components/admin/admin-shell.tsx b/next/apps/web/components/admin/admin-shell.tsx
+--- a/next/apps/web/components/admin/admin-shell.tsx
++++ b/next/apps/web/components/admin/admin-shell.tsx
+@@ -8,12 +8,11 @@ import {
+   writeMetadataDraft,
+   writeSiteProfileDraft
+ } from './admin-model';
+-import { InspectorPanel } from './inspector-panel';
+ import { MetadataManager } from './metadata-manager';
+ import { SearchLab } from './search-lab';
+ import { SharedAuthoring } from './shared-authoring';
+ 
+-type AdminTab = 'metadata' | 'search' | 'about' | 'inspector';
++type AdminTab = 'metadata' | 'search' | 'about';
+@@ -27,8 +26,7 @@ const TABS: ReadonlyArray<Readonly<{ id: AdminTab; label: string }>> = [
+   { id: 'metadata', label: 'Metadata' },
+   { id: 'search', label: 'Search Lab' },
+-  { id: 'about', label: 'Acerca de' },
+-  { id: 'inspector', label: 'Inspector' }
++  { id: 'about', label: 'Acerca de' }
+ ];
+@@ -137,15 +135,6 @@ export function AdminShell() {
+             }}
+           />
+         </section>
+-        <section
+-          id="zas-pane-inspector"
+-          className="zas-pane"
+-          role="tabpanel"
+-          aria-label="Inspector"
+-          hidden={activeTab !== 'inspector'}
+-        >
+-          <InspectorPanel />
+-        </section>
+       </main>
+     </div>
+   );
+diff --git a/next/scripts/check-inspector-extension.ts b/next/scripts/check-inspector-extension.ts
+--- a/next/scripts/check-inspector-extension.ts
++++ b/next/scripts/check-inspector-extension.ts
+@@ -66,6 +66,7 @@ for (const entry of runtimeEntries) {
+ }
+ 
+ for (const legacy of [
++  'apps/web/components/admin/inspector-panel.tsx',
+   'apps/web/components/inspector-runtime.tsx',
+   'apps/web/components/inspector-state.ts',
+   'apps/web/components/inspector-diagnostics.ts',
