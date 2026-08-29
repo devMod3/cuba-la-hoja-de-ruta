@@ -1,13 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import {
-  extractBloggerArticleText,
-  prepareBloggerArticleHtml,
-  sanitizeBloggerArticleHtml
-} from './src/index';
+import { extractArticleText, prepareArticleHtml, sanitizeArticleHtml } from './src/index';
 
-describe('sanitizeBloggerArticleHtml', () => {
-  it('preserves editorial structure while removing Blogger presentation attributes', () => {
-    const output = sanitizeBloggerArticleHtml(
+describe('sanitizeArticleHtml', () => {
+  it('preserves editorial structure while removing source presentation attributes', () => {
+    const output = sanitizeArticleHtml(
       '<h1 style="font-family: serif">Título interior</h1><p onclick="alert(1)"><span style="color:red">Texto <b>fuerte</b> y <i>énfasis</i>.</span></p>'
     );
 
@@ -26,7 +22,7 @@ describe('sanitizeBloggerArticleHtml', () => {
     ];
 
     for (const payload of payloads) {
-      const output = sanitizeBloggerArticleHtml(payload);
+      const output = sanitizeArticleHtml(payload);
       expect(output).not.toMatch(
         /<script|<iframe|<form|<img|javascript:|onerror=|onclick=|onmouseover=|style=/i
       );
@@ -41,14 +37,14 @@ describe('sanitizeBloggerArticleHtml', () => {
     ];
 
     for (const payload of payloads) {
-      const output = sanitizeBloggerArticleHtml(payload);
+      const output = sanitizeArticleHtml(payload);
       expect(output).toContain('<p>Seguro</p>');
       expect(output).not.toMatch(/<svg|<math|<textarea|<xmp|<img|onerror=/i);
     }
   });
 
   it('keeps only explicitly allowed link schemes and attributes', () => {
-    const output = sanitizeBloggerArticleHtml(
+    const output = sanitizeArticleHtml(
       '<p><a href="https://example.com" title="Referencia" target="_blank" rel="opener">https</a> <a href="mailto:test@example.com">correo</a> <a href="//evil.example">relativo</a></p>'
     );
 
@@ -62,7 +58,7 @@ describe('sanitizeBloggerArticleHtml', () => {
 
 describe('article text preparation', () => {
   it('extracts normalized decoded text only after executable content has been removed', () => {
-    const output = extractBloggerArticleText(
+    const output = extractArticleText(
       '<h1>Título</h1><p>Pueblo &amp; Estado\n con   espacios.</p><script>texto ejecutable</script>'
     );
 
@@ -71,7 +67,7 @@ describe('article text preparation', () => {
   });
 
   it('adds deterministic unique anchors and a source-backed heading model', () => {
-    const prepared = prepareBloggerArticleHtml(
+    const prepared = prepareArticleHtml(
       '<h2>Constitución y Estado</h2><p>Texto.</p><h3>Constitución y Estado</h3><h4><br></h4>'
     );
 

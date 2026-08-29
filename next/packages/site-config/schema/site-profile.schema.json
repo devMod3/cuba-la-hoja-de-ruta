@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:zenblog:site-profile:1.0.0",
+  "title": "Site Profile 1.0.0",
+  "type": "object",
+  "required": ["schemaVersion", "updatedAt", "profile", "social", "relatedResources"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "updatedAt": { "type": ["string", "null"] },
+    "profile": { "type": "object" },
+    "social": { "type": "array" },
+    "relatedResources": { "type": "array" }
+  }
+}

@@ -5,7 +5,6 @@ import { searchArticles, searchArticlesByTitle } from './src/index';
 function article(id: string, publishedAt: string | null): Article {
   return {
     id,
-    url: `https://example.com/${id}`,
     title: `Documento ${id}`,
     publishedAt,
     updatedAt: null,

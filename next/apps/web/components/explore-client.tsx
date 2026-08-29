@@ -1,21 +1,16 @@
 'use client';
 
-import Link from 'next/link';
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import type { Article, MetadataRecord, MetadataRegistry } from '@zenblog/domain';
 import { searchArticles, searchArticlesByTitle, type SearchSort } from '@zenblog/search-core';
+import {
+  vocabulary,
+  vocabularyIdForLabel,
+  vocabularyLabel,
+  type VocabularyEntry
+} from '@zenblog/site-config';
+import Link from 'next/link';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { EMPTY_METADATA_REGISTRY, LocalMetadataSource } from '../adapters/local-metadata';
-
-const PILLARS = ['Soberanía', 'Constitución', 'Estado'] as const;
-const TYPES = [
-  'Concepto',
-  'Análisis',
-  'Norma',
-  'Documento',
-  'Cronología',
-  'Historia',
-  'Dossier'
-] as const;
 
 const publicationDate = new Intl.DateTimeFormat('es', {
   day: '2-digit',
@@ -25,30 +20,21 @@ const publicationDate = new Intl.DateTimeFormat('es', {
 
 type ExploreMode = 'simple' | 'advanced';
 type YearMode = 'all' | 'range';
-type Pillar = (typeof PILLARS)[number];
 
 function articleCountLabel(count: number): string {
   return `${String(count)} artículo${count === 1 ? '' : 's'}`;
 }
 
-function knownPillars(article: Article): Pillar[] {
-  const pillars: Pillar[] = [];
-  const seen = new Set<Pillar>();
-
-  for (const label of article.labels) {
-    const pillar = PILLARS.find((candidate) => candidate === label);
-    if (pillar && !seen.has(pillar)) {
-      seen.add(pillar);
-      pillars.push(pillar);
-    }
-  }
-
-  return pillars;
+function knownPillarIds(article: Article): string[] {
+  const ids = article.labels
+    .map((label) => vocabularyIdForLabel(vocabulary.pillars, label))
+    .filter((value): value is string => value !== null);
+  return [...new Set(ids)];
 }
 
 function fallbackMetadataRecord(
-  primaryPillar: Pillar,
-  relatedPillars: readonly Pillar[]
+  primaryPillar: string,
+  relatedPillars: readonly string[]
 ): MetadataRecord {
   return {
     classification: {
@@ -77,7 +63,7 @@ function withPillarFallback(
     const record = records[article.id];
     if (record?.classification.primaryPillar) continue;
 
-    const [primaryPillar, ...relatedPillars] = knownPillars(article);
+    const [primaryPillar, ...relatedPillars] = knownPillarIds(article);
     if (!primaryPillar) continue;
 
     if (!record) {
@@ -87,7 +73,7 @@ function withPillarFallback(
 
     const mergedRelatedPillars = [
       ...new Set([...record.classification.relatedPillars, ...relatedPillars])
-    ].filter((pillar) => pillar !== primaryPillar);
+    ].filter((candidate) => candidate !== primaryPillar);
 
     records[article.id] = {
       ...record,
@@ -103,7 +89,7 @@ function withPillarFallback(
 }
 
 function metadataType(article: Article, registry: MetadataRegistry): string {
-  return registry.records[article.id]?.classification.type ?? 'Sin clasificar';
+  return vocabularyLabel(vocabulary.types, registry.records[article.id]?.classification.type);
 }
 
 function formattedPublicationDate(article: Article): string {
@@ -114,6 +100,14 @@ function formattedPublicationDate(article: Article): string {
 
 function emptyMetadataSnapshot(): MetadataRegistry {
   return EMPTY_METADATA_REGISTRY;
+}
+
+function options(entries: readonly VocabularyEntry[]) {
+  return entries.map((entry) => (
+    <option key={entry.id} value={entry.id}>
+      {entry.label}
+    </option>
+  ));
 }
 
 export function ExploreClient({ articles }: { readonly articles: readonly Article[] }) {
@@ -149,13 +143,9 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
     if (mode === 'simple') return searchArticlesByTitle(articles, query);
 
     const filters = yearMode === 'range' ? { pillar, type, yearFrom, yearTo } : { pillar, type };
-
-    return searchArticles({
-      articles,
-      registry: effectiveRegistry,
-      filters,
-      sort
-    }).map((result) => result.article);
+    return searchArticles({ articles, registry: effectiveRegistry, filters, sort }).map(
+      (result) => result.article
+    );
   }, [articles, effectiveRegistry, mode, pillar, query, sort, type, yearFrom, yearMode, yearTo]);
 
   const resetAdvanced = () => {
@@ -250,11 +240,7 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
                 }}
               >
                 <option value="all">Todos</option>
-                {PILLARS.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
+                {options(vocabulary.pillars)}
               </select>
             </label>
 
@@ -267,11 +253,7 @@ export function ExploreClient({ articles }: { readonly articles: readonly Articl
                 }}
               >
                 <option value="all">Todos</option>
-                {TYPES.map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
+                {options(vocabulary.types)}
               </select>
             </label>
 

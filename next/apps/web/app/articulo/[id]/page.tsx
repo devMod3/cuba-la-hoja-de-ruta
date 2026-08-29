@@ -1,5 +1,5 @@
-import { extractBloggerArticleText, prepareBloggerArticleHtml } from '@zenblog/content-renderer';
-import { bloggerSnapshotArticles, getBloggerSnapshotArticleById } from '@zenblog/content-snapshot';
+import { extractArticleText, prepareArticleHtml } from '@zenblog/content-renderer';
+import { articles, getArticleById } from '@zenblog/content-catalog';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -13,18 +13,19 @@ import {
   estimateReadingMinutes,
   formatEditorialDate
 } from '../../../lib/article-presentation';
+import { articleUrl } from '../../../lib/site-address';
 
 type ArticlePageProps = Readonly<{ params: Promise<{ id: string }> }>;
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return bloggerSnapshotArticles.map((article) => ({ id: article.id }));
+  return articles.map((article) => ({ id: article.id }));
 }
 
 export async function generateMetadata({ params }: ArticlePageProps): Promise<Metadata> {
   const { id } = await params;
-  const article = getBloggerSnapshotArticleById(id);
+  const article = getArticleById(id);
 
   if (!article) {
     return {
@@ -33,18 +34,19 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
     };
   }
 
+  const canonicalUrl = articleUrl(article.id);
   const articleOpenGraph: NonNullable<Metadata['openGraph']> = {
     type: 'article',
     title: article.title,
-    url: article.url,
+    url: canonicalUrl,
     ...(article.publishedAt ? { publishedTime: article.publishedAt } : {}),
     ...(article.updatedAt ? { modifiedTime: article.updatedAt } : {})
   };
 
   return {
     title: article.title,
-    alternates: { canonical: article.url },
-    robots: { index: false, follow: true },
+    alternates: { canonical: canonicalUrl },
+    robots: { index: true, follow: true },
     openGraph: articleOpenGraph
   };
 }
@@ -59,25 +61,26 @@ function matterCountLabel(count: number): string {
 
 export default async function ArticlePreviewPage({ params }: ArticlePageProps) {
   const { id } = await params;
-  const article = getBloggerSnapshotArticleById(id);
+  const article = getArticleById(id);
   if (!article) notFound();
 
-  const preparedArticle = prepareBloggerArticleHtml(article.content);
-  const summaryText = extractBloggerArticleText(article.summary);
+  const preparedArticle = prepareArticleHtml(article.content);
+  const summaryText = extractArticleText(article.summary);
   const deck = createArticleDeck(summaryText, preparedArticle.text);
   const readingMinutes = estimateReadingMinutes(preparedArticle.text);
   const publishedLabel = formatEditorialDate(article.publishedAt);
   const updatedLabel = formatEditorialDate(article.updatedAt);
+  const canonicalUrl = articleUrl(article.id);
   const referenceText = buildArticleReference({
     title: article.title,
     publishedLabel,
-    url: article.url
+    url: canonicalUrl
   });
 
   return (
     <main
       className="article-reader-page"
-      data-component="Article.Preview"
+      data-component="Article.Reader"
       data-reader-version="professional"
     >
       <ArticleReaderProgress />
@@ -174,8 +177,13 @@ export default async function ArticlePreviewPage({ params }: ArticlePageProps) {
 
               <ArticleReaderActions referenceText={referenceText} />
 
-              <a className="reader-source-link" href={article.url} rel="noreferrer" target="_blank">
-                Abrir fuente original ↗
+              <a
+                className="reader-source-link"
+                href={canonicalUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Enlace permanente ↗
               </a>
             </div>
           </aside>

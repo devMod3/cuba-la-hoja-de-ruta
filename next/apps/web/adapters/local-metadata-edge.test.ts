@@ -6,57 +6,67 @@ import {
 } from './local-metadata';
 
 class FixedStorage implements MetadataStorage {
-  constructor(private readonly value: string) {}
+  private readonly value: string;
+
+  constructor(value: string) {
+    this.value = value;
+  }
 
   getItem(): string {
     return this.value;
   }
 }
 
-function readRegistry(value: unknown) {
+function canonical(records: unknown): unknown {
+  return {
+    schemaVersion: '1.0.0',
+    vocabularyVersion: '1.0.0',
+    updatedAt: null,
+    records
+  };
+}
+
+function readRegistry(records: unknown) {
   return new LocalMetadataSource({
-    storage: new FixedStorage(JSON.stringify(value)),
+    storage: new FixedStorage(JSON.stringify(canonical(records))),
+    fallbackRegistry: EMPTY_METADATA_REGISTRY,
     warn: () => undefined
   }).getRegistry();
 }
 
 describe('LocalMetadataSource fail-closed edge coverage', () => {
   it('rejects malformed nested metadata shapes at every client boundary', () => {
-    const malformedRegistries = [
-      { records: { '42': 42 } },
-      { records: { '42': { classification: [] } } },
-      { records: { '42': { classification: { primaryPillar: 1940 } } } },
-      { records: { '42': { classification: { relatedPillars: 'Estado' } } } },
-      { records: { '42': { classification: { relatedPillars: ['Estado', 1] } } } },
-      { records: { '42': { classification: { type: 1940 } } } },
-      { records: { '42': { temporal: '1940' } } },
-      { records: { '42': { temporal: { documentYear: 1940.5 } } } },
-      { records: { '42': { indexing: 'Pueblo' } } },
-      { records: { '42': { indexing: { concepts: 'Pueblo' } } } },
-      { records: { '42': { indexing: { aliases: ['válido', 1] } } } },
-      { records: { '42': { indexing: { keywords: ['válida', false] } } } },
-      { records: { '42': { indexing: { norms: {} } } } },
-      { records: { '42': { indexing: { norms: [null] } } } },
-      { records: { '42': { indexing: { norms: [{ normId: 1940 }] } } } },
-      { records: { '42': { indexing: { norms: [{ articles: '40' }] } } } },
-      { records: { '42': { indexing: { norms: [{ articles: [{}] }] } } } },
-      { records: { '42': { editorial: 'Verificado' } } },
-      { records: { '42': { editorial: { status: false } } } }
+    const malformedRecords = [
+      { '42': 42 },
+      { '42': { classification: [] } },
+      { '42': { classification: { primaryPillar: 1940 } } },
+      { '42': { classification: { relatedPillars: 'estado' } } },
+      { '42': { classification: { relatedPillars: ['estado', 1] } } },
+      { '42': { classification: { type: 1940 } } },
+      { '42': { temporal: '1940' } },
+      { '42': { temporal: { documentYear: 1940.5 } } },
+      { '42': { indexing: 'pueblo' } },
+      { '42': { indexing: { concepts: 'pueblo' } } },
+      { '42': { indexing: { aliases: ['válido', 1] } } },
+      { '42': { indexing: { keywords: ['válida', false] } } },
+      { '42': { indexing: { norms: {} } } },
+      { '42': { indexing: { norms: [null] } } },
+      { '42': { indexing: { norms: [{ normId: 1940 }] } } },
+      { '42': { indexing: { norms: [{ articles: '40' }] } } },
+      { '42': { indexing: { norms: [{ articles: [{}] }] } } },
+      { '42': { editorial: 'verificado' } },
+      { '42': { editorial: { status: false } } }
     ];
-
-    for (const registry of malformedRegistries) {
-      expect(readRegistry(registry)).toBe(EMPTY_METADATA_REGISTRY);
-    }
+    for (const records of malformedRecords)
+      expect(readRegistry(records)).toBe(EMPTY_METADATA_REGISTRY);
   });
 
-  it('keeps valid optional norm defaults without requiring schema-runtime code', () => {
+  it('keeps valid optional norm defaults', () => {
     expect(
       readRegistry({
-        records: {
-          '42': {
-            indexing: {
-              norms: [{}, { normId: 'c40' }, { articles: [40, '41'] }]
-            }
+        '42': {
+          indexing: {
+            norms: [{}, { normId: 'c40' }, { articles: [40, '41'] }]
           }
         }
       }).records['42']?.indexing.norms

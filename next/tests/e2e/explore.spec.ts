@@ -1,15 +1,27 @@
 import { expect, test } from '@playwright/test';
 
+const ZRP_SCRIPT_URL =
+  'https://devmod3.github.io/zen-radio-player/assets/zen-radio-player.js?v=1.0.4';
+
 const PEOPLE_ARTICLE_ID = '1102067444728853158';
 const CONSTITUTION_ARTICLE_ID = '7981496041809796805';
+const ZRP_PLAYLIST_URL = 'https://zuma-radio-player.major-oasis-8708.chatgpt.site/api/playlist';
 
-test('Explore simple mode is snapshot-backed, title-only and routes internally', async ({
+function isGlobalShellRequest(url: URL): boolean {
+  return url.href === ZRP_SCRIPT_URL || url.href === ZRP_PLAYLIST_URL;
+}
+
+test('Explore simple mode is catalog-backed, title-only and routes internally', async ({
   page
 }) => {
-  const bloggerRequests: string[] = [];
+  const unexpectedExternalRequests: string[] = [];
   page.on('request', (request) => {
-    if (request.url().startsWith('https://cubalahojaderuta.blogspot.com/')) {
-      bloggerRequests.push(request.url());
+    const url = new URL(request.url());
+    if (
+      ['http:', 'https:'].includes(url.protocol) &&
+      !['127.0.0.1', 'localhost'].includes(url.hostname)
+    ) {
+      if (!isGlobalShellRequest(url)) unexpectedExternalRequests.push(request.url());
     }
   });
 
@@ -29,7 +41,7 @@ test('Explore simple mode is snapshot-backed, title-only and routes internally',
   );
   await expect(results.nth(1)).toHaveAttribute('href', `/articulo/${CONSTITUTION_ARTICLE_ID}/`);
   await expect(page.getByText('El Blindaje Invisible', { exact: false })).toHaveCount(0);
-  expect(bloggerRequests).toEqual([]);
+  expect(unexpectedExternalRequests).toEqual([]);
 
   await page.getByRole('searchbox', { name: 'Buscar por título' }).fill('constitucion');
   await expect(page.getByRole('status')).toHaveText('1 artículo');
@@ -40,7 +52,7 @@ test('Explore simple mode is snapshot-backed, title-only and routes internally',
 
   await page.getByRole('button', { name: 'Limpiar' }).click();
   await expect(page.getByRole('status')).toHaveText('2 artículos');
-  expect(bloggerRequests).toEqual([]);
+  expect(unexpectedExternalRequests).toEqual([]);
 });
 
 test('Explore advanced mode uses canonical metadata, documentary year and deterministic reset', async ({
@@ -56,26 +68,25 @@ test('Explore advanced mode uses canonical metadata, documentary year and determ
           records: {
             [peopleId]: {
               classification: {
-                primaryPillar: 'Soberanía',
-                relatedPillars: ['Estado'],
-                type: 'Concepto'
+                primaryPillar: 'soberania',
+                relatedPillars: ['estado'],
+                type: 'concepto'
               },
               temporal: { documentYear: 2026 },
               indexing: { concepts: [], aliases: [], keywords: [], norms: [] },
-              editorial: { status: 'Verificado' }
+              editorial: { status: 'verificado' }
             },
             [constitutionId]: {
               classification: {
-                primaryPillar: 'Constitución',
+                primaryPillar: 'constitucion',
                 relatedPillars: [],
-                type: 'Análisis'
+                type: 'analisis'
               },
               temporal: { documentYear: 1940 },
               indexing: { concepts: [], aliases: [], keywords: [], norms: [] },
-              editorial: { status: 'Verificado' }
+              editorial: { status: 'verificado' }
             }
-          },
-          migrationIssues: {}
+          }
         })
       );
     },
@@ -86,7 +97,7 @@ test('Explore advanced mode uses canonical metadata, documentary year and determ
   await page.getByRole('button', { name: 'Búsqueda avanzada' }).click();
 
   await expect(page.getByRole('searchbox', { name: 'Buscar por título' })).toHaveCount(0);
-  await page.getByLabel('Pilar').selectOption('Constitución');
+  await page.getByLabel('Pilar').selectOption('constitucion');
   await expect(page.getByRole('status')).toHaveText('1 artículo');
   const result = page.locator('.explore-results a');
   await expect(result).toHaveCount(1);
@@ -109,13 +120,13 @@ test('Explore advanced mode uses canonical metadata, documentary year and determ
   await expect(page.getByRole('status')).toHaveText('2 artículos');
 });
 
-test('Explore advanced mode falls back only to known Blogger pillars and never invents document metadata', async ({
+test('Explore advanced mode falls back only to controlled-vocabulary pillars and never invents document metadata', async ({
   page
 }) => {
   await page.goto('/explorar/');
   await page.getByRole('button', { name: 'Búsqueda avanzada' }).click();
 
-  await page.getByLabel('Pilar').selectOption('Estado');
+  await page.getByLabel('Pilar').selectOption('estado');
   await expect(page.getByRole('status')).toHaveText('1 artículo');
   await expect(page.locator('.explore-results a')).toContainText('Que es Pueblo?');
 

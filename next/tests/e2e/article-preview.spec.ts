@@ -1,18 +1,20 @@
 import { expect, test } from '@playwright/test';
 
 const ARTICLE_ID = '1102067444728853158';
-const CANONICAL = 'https://cubalahojaderuta.blogspot.com/2026/08/que-es-pueblo.html';
+const CANONICAL = 'https://devmod3.github.io/cuba-la-hoja-de-ruta/articulo/1102067444728853158/';
 const SECOND_ARTICLE_ID = '7981496041809796805';
 
-test('article reader is sanitized, noindex and canonically owned by Blogger', async ({ page }) => {
+test('article reader is sanitized, indexable and canonically owned by GitHub Pages', async ({
+  page
+}) => {
   await page.goto(`/articulo/${ARTICLE_ID}/`);
 
   await expect(page.locator('[data-reader-version="professional"]')).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Que es Pueblo?');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', CANONICAL);
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/i);
+  await expect(page.locator('meta[name="robots"]')).not.toHaveAttribute('content', /noindex/i);
   await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', CANONICAL);
-  await expect(page.getByRole('link', { name: 'Abrir fuente original ↗' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Enlace permanente ↗' })).toHaveAttribute(
     'href',
     CANONICAL
   );
@@ -26,7 +28,7 @@ test('article reader is sanitized, noindex and canonically owned by Blogger', as
   await expect(copy.locator('[style], [onclick], [onerror], [onload], [onmouseover]')).toHaveCount(
     0
   );
-  await expect(page.locator('[data-component="Article.Preview"] h1')).toHaveCount(1);
+  await expect(page.locator('[data-component="Article.Reader"] h1')).toHaveCount(1);
 });
 
 test('article reader exposes editorial hierarchy, contextual index and reading tools', async ({
@@ -72,7 +74,7 @@ test('reading progress responds to document scroll', async ({ page }) => {
     .toBeGreaterThan(50);
 });
 
-test('every captured Blogger article gets a static reader route', async ({ page }) => {
+test('every catalog article gets a static reader route', async ({ page }) => {
   const response = await page.goto(`/articulo/${SECOND_ARTICLE_ID}/`);
   expect(response?.status()).toBe(200);
   await expect(page.getByRole('heading', { level: 1 })).toContainText(

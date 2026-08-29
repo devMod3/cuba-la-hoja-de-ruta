@@ -30,6 +30,19 @@ describe('authoring session contracts', () => {
   });
 });
 
+describe('AuthoringError', () => {
+  it('preserves typed failure metadata', () => {
+    const error = new AuthoringError('transport', 'Transport failed', 503);
+
+    expect(error).toMatchObject({
+      name: 'AuthoringError',
+      code: 'transport',
+      message: 'Transport failed',
+      status: 503
+    });
+  });
+});
+
 describe('canonicalJson', () => {
   it('orders object keys recursively and appends a terminal newline', () => {
     expect(canonicalJson({ z: 1, a: { y: true, b: ['x', null] } })).toBe(
@@ -40,6 +53,7 @@ describe('canonicalJson', () => {
   it('rejects non-JSON, sparse and cyclic values', () => {
     expect(() => canonicalJson({ value: Number.NaN })).toThrow(AuthoringError);
     expect(() => canonicalJson({ value: undefined })).toThrow(/Unsupported/);
+    expect(() => canonicalJson(new Date('2026-01-01T00:00:00.000Z'))).toThrow(/plain JSON/);
 
     const sparse: unknown[] = [];
     sparse.length = 1;

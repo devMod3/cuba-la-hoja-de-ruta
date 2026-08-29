@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { MetadataRegistry } from '@zenblog/domain';
 import {
   DEFAULT_METADATA_STORAGE_KEY,
-  EMPTY_METADATA_REGISTRY,
   LocalMetadataSource,
   type MetadataStorage
 } from './local-metadata';
@@ -17,7 +17,7 @@ class MemoryStorage implements MetadataStorage {
     return this.#value;
   }
 
-  set(value: string | null) {
+  set(value: string | null): void {
     this.#value = value;
   }
 }
@@ -37,55 +37,62 @@ class KeyedEvent extends Event {
   }
 }
 
+function shared(records: unknown = {}): string {
+  return JSON.stringify({
+    schemaVersion: '1.0.0',
+    vocabularyVersion: '1.0.0',
+    updatedAt: null,
+    records
+  });
+}
+
+const fallback: MetadataRegistry = Object.freeze({ records: {} });
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe('LocalMetadataSource', () => {
-  it('preserves the zenMetadataRegistry.v2 storage contract', () => {
+  it('preserves the local metadata storage contract', () => {
     expect(DEFAULT_METADATA_STORAGE_KEY).toBe('zenMetadataRegistry.v2');
   });
 
-  it('reads valid metadata with domain-compatible defaults and coercions', () => {
+  it('reads canonical shared metadata with domain coercions', () => {
     const storage = new MemoryStorage(
-      JSON.stringify({
-        schemaVersion: '1.0.0',
-        records: {
-          '42': {
-            classification: {
-              primaryPillar: 'Constitución',
-              relatedPillars: ['Estado'],
-              type: 'Análisis'
-            },
-            temporal: { documentYear: '1940' },
-            indexing: {
-              concepts: ['Poder constituyente'],
-              norms: [{ normId: 'c40', articles: [40, '41'] }]
-            },
-            editorial: { status: 'Verificado' },
-            ignoredFutureField: true
+      shared({
+        '42': {
+          classification: {
+            primaryPillar: 'constitucion',
+            relatedPillars: ['estado'],
+            type: 'analisis'
           },
-          '43': {}
+          temporal: { documentYear: '1940' },
+          indexing: {
+            concepts: ['poder-constituyente'],
+            norms: [{ normId: 'c40', articles: [40, '41'] }]
+          },
+          editorial: { status: 'verificado' },
+          ignoredFutureField: true
         },
-        ignoredTopLevelField: 'compatible'
+        '43': {}
       })
     );
 
-    const registry = new LocalMetadataSource({ storage }).getRegistry();
+    const registry = new LocalMetadataSource({ storage, fallbackRegistry: fallback }).getRegistry();
     expect(registry.records['42']).toEqual({
       classification: {
-        primaryPillar: 'Constitución',
-        relatedPillars: ['Estado'],
-        type: 'Análisis'
+        primaryPillar: 'constitucion',
+        relatedPillars: ['estado'],
+        type: 'analisis'
       },
       temporal: { documentYear: 1940 },
       indexing: {
-        concepts: ['Poder constituyente'],
+        concepts: ['poder-constituyente'],
         aliases: [],
         keywords: [],
         norms: [{ normId: 'c40', articles: ['40', '41'] }]
       },
-      editorial: { status: 'Verificado' }
+      editorial: { status: 'verificado' }
     });
     expect(registry.records['43']).toEqual({
       classification: { primaryPillar: null, relatedPillars: [], type: null },
@@ -95,158 +102,145 @@ describe('LocalMetadataSource', () => {
     });
   });
 
-  it('normalizes non-positive and non-numeric documentary years to null', () => {
+  it('normalizes invalid documentary years to null', () => {
     for (const documentYear of [null, '', 0, -1940, 'not-a-year']) {
-      const storage = new MemoryStorage(
-        JSON.stringify({ records: { '42': { temporal: { documentYear } } } })
-      );
-      expect(new LocalMetadataSource({ storage }).getRegistry().records['42']?.temporal).toEqual({
-        documentYear: null
-      });
-    }
-  });
-
-  it('fails closed for malformed structures rather than trusting partial metadata', () => {
-    const malformedRegistries = [
-      null,
-      [],
-      { records: null },
-      { records: { '42': null } },
-      { records: { '42': { classification: 'Constitución' } } },
-      { records: { '42': { classification: { primaryPillar: 1940 } } } },
-      { records: { '42': { classification: { relatedPillars: ['Estado', 1] } } } },
-      { records: { '42': { temporal: { documentYear: 1940.5 } } } },
-      { records: { '42': { indexing: { concepts: 'Pueblo' } } } },
-      { records: { '42': { indexing: { norms: [{ articles: [{}] }] } } } },
-      { records: { '42': { editorial: { status: false } } } }
-    ];
-
-    for (const registry of malformedRegistries) {
       const source = new LocalMetadataSource({
-        storage: new MemoryStorage(JSON.stringify(registry))
+        storage: new MemoryStorage(shared({ '42': { temporal: { documentYear } } })),
+        fallbackRegistry: fallback
       });
-      expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
+      expect(source.getRegistry().records['42']?.temporal).toEqual({ documentYear: null });
     }
   });
 
-  it('accepts a missing records property as an empty registry', () => {
-    const source = new LocalMetadataSource({ storage: new MemoryStorage('{"future":true}') });
-    expect(source.getRegistry()).toEqual(EMPTY_METADATA_REGISTRY);
+  it('fails closed when the shared-document envelope is malformed', () => {
+    for (const value of [null, [], {}, { records: {} }, { schemaVersion: '2.0.0', records: {} }]) {
+      const source = new LocalMetadataSource({
+        storage: new MemoryStorage(JSON.stringify(value)),
+        fallbackRegistry: fallback,
+        warn: () => undefined
+      });
+      expect(source.getRegistry()).toBe(fallback);
+    }
   });
 
-  it('returns a stable external-store snapshot until raw storage changes', () => {
-    const storage = new MemoryStorage(JSON.stringify({ records: {} }));
-    const source = new LocalMetadataSource({ storage });
+  it('fails closed for malformed nested metadata', () => {
+    const malformed = [
+      { '42': null },
+      { '42': { classification: 'constitucion' } },
+      { '42': { classification: { primaryPillar: 1940 } } },
+      { '42': { classification: { relatedPillars: ['estado', 1] } } },
+      { '42': { temporal: { documentYear: 1940.5 } } },
+      { '42': { indexing: { concepts: 'pueblo' } } },
+      { '42': { indexing: { norms: [{ articles: [{}] }] } } },
+      { '42': { editorial: { status: false } } }
+    ];
+    for (const records of malformed) {
+      const source = new LocalMetadataSource({
+        storage: new MemoryStorage(shared(records)),
+        fallbackRegistry: fallback,
+        warn: () => undefined
+      });
+      expect(source.getRegistry()).toBe(fallback);
+    }
+  });
 
+  it('returns a stable snapshot until raw storage changes', () => {
+    const storage = new MemoryStorage(shared({}));
+    const source = new LocalMetadataSource({ storage, fallbackRegistry: fallback });
     const first = source.getRegistry();
     expect(source.getRegistry()).toBe(first);
 
     storage.set(
-      JSON.stringify({
-        records: {
-          '42': {
-            classification: {
-              primaryPillar: 'Constitución',
-              relatedPillars: [],
-              type: 'Análisis'
-            },
-            temporal: { documentYear: 1940 }
+      shared({
+        '42': {
+          classification: {
+            primaryPillar: 'constitucion',
+            relatedPillars: [],
+            type: 'analisis'
           }
         }
       })
     );
-
     const second = source.getRegistry();
     expect(second).not.toBe(first);
-    expect(second.records['42']?.classification.type).toBe('Análisis');
+    expect(second.records['42']?.classification.type).toBe('analisis');
     expect(source.getRegistry()).toBe(second);
   });
 
-  it('falls back safely and caches invalid JSON until the raw value changes', () => {
+  it('caches invalid JSON until the raw value changes', () => {
     const warn = vi.fn();
     const storage = new MemoryStorage('{broken');
-    const source = new LocalMetadataSource({ storage, warn });
-
-    expect(source.getRegistry()).toEqual(EMPTY_METADATA_REGISTRY);
-    expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
+    const source = new LocalMetadataSource({ storage, fallbackRegistry: fallback, warn });
+    expect(source.getRegistry()).toBe(fallback);
+    expect(source.getRegistry()).toBe(fallback);
     expect(warn).toHaveBeenCalledOnce();
-
     storage.set('{still-broken');
-    expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
+    expect(source.getRegistry()).toBe(fallback);
     expect(warn).toHaveBeenCalledTimes(2);
   });
 
-  it('warns and fails closed when the storage boundary throws', () => {
+  it('warns and fails closed when storage throws', () => {
     const warn = vi.fn();
-    const source = new LocalMetadataSource({ storage: new ThrowingStorage(), warn });
-
-    expect(source.getRegistry()).toBe(EMPTY_METADATA_REGISTRY);
+    const source = new LocalMetadataSource({
+      storage: new ThrowingStorage(),
+      fallbackRegistry: fallback,
+      warn
+    });
+    expect(source.getRegistry()).toBe(fallback);
     expect(warn).toHaveBeenCalledWith('[ZenBlog] Metadata registry unavailable', expect.any(Error));
   });
 
-  it('uses the default console warning for storage parse failures', () => {
+  it('uses the default console warning for parse failures', () => {
     const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const source = new LocalMetadataSource({ storage: new MemoryStorage('{broken') });
-
-    expect(source.getRegistry()).toEqual(EMPTY_METADATA_REGISTRY);
-    expect(consoleWarn).toHaveBeenCalledOnce();
+    const source = new LocalMetadataSource({
+      storage: new MemoryStorage('{broken'),
+      fallbackRegistry: fallback
+    });
+    expect(source.getRegistry()).toBe(fallback);
     expect(consoleWarn).toHaveBeenCalledWith(
       '[ZenBlog] Metadata registry unavailable',
       expect.any(SyntaxError)
     );
   });
 
-  it('falls back silently for missing or schema-invalid metadata', () => {
-    const warn = vi.fn();
-
-    expect(
-      new LocalMetadataSource({ storage: new MemoryStorage(null), warn }).getRegistry()
-    ).toEqual(EMPTY_METADATA_REGISTRY);
-    expect(
-      new LocalMetadataSource({
-        storage: new MemoryStorage('{"records":null}'),
-        warn
-      }).getRegistry()
-    ).toEqual(EMPTY_METADATA_REGISTRY);
-    expect(warn).not.toHaveBeenCalled();
+  it('uses the embedded registry when local storage is missing', () => {
+    const embedded: MetadataRegistry = Object.freeze({
+      records: {
+        '42': {
+          classification: { primaryPillar: 'estado', relatedPillars: [], type: null },
+          temporal: { documentYear: null },
+          indexing: { concepts: [], aliases: [], keywords: [], norms: [] },
+          editorial: { status: null }
+        }
+      }
+    });
+    const source = new LocalMetadataSource({
+      storage: new MemoryStorage(null),
+      fallbackRegistry: embedded
+    });
+    expect(source.getRegistry()).toBe(embedded);
   });
 
-  it('publishes updates for zenmetadata:changed and only the matching storage key', () => {
-    const storage = new MemoryStorage(JSON.stringify({ records: {} }));
+  it('publishes updates for metadata and matching storage events', () => {
+    const storage = new MemoryStorage(shared({}));
     const documentTarget = new EventTarget();
     const windowTarget = new EventTarget();
-    const source = new LocalMetadataSource({ storage, documentTarget, windowTarget });
+    const source = new LocalMetadataSource({
+      storage,
+      fallbackRegistry: fallback,
+      documentTarget,
+      windowTarget
+    });
     const listener = vi.fn();
     const unsubscribe = source.subscribe(listener);
 
     documentTarget.dispatchEvent(new Event('zenmetadata:changed'));
-    windowTarget.dispatchEvent(new KeyedEvent('storage', 'other.key'));
+    windowTarget.dispatchEvent(new KeyedEvent('storage', 'unrelated'));
     windowTarget.dispatchEvent(new KeyedEvent('storage', DEFAULT_METADATA_STORAGE_KEY));
-
     expect(listener).toHaveBeenCalledTimes(2);
+
     unsubscribe();
     documentTarget.dispatchEvent(new Event('zenmetadata:changed'));
     expect(listener).toHaveBeenCalledTimes(2);
-  });
-
-  it('honors a custom storage key and tolerates an omitted event target', () => {
-    const storage = new MemoryStorage(JSON.stringify({ records: {} }));
-    const windowTarget = new EventTarget();
-    const listener = vi.fn();
-    const source = new LocalMetadataSource({
-      storage,
-      storageKey: 'custom.metadata',
-      windowTarget
-    });
-    const unsubscribe = source.subscribe(listener);
-
-    windowTarget.dispatchEvent(new KeyedEvent('storage', DEFAULT_METADATA_STORAGE_KEY));
-    windowTarget.dispatchEvent(new KeyedEvent('storage', null));
-    windowTarget.dispatchEvent(new KeyedEvent('storage', 'custom.metadata'));
-
-    expect(listener).toHaveBeenCalledOnce();
-    expect(() => {
-      unsubscribe();
-    }).not.toThrow();
   });
 });
