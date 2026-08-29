@@ -10,13 +10,15 @@
   },
   "scripts": {
     "dev": "pnpm --filter @zenblog/web dev",
-    "build": "pnpm -r --if-present build",
+    "build": "pnpm -r --if-present build && pnpm inspector:build",
     "typecheck": "pnpm -r --if-present typecheck",
     "typecheck:quality": "tsc -p tsconfig.quality.json --noEmit",
     "lint": "eslint . --max-warnings=0 --config eslint.config.ts --flag unstable_native_nodejs_ts_config",
     "source:typescript": "node scripts/check-typescript-only.ts",
     "project:standards": "node scripts/check-project-standards.ts",
     "architecture:check": "node scripts/check-architecture.ts",
+    "inspector:check": "node scripts/check-inspector-extension.ts",
+    "inspector:build": "node scripts/build-inspector-extension.ts",
     "static:articles:check": "node scripts/check-static-article-routes.ts",
     "seo:ownership:check": "node scripts/check-seo-ownership.ts",
     "security:baseline": "node scripts/check-supply-chain.ts",
@@ -27,8 +29,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "check": "pnpm format:check && pnpm lint && pnpm source:typescript && pnpm project:standards && pnpm architecture:check && pnpm portability:check && pnpm security:check && pnpm typecheck && pnpm typecheck:quality && pnpm test:coverage && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget",
+    "test:e2e": "pnpm inspector:build && playwright test",
+    "check": "pnpm format:check && pnpm lint && pnpm source:typescript && pnpm project:standards && pnpm architecture:check && pnpm inspector:check && pnpm portability:check && pnpm security:check && pnpm typecheck && pnpm typecheck:quality && pnpm test:coverage && pnpm build && pnpm static:articles:check && pnpm seo:ownership:check && pnpm performance:budget",
     "portability:check": "node scripts/check-portability.ts"
   },
   "devDependencies": {
