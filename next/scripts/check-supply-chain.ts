@@ -8,6 +8,7 @@ import baselineData from '../security/dependency-baseline.json' with { type: 'js
 interface DependencyBaseline {
   readonly packageManager: string;
   readonly nodeEngine: string;
+  readonly pnpmEngine: string;
   readonly lockfileSha256: string;
   readonly lockfileEntries: number;
   readonly minimumReleaseAgeMinutes: number;
@@ -74,6 +75,11 @@ if (manifestData.packageManager !== baseline.packageManager) {
 if (manifestData.engines.node !== baseline.nodeEngine) {
   errors.push(
     `Node engine changed: expected ${baseline.nodeEngine}, found ${manifestData.engines.node}`
+  );
+}
+if (manifestData.engines.pnpm !== baseline.pnpmEngine) {
+  errors.push(
+    `pnpm engine changed: expected ${baseline.pnpmEngine}, found ${manifestData.engines.pnpm}`
   );
 }
 if (lockfileSha256 !== baseline.lockfileSha256) {

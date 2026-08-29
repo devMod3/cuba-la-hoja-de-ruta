@@ -5,8 +5,8 @@
   "type": "module",
   "packageManager": "pnpm@11.22.0",
   "engines": {
-    "node": "24.19.x",
-    "pnpm": "11.22.x"
+    "node": ">=24.19.0 <25",
+    "pnpm": ">=11.22.0 <12"
   },
   "scripts": {
     "dev": "pnpm --filter @zenblog/web dev",
