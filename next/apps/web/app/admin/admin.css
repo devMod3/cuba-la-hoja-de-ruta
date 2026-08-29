@@ -1792,7 +1792,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-#zen-about-manager-root .zam-photo-preview img {
+#zen-about-manager-root .zam-photo-preview-image {
   width: 100%;
   height: 100%;
   object-fit: cover;

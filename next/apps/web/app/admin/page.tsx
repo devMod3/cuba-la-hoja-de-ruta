@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { AdminShell } from '../../components/admin/admin-shell';
 import './admin.css';
 import './admin-accessibility.css';
+import './admin-containment.css';
 
 export const metadata: Metadata = {
   title: 'ZenBlog Admin',

@@ -14,7 +14,7 @@ import {
   type PublishedSiteProfile,
   type SharedMetadataRegistry
 } from '@zenblog/site-config';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { metadataIsMeaningful, profileIsMeaningful } from './admin-model';
 
 type ConnectionState = 'disconnected' | 'authenticating' | 'authorized' | 'error';
@@ -34,6 +34,7 @@ interface SharedAuthoringProps {
   readonly profile: PublishedSiteProfile;
   readonly onMetadataAdopted: (value: SharedMetadataRegistry) => void;
   readonly onProfileAdopted: (value: PublishedSiteProfile) => void;
+  readonly openProfileRequest?: number;
 }
 
 function safeFailure(error: unknown): string {
@@ -67,7 +68,8 @@ export function SharedAuthoring({
   metadata,
   profile,
   onMetadataAdopted,
-  onProfileAdopted
+  onProfileAdopted,
+  openProfileRequest = 0
 }: SharedAuthoringProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [token, setToken] = useState('');
@@ -79,8 +81,15 @@ export function SharedAuthoring({
 
   const login = connection?.session.identity.login ?? null;
 
+  useEffect(() => {
+    if (openProfileRequest <= 0) return;
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, [openProfileRequest]);
+
   function open(): void {
-    dialogRef.current?.showModal();
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
   }
 
   function close(): void {
@@ -222,7 +231,7 @@ export function SharedAuthoring({
           key: 'site-profile',
           value: profile,
           expectedVersion: overwrite ? (remote.profile?.version ?? null) : null,
-          message: 'content: update shared site profile'
+          message: 'content: publish About profile'
         },
         parsePublishedSiteProfile
       );
@@ -239,7 +248,9 @@ export function SharedAuthoring({
         next.delete('site-profile');
         return next;
       });
-      setStatus(`Perfil sincronizado; versión ${readBack.version} verificada.`);
+      setStatus(
+        `Perfil publicado en main; versión ${readBack.version} verificada. El despliegue público continúa por CI.`
+      );
     } catch (error) {
       if (error instanceof AuthoringError && error.code === 'conflict') {
         const refreshed = await readProfile(connection);
@@ -368,6 +379,8 @@ export function SharedAuthoring({
                 onAdopt={() => {
                   if (remote.profile) onProfileAdopted(remote.profile.value);
                 }}
+                uploadLabel="Publicar borrador"
+                overwriteLabel="Publicar borrador"
               />
             </div>
           ) : null}
@@ -401,6 +414,8 @@ interface DocumentCardProps {
   readonly onUpload: () => void;
   readonly onOverwrite: () => void;
   readonly onAdopt: () => void;
+  readonly uploadLabel?: string;
+  readonly overwriteLabel?: string;
 }
 
 function DocumentCard({
@@ -410,7 +425,9 @@ function DocumentCard({
   conflict,
   onUpload,
   onOverwrite,
-  onAdopt
+  onAdopt,
+  uploadLabel = 'Subir local',
+  overwriteLabel = 'Sobrescribir remoto'
 }: DocumentCardProps) {
   return (
     <article className="zsa-document" data-zsa-key={documentKey}>
@@ -428,7 +445,7 @@ function DocumentCard({
       <div className="zsa-document-actions">
         {state === 'local-only' ? (
           <button type="button" className="zsa-primary" onClick={onUpload}>
-            Subir local
+            {uploadLabel}
           </button>
         ) : null}
         {state === 'remote-only' ? (
@@ -442,7 +459,7 @@ function DocumentCard({
               Adoptar remoto
             </button>
             <button type="button" className="zsa-primary" onClick={onOverwrite}>
-              Sobrescribir remoto
+              {overwriteLabel}
             </button>
           </>
         ) : null}

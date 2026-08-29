@@ -88,6 +88,7 @@ export default function AboutPage() {
     location ||
     profile.email ||
     profile.website ||
+    profile.externalProfileUrl ||
     profile.audioClipUrl ||
     profile.wishlistUrl ||
     profileLists.length > 0 ||
@@ -110,8 +111,8 @@ export default function AboutPage() {
 
   const quickLinks = [
     profile.website ? { label: 'Sitio web ↗', href: profile.website, external: true } : null,
-    profile.audioClipUrl
-      ? { label: 'Audio Clip ↗', href: profile.audioClipUrl, external: true }
+    profile.externalProfileUrl
+      ? { label: 'Perfil de Blogger ↗', href: profile.externalProfileUrl, external: true }
       : null,
     profile.wishlistUrl ? { label: 'Wishlist ↗', href: profile.wishlistUrl, external: true } : null,
     profile.email
@@ -159,6 +160,16 @@ export default function AboutPage() {
                     )
                   )}
                 </div>
+              ) : null}
+
+              {profile.audioClipUrl ? (
+                <audio
+                  controls
+                  preload="none"
+                  src={profile.audioClipUrl}
+                  aria-label="Audio Clip"
+                  style={{ width: 'min(100%, 360px)', maxWidth: '100%' }}
+                />
               ) : null}
             </div>
           </div>

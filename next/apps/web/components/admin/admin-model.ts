@@ -179,6 +179,7 @@ export function profileIsMeaningful(value: PublishedSiteProfile): boolean {
     profile.photoUrl ||
     profile.email ||
     profile.website ||
+    profile.externalProfileUrl ||
     profile.audioClipUrl ||
     profile.wishlistUrl ||
     profile.randomQuestion ||

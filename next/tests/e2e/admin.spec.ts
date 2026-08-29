@@ -275,16 +275,17 @@ test('Admin persists controlled metadata fields with canonical vocabulary identi
   });
 });
 
-test('Admin About editor persists repository-owned profile data locally', async ({ page }) => {
+test('Admin About validates profile locally before authenticated publication', async ({ page }) => {
   await page.goto('/admin/');
   const shell = page.locator('#zen-admin-shell');
   await shell.getByRole('tab', { name: 'Acerca de' }).click();
 
-  await page.getByLabel('Nombre').fill('Perfil editorial');
+  await page.getByLabel('Nombre visible', { exact: true }).fill('Perfil editorial');
   await page.getByLabel('Introducción').fill('Descripción mantenida desde el entorno Next.js.');
   await page.getByLabel('Ciudad').fill('La Habana');
   await page.getByRole('button', { name: 'Guardar', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('guardado');
+  await expect(shell.locator('.zam-status')).toContainText('Perfil validado.');
+  await expect(shell.getByRole('dialog', { name: 'Estado compartido' })).toBeVisible();
 
   const stored = await page.evaluate(() => globalThis.localStorage.getItem('zenSiteProfile.v1'));
   expect(stored).not.toBeNull();

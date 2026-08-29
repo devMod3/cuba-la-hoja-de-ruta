@@ -1,0 +1,399 @@
+/* Admin viewport contract: every user-facing control stays inside #zen-admin-shell. */
+#zen-admin-shell {
+  width: 100dvw;
+  max-width: 100dvw;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+#zen-admin-shell .zas-header,
+#zen-admin-shell .zas-header-actions,
+#zen-admin-shell .zas-content,
+#zen-admin-shell .zas-pane,
+#zen-admin-shell #zen-about-manager-root,
+#zen-admin-shell .zam-shell,
+#zen-admin-shell .zam-header,
+#zen-admin-shell .zam-header-actions,
+#zen-admin-shell .zam-main,
+#zen-admin-shell .zam-panel,
+#zen-admin-shell .zam-panel-copy,
+#zen-admin-shell .zam-group,
+#zen-admin-shell .zam-group-title,
+#zen-admin-shell .zam-details,
+#zen-admin-shell .zam-photo-upload,
+#zen-admin-shell .zam-audio-upload,
+#zen-admin-shell .zam-footer,
+#zen-admin-shell .zsa-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#zen-admin-shell .zas-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#zen-admin-shell .zas-content,
+#zen-admin-shell .zas-pane,
+#zen-admin-shell #zen-about-manager-root,
+#zen-admin-shell .zam-shell {
+  overflow: hidden;
+}
+
+#zen-admin-shell .zam-shell {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+#zen-admin-shell .zam-header {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+#zen-admin-shell .zam-header-actions {
+  flex: 1 1 420px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  overflow: visible;
+}
+
+#zen-admin-shell .zam-header-actions button,
+#zen-admin-shell .zam-photo-actions button,
+#zen-admin-shell .zam-audio-actions button,
+#zen-admin-shell .zam-group-title button,
+#zen-admin-shell .zam-footer button,
+#zen-admin-shell .zas-header-actions > *,
+#zen-admin-shell input,
+#zen-admin-shell textarea,
+#zen-admin-shell select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#zen-admin-shell .zam-header-actions button {
+  width: 100%;
+  white-space: normal;
+}
+
+#zen-admin-shell .zam-main {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+#zen-admin-shell .zam-panel-intro,
+#zen-admin-shell .zam-panel-copy,
+#zen-admin-shell .zam-field,
+#zen-admin-shell .zam-grid-3,
+#zen-admin-shell .zam-photo-upload,
+#zen-admin-shell .zam-photo-copy,
+#zen-admin-shell .zam-audio-upload,
+#zen-admin-shell .zam-audio-copy,
+#zen-admin-shell .zam-card,
+#zen-admin-shell .zam-card-head,
+#zen-admin-shell .zam-repeater,
+#zen-admin-shell .zam-empty {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#zen-admin-shell .zam-panel-copy {
+  display: grid;
+  gap: 5px;
+  max-width: 500px;
+}
+
+#zen-admin-shell .zam-panel-copy p {
+  max-width: none;
+  text-align: left;
+}
+
+#zen-admin-shell .zam-photo-preview-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+#zen-admin-shell .zam-photo-preview > span[aria-hidden='true'] {
+  color: #8f8b84;
+}
+
+#zen-admin-shell .zam-photo-actions,
+#zen-admin-shell .zam-audio-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+#zen-admin-shell .zam-media-source-field,
+#zen-admin-shell .zam-audio-source-field {
+  margin-top: 9px;
+  padding: 9px 0 0;
+  border-top: 1px solid #23272b !important;
+  grid-template-columns: 1fr !important;
+  gap: 5px !important;
+}
+
+#zen-admin-shell .zam-media-source-field > span,
+#zen-admin-shell .zam-audio-source-field > span {
+  padding-top: 0 !important;
+}
+
+#zen-admin-shell .zam-audio-upload {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px 14px;
+  align-items: center;
+  padding: 12px;
+  border-top: 1px solid #23272b;
+  background: #14171a;
+}
+
+#zen-admin-shell .zam-audio-copy strong,
+#zen-admin-shell .zam-audio-copy small {
+  display: block;
+}
+
+#zen-admin-shell .zam-audio-copy strong {
+  font-size: 0.78rem;
+}
+
+#zen-admin-shell .zam-audio-copy small {
+  margin-top: 4px;
+  color: #8f8b84;
+  font-size: 0.63rem;
+  line-height: 1.45;
+}
+
+#zen-admin-shell .zam-audio-source-field {
+  grid-column: 1 / -1;
+}
+
+#zen-admin-shell .zam-group-title-with-action {
+  gap: 12px;
+  text-transform: none;
+}
+
+#zen-admin-shell .zam-group-title-with-action > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+#zen-admin-shell .zam-group-title-with-action > div > span {
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+#zen-admin-shell .zam-group-title-with-action small {
+  color: #79766f;
+  font-size: 0.53rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+#zen-admin-shell .zam-group-title-with-action button {
+  flex: 0 1 auto;
+  white-space: normal;
+}
+
+#zen-admin-shell .zam-repeater-contained {
+  padding: 10px;
+}
+
+#zen-admin-shell .zam-empty {
+  margin: 0;
+}
+
+#zen-admin-shell .zam-footer {
+  min-height: 58px;
+  flex-wrap: wrap;
+}
+
+#zen-admin-shell .zam-footer button {
+  min-width: 132px;
+}
+
+#zen-admin-shell .zsa-dialog {
+  width: min(760px, calc(100dvw - 24px));
+  max-width: calc(100dvw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+
+#zen-admin-shell .zsa-panel {
+  max-height: calc(100dvh - 26px);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@media (max-width: 1023px) {
+  #zen-admin-shell .zas-header-actions {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 767px) {
+  #zen-admin-shell .zas-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 52px 52px;
+  }
+
+  #zen-admin-shell .zas-header-actions {
+    grid-row: 1;
+    grid-column: 2;
+    flex-wrap: nowrap;
+  }
+
+  #zen-admin-shell .zas-header-actions .zsa-launcher,
+  #zen-admin-shell .zas-header-actions .zas-site-link {
+    min-height: 34px;
+    padding-inline: 7px;
+    font-size: 0.54rem;
+    white-space: nowrap;
+  }
+
+  #zen-admin-shell .zas-tabs {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+  }
+
+  #zen-admin-shell .zas-tab {
+    min-width: 0;
+    padding-inline: 6px;
+  }
+
+  #zen-admin-shell .zam-header {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  #zen-admin-shell .zam-brand {
+    display: none !important;
+  }
+
+  #zen-admin-shell .zam-header-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    flex: 0 0 auto;
+    overflow: visible !important;
+    gap: 6px;
+  }
+
+  #zen-admin-shell .zam-header-actions button {
+    min-height: 40px;
+    padding: 0.45rem 0.35rem;
+    font-size: 0.61rem;
+    line-height: 1.2;
+  }
+
+  #zen-admin-shell .zam-status {
+    min-height: 36px;
+    padding-block: 7px;
+  }
+
+  #zen-admin-shell .zam-main {
+    padding: 12px !important;
+  }
+
+  #zen-admin-shell .zam-panel-intro {
+    display: grid !important;
+    align-items: start !important;
+    gap: 8px !important;
+  }
+
+  #zen-admin-shell .zam-panel-copy p {
+    display: block !important;
+    text-align: left !important;
+  }
+
+  #zen-admin-shell .zam-photo-actions,
+  #zen-admin-shell .zam-audio-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #zen-admin-shell .zam-audio-upload {
+    grid-template-columns: 1fr;
+  }
+
+  #zen-admin-shell .zam-audio-source-field {
+    grid-column: auto;
+  }
+
+  #zen-admin-shell .zam-group-title-with-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #zen-admin-shell .zam-group-title-with-action button {
+    width: 100%;
+  }
+
+  #zen-admin-shell .zam-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  #zen-admin-shell .zam-footer button {
+    min-width: 104px;
+  }
+}
+
+@media (max-width: 420px) {
+  #zen-admin-shell .zas-brand strong {
+    font-size: 0.78rem;
+  }
+
+  #zen-admin-shell .zas-mark {
+    width: 28px;
+    height: 28px;
+  }
+
+  #zen-admin-shell .zas-header-actions .zsa-launcher,
+  #zen-admin-shell .zas-header-actions .zas-site-link {
+    padding-inline: 5px;
+    font-size: 0.49rem;
+  }
+
+  #zen-admin-shell .zam-header-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #zen-admin-shell .zam-photo-upload {
+    grid-template-columns: 1fr !important;
+  }
+
+  #zen-admin-shell .zam-photo-preview {
+    justify-self: start;
+  }
+
+  #zen-admin-shell .zam-footer {
+    grid-template-columns: 1fr;
+  }
+
+  #zen-admin-shell .zam-footer button {
+    width: 100%;
+  }
+}
