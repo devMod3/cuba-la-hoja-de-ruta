@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isSafeAudioSource,
   isSafeExternalUrl,
   isSafeImageSource,
   parsePublishedSiteProfile,
@@ -23,7 +24,8 @@ function validProfile() {
       photoUrl: 'data:image/webp;base64,QUJDRA==',
       email: 'reader@example.com',
       website: 'https://example.com/',
-      audioClipUrl: '',
+      externalProfileUrl: 'https://www.blogger.com/profile/example',
+      audioClipUrl: 'data:audio/mpeg;base64,SUQz',
       wishlistUrl: '',
       randomQuestion: '',
       randomAnswer: '',
@@ -71,6 +73,7 @@ describe('site config', () => {
   it('canonicalizes profile collections and enum values', () => {
     const profile = parsePublishedSiteProfile(validProfile());
     expect(profile.profile.displayName).toBe('La resistencia');
+    expect(profile.profile.externalProfileUrl).toBe('https://www.blogger.com/profile/example');
     expect(profile.profile.interests).toEqual(['Constitucionalismo', 'Tecnologías']);
     expect(profile.social.map((item) => item.platform)).toEqual(['unknown', 'x']);
     expect(profile.relatedResources.map((item) => item.type)).toEqual(['unknown', 'archive']);
@@ -81,7 +84,11 @@ describe('site config', () => {
     unsafe.schemaVersion = '2.0.0';
     unsafe.profile.photoUrl = 'data:image/svg+xml;base64,PHN2Zz4=';
     unsafe.profile.website = 'javascript:alert(1)';
-    expect(() => parsePublishedSiteProfile(unsafe)).toThrow(/schemaVersion.*photoUrl.*website/u);
+    unsafe.profile.externalProfileUrl = 'javascript:blogger';
+    unsafe.profile.audioClipUrl = 'data:text/html;base64,PGgxPk5vPC9oMT4=';
+    expect(() => parsePublishedSiteProfile(unsafe)).toThrow(
+      /schemaVersion.*photoUrl.*audioClipUrl.*website.*externalProfileUrl/u
+    );
 
     const invalidEmail = validProfile();
     invalidEmail.profile.email = 'not-an-email';
@@ -119,12 +126,14 @@ describe('site config', () => {
     ).toThrow(/requires id and label/u);
   });
 
-  it('keeps URL/image policy and presentation labels stable', () => {
+  it('keeps URL/media policy and presentation labels stable', () => {
     expect(isSafeExternalUrl('https://example.com/path')).toBe(true);
     expect(isSafeExternalUrl('javascript:alert(1)')).toBe(false);
     expect(isSafeExternalUrl('http://[')).toBe(false);
     expect(isSafeImageSource('data:image/png;base64,QUJDRA==')).toBe(true);
     expect(isSafeImageSource('data:image/svg+xml;base64,PHN2Zz4=')).toBe(false);
+    expect(isSafeAudioSource('data:audio/mpeg;base64,SUQz')).toBe(true);
+    expect(isSafeAudioSource('data:text/html;base64,PGgxPk5vPC9oMT4=')).toBe(false);
     expect(socialPlatformLabel('x')).toBe('X / Twitter');
     expect(resourceTypeLabel('source')).toBe('Fuente');
   });
@@ -132,8 +141,11 @@ describe('site config', () => {
   it('covers safe defaults and fail-closed profile policy branches', () => {
     expect(isSafeExternalUrl('')).toBe(true);
     expect(isSafeImageSource('')).toBe(true);
+    expect(isSafeAudioSource('')).toBe(true);
     expect(isSafeImageSource('https://example.com/image.webp')).toBe(true);
+    expect(isSafeAudioSource('https://example.com/clip.mp3')).toBe(true);
     expect(isSafeImageSource(`data:image/png;base64,${'A'.repeat(900_001)}`)).toBe(false);
+    expect(isSafeAudioSource(`data:audio/mpeg;base64,${'A'.repeat(2_100_001)}`)).toBe(false);
 
     const minimal = parsePublishedSiteProfile({
       schemaVersion: '1.0.0',
@@ -143,6 +155,7 @@ describe('site config', () => {
         { title: 'Resource', type: '', url: 'https://example.com/resource', visible: false }
       ]
     });
+    expect(minimal.profile.externalProfileUrl).toBe('');
     expect(minimal.social[0]).toMatchObject({ platform: 'other', visible: false });
     expect(minimal.relatedResources[0]).toMatchObject({ type: 'other', visible: false });
 

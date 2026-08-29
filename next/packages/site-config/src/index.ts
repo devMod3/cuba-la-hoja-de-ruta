@@ -36,6 +36,7 @@ export interface PublishedSiteProfile {
     readonly photoUrl: string;
     readonly email: string;
     readonly website: string;
+    readonly externalProfileUrl: string;
     readonly audioClipUrl: string;
     readonly wishlistUrl: string;
     readonly randomQuestion: string;
@@ -118,7 +119,9 @@ const RESOURCE_LABELS: Readonly<Record<string, string>> = {
 };
 
 const SAFE_IMAGE_DATA = /^data:image\/(?:png|jpeg|webp);base64,[a-z0-9+/=\s]+$/iu;
+const SAFE_AUDIO_DATA = /^data:audio\/(?:mpeg|mp4|ogg|wav|x-wav|webm);base64,[a-z0-9+/=\s]+$/iu;
 const MAX_INLINE_IMAGE_LENGTH = 900_000;
+const MAX_INLINE_AUDIO_LENGTH = 2_100_000;
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
@@ -161,6 +164,12 @@ export function isSafeImageSource(value: string): boolean {
   if (!value) return true;
   if (isSafeExternalUrl(value)) return true;
   return value.length <= MAX_INLINE_IMAGE_LENGTH && SAFE_IMAGE_DATA.test(value);
+}
+
+export function isSafeAudioSource(value: string): boolean {
+  if (!value) return true;
+  if (isSafeExternalUrl(value)) return true;
+  return value.length <= MAX_INLINE_AUDIO_LENGTH && SAFE_AUDIO_DATA.test(value);
 }
 
 function vocabularyEntries(value: unknown, field: string): readonly VocabularyEntry[] {
@@ -229,6 +238,7 @@ export function parsePublishedSiteProfile(value: unknown): PublishedSiteProfile 
       photoUrl: text(profile['photoUrl']),
       email: text(profile['email']),
       website: text(profile['website']),
+      externalProfileUrl: text(profile['externalProfileUrl']),
       audioClipUrl: text(profile['audioClipUrl']),
       wishlistUrl: text(profile['wishlistUrl']),
       randomQuestion: text(profile['randomQuestion']),
@@ -282,13 +292,16 @@ export function parsePublishedSiteProfile(value: unknown): PublishedSiteProfile 
   if (data.profile.photoUrl && !isSafeImageSource(data.profile.photoUrl)) {
     errors.push('profile.photoUrl has an unsafe image source');
   }
+  if (data.profile.audioClipUrl && !isSafeAudioSource(data.profile.audioClipUrl)) {
+    errors.push('profile.audioClipUrl has an unsafe audio source');
+  }
   if (data.profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(data.profile.email)) {
     errors.push('profile.email is invalid');
   }
 
   for (const [name, url] of [
     ['profile.website', data.profile.website],
-    ['profile.audioClipUrl', data.profile.audioClipUrl],
+    ['profile.externalProfileUrl', data.profile.externalProfileUrl],
     ['profile.wishlistUrl', data.profile.wishlistUrl]
   ] as const) {
     if (url && !isSafeExternalUrl(url)) errors.push(`${name} is unsafe`);

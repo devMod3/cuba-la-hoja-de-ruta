@@ -114,5 +114,4 @@ jobs:
           test -d apps/web/out/_next
           test -f apps/web/out/robots.txt
           test -f apps/web/out/sitemap.xml
-          grep -R -F -q --include='*.html' '/portable-delivery-probe/_next/' apps/web/out
-          ! grep -R -E -i -q 'blogspot|blogger' apps/web/out
+          node scripts/check-portable-export.ts

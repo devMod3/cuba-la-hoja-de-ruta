@@ -32,6 +32,7 @@ const TABS: ReadonlyArray<Readonly<{ id: AdminTab; label: string }>> = [
 
 export function AdminShell() {
   const [activeTab, setActiveTab] = useState<AdminTab>('metadata');
+  const [profilePublishRequest, setProfilePublishRequest] = useState(0);
   const metadataStore = useMemo(() => createMetadataDraftStore(), []);
   const profileStore = useMemo(() => createSiteProfileDraftStore(), []);
   const metadata = useSyncExternalStore(
@@ -46,11 +47,11 @@ export function AdminShell() {
   );
 
   return (
-    <div id="zen-admin-shell" data-component="Admin">
+    <div id="zen-admin-shell" data-component="Admin" data-active-tool={activeTab}>
       <header className="zas-header">
         <a
           className="zas-brand"
-          href="/"
+          href="../"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Abrir La hoja de ruta"
@@ -92,9 +93,10 @@ export function AdminShell() {
             onProfileAdopted={(value) => {
               writeSiteProfileDraft(globalThis.localStorage, value);
             }}
+            openProfileRequest={profilePublishRequest}
           />
-          <a className="zas-site-link" href="/" target="_blank" rel="noopener noreferrer">
-            Sitio ↗
+          <a className="zas-site-link" href="../" target="_blank" rel="noopener noreferrer">
+            Ir al sitio ↗
           </a>
         </div>
       </header>
@@ -133,6 +135,9 @@ export function AdminShell() {
             profile={profile}
             onChange={(value) => {
               writeSiteProfileDraft(globalThis.localStorage, value);
+            }}
+            onPublishRequest={() => {
+              setProfilePublishRequest((request) => request + 1);
             }}
           />
         </section>
