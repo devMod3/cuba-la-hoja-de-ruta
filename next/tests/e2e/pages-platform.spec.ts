@@ -1,30 +1,5 @@
 import { expect, test } from '@playwright/test';
 
-test('public Inspector toggles with Alt+I and identifies a current Next component', async ({
-  page
-}) => {
-  await page.goto('/');
-
-  await page.keyboard.press('Alt+i');
-  await expect(page.locator('html')).toHaveAttribute('data-zen-inspector', 'on');
-  await expect
-    .poll(() => page.evaluate(() => globalThis.localStorage.getItem('zenInspector.enabled')))
-    .toBe('true');
-
-  const heading = page.getByRole('heading', { level: 1 });
-  await heading.hover();
-  await expect(page.locator('#zen-inspector-hud')).toBeVisible();
-  await heading.click();
-
-  const dialog = page.locator('#zen-inspector-modal');
-  await expect(dialog).toBeVisible();
-  await expect(page.locator('#zen-inspector-component-name')).not.toHaveValue('');
-  await expect(page.locator('#zen-inspector-log')).not.toHaveValue('');
-
-  await page.keyboard.press('Alt+i');
-  await expect(page.locator('html')).toHaveAttribute('data-zen-inspector', 'off');
-});
-
 test('robots.txt declares GitHub Pages sitemap as the only public sitemap authority', async ({
   page
 }) => {

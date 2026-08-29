@@ -32,9 +32,7 @@ async function makeMetadataMeaningful(page: Page) {
   await expect(page.locator('#zmm-status')).toContainText('Metadata guardada');
 }
 
-test('Admin mounts the existing four-tool shell and persists metadata locally', async ({
-  page
-}) => {
+test('Admin mounts the three-tool shell and persists metadata locally', async ({ page }) => {
   await page.goto('/admin/');
 
   const shell = page.locator('#zen-admin-shell');
@@ -45,7 +43,6 @@ test('Admin mounts the existing four-tool shell and persists metadata locally', 
   );
   await expect(shell.getByRole('tab', { name: 'Search Lab' })).toBeVisible();
   await expect(shell.getByRole('tab', { name: 'Acerca de' })).toBeVisible();
-  await expect(shell.getByRole('tab', { name: 'Inspector' })).toBeVisible();
 
   await makeMetadataMeaningful(page);
 
@@ -56,7 +53,7 @@ test('Admin mounts the existing four-tool shell and persists metadata locally', 
   expect(JSON.parse(stored ?? '{}')).toMatchObject({ schemaVersion: '1.0.0' });
 });
 
-test('Admin Search Lab, About Manager and Inspector remain functional', async ({ page }) => {
+test('Admin Search Lab and About Manager remain functional', async ({ page }) => {
   await page.goto('/admin/');
   const shell = page.locator('#zen-admin-shell');
   await expect(shell).toBeVisible();
@@ -70,16 +67,6 @@ test('Admin Search Lab, About Manager and Inspector remain functional', async ({
 
   await shell.getByRole('tab', { name: 'Acerca de' }).click();
   await expect(page.locator('#zen-about-manager-root')).toBeVisible();
-
-  await shell.getByRole('tab', { name: 'Inspector' }).click();
-  const inspector = page.locator('#zas-inspector-switch');
-  await expect(inspector).not.toBeChecked();
-  await page.locator('label[for="zas-inspector-switch"]').click();
-  await expect(inspector).toBeChecked();
-  await expect(page.locator('#zas-inspector-state')).toHaveText('ON');
-  await expect
-    .poll(() => page.evaluate(() => globalThis.localStorage.getItem('zenInspector.enabled')))
-    .toBe('true');
 
   const accessibility = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

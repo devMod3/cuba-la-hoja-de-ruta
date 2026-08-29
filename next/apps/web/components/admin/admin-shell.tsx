@@ -9,12 +9,11 @@ import {
   writeMetadataDraft,
   writeSiteProfileDraft
 } from './admin-model';
-import { InspectorPanel } from './inspector-panel';
 import { MetadataManager } from './metadata-manager';
 import { SearchLab } from './search-lab';
 import { SharedAuthoring } from './shared-authoring';
 
-type AdminTab = 'metadata' | 'search' | 'about' | 'inspector';
+type AdminTab = 'metadata' | 'search' | 'about';
 
 const authoringConnector = createGitHubAuthoringConnector({
   owner: 'devMod3',
@@ -28,8 +27,7 @@ const authoringConnector = createGitHubAuthoringConnector({
 const TABS: ReadonlyArray<Readonly<{ id: AdminTab; label: string }>> = [
   { id: 'metadata', label: 'Metadata' },
   { id: 'search', label: 'Search Lab' },
-  { id: 'about', label: 'Acerca de' },
-  { id: 'inspector', label: 'Inspector' }
+  { id: 'about', label: 'Acerca de' }
 ];
 
 export function AdminShell() {
@@ -137,15 +135,6 @@ export function AdminShell() {
               writeSiteProfileDraft(globalThis.localStorage, value);
             }}
           />
-        </section>
-        <section
-          id="zas-pane-inspector"
-          className="zas-pane"
-          role="tabpanel"
-          aria-label="Inspector"
-          hidden={activeTab !== 'inspector'}
-        >
-          <InspectorPanel />
         </section>
       </main>
     </div>

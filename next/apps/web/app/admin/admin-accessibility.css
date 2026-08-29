@@ -1,0 +1,5 @@
+#zen-about-manager-root .zam-group-title span:last-child,
+#zen-about-manager-root .zam-details > summary small,
+#zen-about-manager-root .zam-footer span {
+  color: #8f8b84;
+}
