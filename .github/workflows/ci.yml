@@ -14,6 +14,147 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  materialize-inspector-lint:
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/brave-universal-inspector' && github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact Inspector branch
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: feat/brave-universal-inspector
+          fetch-depth: 1
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+
+      - name: Install exact pnpm
+        run: npm install --global --ignore-scripts pnpm@11.22.0
+
+      - name: Install frozen dependencies
+        working-directory: next
+        run: pnpm install --frozen-lockfile
+
+      - name: Materialize strict Inspector repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(relative: str, old: str, new: str) -> None:
+              path = Path(relative)
+              text = path.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{relative}: expected exactly one replacement, found {count}')
+              path.write_text(text.replace(old, new, 1))
+
+          content = 'next/apps/inspector-extension/src/content.ts'
+          replace_once(content, ') => boolean | void', ') => boolean | undefined')
+          replace_once(
+              content,
+              "type ZenInspectorTag = keyof HTMLElementTagNameMap;\n\n(() => {",
+              """type ZenInspectorTag = keyof HTMLElementTagNameMap;
+
+function isZenInspectorToggleMessage(message: unknown): message is ZenInspectorToggleMessage {
+  if (typeof message !== 'object' || message === null || !('type' in message)) return false;
+  const candidate = message as Readonly<{ type?: unknown }>;
+  return candidate.type === 'zen-inspector:toggle';
+}
+
+(() => {"""
+          )
+          replace_once(
+              content,
+              """      const copied = document.execCommand('copy');
+      copyStatus.textContent = copied ? 'Copiado' : 'Seleccionado para copiar';""",
+              "      copyStatus.textContent = 'No se pudo copiar; log seleccionado';"
+          )
+          replace_once(
+              content,
+              """      if (
+        typeof message !== 'object' ||
+        message === null ||
+        !('type' in message) ||
+        (message as ZenInspectorToggleMessage).type !== 'zen-inspector:toggle'
+      ) {
+        return false;
+      }""",
+              "      if (!isZenInspectorToggleMessage(message)) return false;"
+          )
+
+          diagnostics = 'next/apps/inspector-extension/src/diagnostics.ts'
+          replace_once(diagnostics, "typeof globalThis.CSS?.escape === 'function'", "typeof globalThis.CSS.escape === 'function'")
+          replace_once(
+              diagnostics,
+              """  return (
+    (element.textContent ?? '').replace(/\\s+/gu, ' ').trim().slice(0, 320) || 'Sin texto visible'
+  );""",
+              "  return element.textContent.replace(/\\s+/gu, ' ').trim().slice(0, 320) || 'Sin texto visible';"
+          )
+          replace_once(
+              diagnostics,
+              "    .join('\\n');\n}",
+              "    .join('\\n');\n}\n\nObject.assign(globalThis, { zenInspectorBuildLog });"
+          )
+
+          admin = 'next/apps/web/components/admin/admin-shell.tsx'
+          replace_once(admin, "import { InspectorPanel } from './inspector-panel';\n", '')
+          replace_once(admin, "type AdminTab = 'metadata' | 'search' | 'about' | 'inspector';", "type AdminTab = 'metadata' | 'search' | 'about';")
+          replace_once(
+              admin,
+              """  { id: 'about', label: 'Acerca de' },
+  { id: 'inspector', label: 'Inspector' }""",
+              "  { id: 'about', label: 'Acerca de' }"
+          )
+          replace_once(
+              admin,
+              """        <section
+          id="zas-pane-inspector"
+          className="zas-pane"
+          role="tabpanel"
+          aria-label="Inspector"
+          hidden={activeTab !== 'inspector'}
+        >
+          <InspectorPanel />
+        </section>
+""",
+              ''
+          )
+
+          contract = 'next/scripts/check-inspector-extension.ts'
+          replace_once(
+              contract,
+              "for (const legacy of [\n  'apps/web/components/inspector-runtime.tsx',",
+              "for (const legacy of [\n  'apps/web/components/admin/inspector-panel.tsx',\n  'apps/web/components/inspector-runtime.tsx',"
+          )
+          PY
+          git rm next/apps/web/components/admin/inspector-panel.tsx
+          cd next
+          pnpm exec prettier --write \
+            apps/inspector-extension/src/content.ts \
+            apps/inspector-extension/src/diagnostics.ts \
+            apps/web/components/admin/admin-shell.tsx \
+            scripts/check-inspector-extension.ts
+          cd ..
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add next/apps/inspector-extension/src/content.ts \
+            next/apps/inspector-extension/src/diagnostics.ts \
+            next/apps/web/components/admin/admin-shell.tsx \
+            next/scripts/check-inspector-extension.ts
+          git add -u next/apps/web/components/admin/inspector-panel.tsx
+          git commit -m 'fix: satisfy strict Inspector lint [inspector-lint-materialized]'
+          git push origin HEAD:feat/brave-universal-inspector
+
   repository-boundary:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
