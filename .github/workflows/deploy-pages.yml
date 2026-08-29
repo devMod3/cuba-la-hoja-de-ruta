@@ -71,7 +71,7 @@ jobs:
           test -f apps/web/out/robots.txt
           test -f apps/web/out/sitemap.xml
           test -n "$(find apps/web/out -type f -print -quit)"
-          ! grep -R -E -i -q 'blogspot|blogger' apps/web/out
+          node scripts/check-portable-export.ts apps/web/out "${{ steps.pages.outputs.base_path }}"
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
