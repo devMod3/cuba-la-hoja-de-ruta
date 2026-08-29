@@ -1,4 +1,4 @@
-/* ZenBlog AdminShell v0.8 — one layout, four tools. */
+/* ZenBlog AdminShell v0.8 — one layout, three tools. */
 #zen-admin-shell,
 #zen-admin-shell * {
   box-sizing: border-box;
@@ -170,147 +170,6 @@
   display: none !important;
 }
 
-/* Inspector tab */
-.zas-tool-page {
-  width: min(900px, calc(100% - 40px));
-  height: 100%;
-  margin: 0 auto;
-  padding: clamp(22px, 4vw, 48px) 0;
-  overflow: auto;
-}
-.zas-tool-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
-  gap: clamp(24px, 6vw, 72px);
-  align-items: start;
-  padding-bottom: 24px;
-  border-bottom: 1px solid var(--zas-border);
-}
-.zas-tool-head small {
-  color: var(--zas-accent);
-  font-size: 0.58rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.zas-tool-head h1 {
-  margin: 6px 0 0;
-  font:
-    560 clamp(2rem, 5vw, 4rem)/1 'Source Serif 4',
-    Georgia,
-    serif;
-  letter-spacing: -0.035em;
-}
-.zas-switch-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 22px;
-  min-height: 72px;
-  padding: 12px 0;
-  cursor: pointer;
-}
-.zas-switch-row > span:first-child {
-  min-width: 0;
-}
-.zas-switch-row strong,
-.zas-switch-row small {
-  display: block;
-}
-.zas-switch-row strong {
-  font-size: 0.8rem;
-}
-.zas-switch-row small {
-  max-width: 320px;
-  margin-top: 4px;
-  color: var(--zas-t3);
-  font-size: 0.65rem;
-  line-height: 1.45;
-}
-.zas-switch {
-  position: relative;
-  flex: 0 0 auto;
-  width: 46px;
-  height: 28px;
-}
-.zas-switch input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-.zas-switch i {
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--zas-border2);
-  border-radius: 999px;
-  background: var(--zas-s2);
-  transition:
-    background 0.16s ease,
-    border-color 0.16s ease;
-}
-.zas-switch i::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--zas-t2);
-  transition:
-    transform 0.16s ease,
-    background 0.16s ease;
-}
-.zas-switch input:checked + i {
-  border-color: var(--zas-accent);
-  background: rgba(197, 174, 122, 0.18);
-}
-.zas-switch input:checked + i::after {
-  transform: translateX(18px);
-  background: var(--zas-accent);
-}
-.zas-switch input:focus-visible + i {
-  outline: 2px solid var(--zas-accent);
-  outline-offset: 3px;
-}
-.zas-inspector-info {
-  display: grid;
-  gap: 18px;
-  max-width: 620px;
-  padding-top: 24px;
-}
-.zas-inspector-info p {
-  margin: 0;
-  color: var(--zas-t2);
-  font-family: 'Source Serif 4', Georgia, serif;
-  font-size: 1rem;
-  line-height: 1.65;
-}
-.zas-inspector-state {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--zas-border);
-  color: var(--zas-t3);
-  font-size: 0.68rem;
-}
-.zas-inspector-state strong {
-  color: var(--zas-accent);
-}
-.zas-primary-link {
-  justify-self: start;
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 12px;
-  border: 1px solid var(--zas-accent);
-  color: var(--zas-text);
-  font-size: 0.68rem;
-  font-weight: 750;
-  text-decoration: none;
-}
-
 /* Tablet: retain all capabilities, reduce chrome. */
 @media (min-width: 768px) and (max-width: 1023px) {
   #zen-admin-shell {
@@ -334,12 +193,6 @@
   }
   .zas-site-link {
     display: none;
-  }
-  .zas-tool-page {
-    width: min(100% - 32px, 900px);
-  }
-  .zas-tool-head {
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   }
   #zen-admin-shell .zmm-workspace {
     grid-template-columns: 172px minmax(0, 1fr);
@@ -398,21 +251,6 @@
     flex: 1 0 auto;
     min-width: 92px;
     padding: 0 12px;
-  }
-  .zas-tool-page {
-    width: min(100% - 24px, 900px);
-    padding: 22px 0 calc(28px + env(safe-area-inset-bottom));
-  }
-  .zas-tool-head {
-    grid-template-columns: 1fr;
-    gap: 18px;
-    padding-bottom: 18px;
-  }
-  .zas-switch-row {
-    min-height: 62px;
-  }
-  .zas-inspector-info {
-    padding-top: 18px;
   }
   #zen-admin-shell .zmm-header,
   #zen-admin-shell .zsl-header,

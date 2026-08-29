@@ -5,9 +5,7 @@ import { GlobalHeader } from '../components/global-header';
 import { MobileGestureNavigation } from '../components/mobile-gesture-navigation';
 import { ZrpLoader } from '../components/zrp-loader';
 import './globals.css';
-import './inspector.css';
 import './reader.css';
-import { InspectorRuntime } from '../components/inspector-runtime';
 import { siteUrl } from '../lib/site-address';
 
 const sourceSans = Source_Sans_3({
@@ -40,7 +38,6 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <GlobalHeader />
         {children}
         <MobileGestureNavigation />
-        <InspectorRuntime />
         <ZrpLoader />
       </body>
     </html>
