@@ -1,25 +1,27 @@
 # ZenBlog Next
 
-Parallel modernization line for La hoja de ruta.
+Aplicación estática Next.js de **La hoja de ruta**, publicada exclusivamente en GitHub Pages.
 
-## Safety invariant
+## Workspace
 
-The current Blogger/ZenBlog production baseline is not modified by work in this directory. Migration work proves parity before any cutover.
+- `apps/web`: App Router, presentación y composition roots.
+- `packages/domain`: contratos de dominio.
+- `packages/content-catalog`: catálogo editorial propiedad del repositorio.
+- `packages/site-config`: perfil, vocabulario y metadata compartida.
+- `packages/content-renderer`: sanitización de HTML editorial.
+- `packages/search-core`: búsqueda portable.
+- `packages/authoring-core`: contratos de autoría.
+- `packages/authoring-github`: adaptador GitHub Contents API.
+- `packages/zrp-adapter`: integración aislada de ZRP.
 
-## Stack baseline
+## Desarrollo
 
-- Node.js 24 LTS
-- Next.js 16.2 Active LTS (App Router)
-- React 19.2
-- TypeScript 6.0 in strict mode
-- ESLint 10 with direct Next.js and React Hooks plugins
-- pnpm 11 workspace with reviewed dependency build allowlist
-- Zod runtime validation at external boundaries
-- Vitest for unit/contract tests
-- Playwright for Chromium, Firefox, WebKit and mobile WebKit
+Requiere Node 24.19.x y pnpm 11.22.x.
 
-## Architecture
+```bash
+pnpm install --frozen-lockfile
+pnpm check
+pnpm test:e2e
+```
 
-`apps/web` owns rendering and routing. `packages/domain` owns stable domain contracts. `packages/cms-blogger` translates Blogger data into domain objects. `packages/search-core` owns framework-free retrieval semantics. `packages/zrp-adapter` owns the integration contract with the independent Zen Radio Player.
-
-Framework code must not leak into domain packages.
+`pnpm check` aplica TypeScript estricto, SOLID/boundaries, supply chain, cobertura, build estático, SEO y performance. Playwright usa `retries: 0` en Chromium, Firefox, WebKit y Mobile WebKit.

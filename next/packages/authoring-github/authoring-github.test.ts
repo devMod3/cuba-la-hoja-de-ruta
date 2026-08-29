@@ -1,6 +1,10 @@
-import { AuthoringError, type SharedDocumentKey } from '@zenblog/authoring-core';
+import { AuthoringError } from '@zenblog/authoring-core';
 import { describe, expect, it } from 'vitest';
-import { connectGitHubAuthoring, type GitHubAuthoringConfig } from './src/index';
+import {
+  connectGitHubAuthoring,
+  createGitHubAuthoringConnector,
+  type GitHubAuthoringConfig
+} from './src/index';
 
 const TOKEN = 'ghp_SENTINEL_NEVER_LEAK_123456789';
 
@@ -97,7 +101,7 @@ describe('connectGitHubAuthoring', () => {
     expect(identityRequest).toBeDefined();
     if (!identityRequest) throw new Error('Expected identity request');
     expect(requestHeaders(identityRequest).get('Authorization')).toBe(`Bearer ${TOKEN}`);
-    expect(requestHeaders(identityRequest).get('X-GitHub-Api-Version')).toBe('2022-11-28');
+    expect(requestHeaders(identityRequest).get('X-GitHub-Api-Version')).toBeNull();
   });
 
   it('fails before network access for missing credentials or unsafe allowlist configuration', async () => {
@@ -121,6 +125,22 @@ describe('connectGitHubAuthoring', () => {
       ).rejects.toMatchObject({ code: 'validation' });
       expect(invalidPath.requests).toHaveLength(0);
     }
+
+    for (const unsafeConfig of [
+      { ...config, apiBaseUrl: 'http://api.github.test' },
+      { ...config, owner: '../owner' },
+      { ...config, documents: {} }
+    ]) {
+      const invalidConfig = queuedFetch();
+      await expect(
+        connectGitHubAuthoring({
+          token: TOKEN,
+          config: unsafeConfig,
+          fetchImpl: invalidConfig.fetchImpl
+        })
+      ).rejects.toMatchObject({ code: 'validation' });
+      expect(invalidConfig.requests).toHaveLength(0);
+    }
   });
 
   it('separates authentication from repository write authorization', async () => {
@@ -129,6 +149,21 @@ describe('connectGitHubAuthoring', () => {
       connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: mock.fetchImpl })
     ).rejects.toMatchObject({ code: 'forbidden' });
     expect(mock.requests).toHaveLength(2);
+  });
+
+  it('rejects malformed identities and repositories unavailable to the identity', async () => {
+    const malformedIdentity = queuedFetch(jsonResponse({ id: null, login: '' }));
+    await expect(
+      connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: malformedIdentity.fetchImpl })
+    ).rejects.toMatchObject({ code: 'unauthorized' });
+
+    const unavailableRepository = queuedFetch(
+      jsonResponse({ id: 42, login: 'maintainer', name: null }),
+      jsonResponse({}, 404)
+    );
+    await expect(
+      connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: unavailableRepository.fetchImpl })
+    ).rejects.toMatchObject({ code: 'forbidden', status: 404 });
   });
 
   it('maps authentication and transport errors without credential leakage', async () => {
@@ -150,6 +185,20 @@ describe('connectGitHubAuthoring', () => {
     }).catch((error: unknown) => error);
     expect(transportError).toMatchObject({ code: 'transport' });
     expect(String(transportError)).not.toContain(TOKEN);
+  });
+
+  it('exposes the GitHub implementation through the authoring connector port', async () => {
+    const mock = queuedFetch(...authResponses());
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = mock.fetchImpl;
+    try {
+      const connector = createGitHubAuthoringConnector(config);
+      const connection = await connector.connect(TOKEN);
+      expect(connection.session.status).toBe('authorized');
+      connection.disconnect();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
 
@@ -252,7 +301,7 @@ describe('GitHub versioned JSON repository', () => {
     expect(body).not.toHaveProperty('sha');
 
     await expect(
-      connection.repository.read('../../workflows' as SharedDocumentKey, validateRecord)
+      connection.repository.read('../../workflows', validateRecord)
     ).rejects.toMatchObject({ code: 'validation' });
     expect(mock.requests).toHaveLength(3);
   });
@@ -351,5 +400,72 @@ describe('GitHub versioned JSON repository', () => {
     expect(error).toBeInstanceOf(AuthoringError);
     expect(error).toMatchObject({ code: 'validation' });
     expect(String(error)).not.toContain(TOKEN);
+  });
+
+  it('rejects malformed transport payloads and invalid commit messages without unsafe retries', async () => {
+    const invalidRead = queuedFetch(
+      ...authResponses(),
+      jsonResponse({ type: 'dir', encoding: 'base64', sha: 'bad-sha', content: encodedJson({}) })
+    );
+    const readConnection = await connectGitHubAuthoring({
+      token: TOKEN,
+      config,
+      fetchImpl: invalidRead.fetchImpl
+    });
+    await expect(
+      readConnection.repository.read('site-profile', validateRecord)
+    ).rejects.toMatchObject({ code: 'validation' });
+    expect(invalidRead.requests).toHaveLength(3);
+
+    const invalidMessage = queuedFetch(...authResponses());
+    const messageConnection = await connectGitHubAuthoring({
+      token: TOKEN,
+      config,
+      fetchImpl: invalidMessage.fetchImpl
+    });
+    await expect(
+      messageConnection.repository.write(
+        {
+          key: 'site-profile',
+          value: { valid: true },
+          expectedVersion: null,
+          message: '   '
+        },
+        validateRecord
+      )
+    ).rejects.toMatchObject({ code: 'validation' });
+    expect(invalidMessage.requests).toHaveLength(2);
+
+    const invalidWrite = queuedFetch(...authResponses(), jsonResponse({ content: {} }));
+    const writeConnection = await connectGitHubAuthoring({
+      token: TOKEN,
+      config,
+      fetchImpl: invalidWrite.fetchImpl
+    });
+    await expect(
+      writeConnection.repository.write(
+        {
+          key: 'site-profile',
+          value: { valid: true },
+          expectedVersion: null,
+          message: 'Valid message'
+        },
+        validateRecord
+      )
+    ).rejects.toMatchObject({ code: 'validation' });
+    expect(invalidWrite.requests).toHaveLength(3);
+  });
+
+  it('maps forbidden and generic HTTP failures to stable authoring error classes', async () => {
+    for (const [status, code] of [
+      [403, 'forbidden'],
+      [500, 'transport']
+    ] as const) {
+      const mock = queuedFetch(jsonResponse({}, status));
+      await expect(
+        connectGitHubAuthoring({ token: TOKEN, config, fetchImpl: mock.fetchImpl })
+      ).rejects.toMatchObject({ code, status });
+      expect(mock.requests).toHaveLength(1);
+    }
   });
 });

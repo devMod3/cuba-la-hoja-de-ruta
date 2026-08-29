@@ -1,4 +1,4 @@
-import { bloggerSnapshotArticles } from '@zenblog/content-snapshot';
+import { articles } from '@zenblog/content-catalog';
 import type { Metadata } from 'next';
 import { ExploreClient } from '../../components/explore-client';
 import './explore.css';
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function ExplorePage() {
   return (
     <main className="explore-page" data-component="Explore">
-      <ExploreClient articles={bloggerSnapshotArticles} />
+      <ExploreClient articles={articles} />
     </main>
   );
 }

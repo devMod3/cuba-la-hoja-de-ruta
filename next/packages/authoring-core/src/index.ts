@@ -2,9 +2,7 @@ export const AUTHORING_CAPABILITIES = ['shared:read', 'shared:write'] as const;
 
 export type AuthoringCapability = (typeof AUTHORING_CAPABILITIES)[number];
 
-export const SHARED_DOCUMENT_KEYS = ['metadata-registry', 'site-profile'] as const;
-
-export type SharedDocumentKey = (typeof SHARED_DOCUMENT_KEYS)[number];
+export type DocumentKey = string;
 
 export const AUTHORING_FAILURE_CODES = [
   'unauthorized',
@@ -36,13 +34,13 @@ export interface DisconnectedAuthoringSession {
 export type AuthoringSession = AuthorizedAuthoringSession | DisconnectedAuthoringSession;
 
 export interface VersionedJsonDocument<T> {
-  readonly key: SharedDocumentKey;
+  readonly key: DocumentKey;
   readonly value: T;
   readonly version: string;
 }
 
 export interface WriteVersionedJsonInput<T> {
-  readonly key: SharedDocumentKey;
+  readonly key: DocumentKey;
   readonly value: T;
   readonly expectedVersion: string | null;
   readonly message: string;
@@ -51,7 +49,7 @@ export interface WriteVersionedJsonInput<T> {
 export type JsonValidator<T> = (value: unknown) => T;
 
 export interface VersionedJsonRepository {
-  read<T>(key: SharedDocumentKey, validate: JsonValidator<T>): Promise<VersionedJsonDocument<T>>;
+  read<T>(key: DocumentKey, validate: JsonValidator<T>): Promise<VersionedJsonDocument<T>>;
   write<T>(
     input: WriteVersionedJsonInput<T>,
     validate: JsonValidator<T>
@@ -63,13 +61,13 @@ export type JsonValue =
 
 export class AuthoringError extends Error {
   override readonly name = 'AuthoringError';
+  readonly code: AuthoringFailureCode;
+  readonly status: number | null;
 
-  constructor(
-    readonly code: AuthoringFailureCode,
-    message: string,
-    readonly status: number | null = null
-  ) {
+  constructor(code: AuthoringFailureCode, message: string, status: number | null = null) {
     super(message);
+    this.code = code;
+    this.status = status;
   }
 }
 
@@ -148,10 +146,10 @@ interface StoredDocument {
 }
 
 export class InMemoryVersionedJsonRepository implements VersionedJsonRepository {
-  readonly #documents = new Map<SharedDocumentKey, StoredDocument>();
+  readonly #documents = new Map<DocumentKey, StoredDocument>();
   #revision = 0;
 
-  read<T>(key: SharedDocumentKey, validate: JsonValidator<T>): Promise<VersionedJsonDocument<T>> {
+  read<T>(key: DocumentKey, validate: JsonValidator<T>): Promise<VersionedJsonDocument<T>> {
     return Promise.resolve().then(() => {
       const stored = this.#documents.get(key);
       if (!stored) throw new AuthoringError('not-found', `Shared document not found: ${key}`);
@@ -186,4 +184,14 @@ export class InMemoryVersionedJsonRepository implements VersionedJsonRepository 
       return Object.freeze({ key: input.key, value, version });
     });
   }
+}
+
+export interface AuthoringConnection {
+  readonly session: AuthorizedAuthoringSession;
+  readonly repository: VersionedJsonRepository;
+  disconnect(): void;
+}
+
+export interface AuthoringConnector {
+  connect(credential: string): Promise<AuthoringConnection>;
 }

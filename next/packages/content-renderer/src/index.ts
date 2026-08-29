@@ -1,7 +1,7 @@
 import sanitizeHtml from 'sanitize-html';
 import type { IOptions } from 'sanitize-html';
 
-const BLOGGER_ARTICLE_POLICY: IOptions = {
+const ARTICLE_POLICY: IOptions = {
   allowedTags: [
     'p',
     'h2',
@@ -49,7 +49,7 @@ export type ArticleHeading = Readonly<{
   level: 2 | 3 | 4;
 }>;
 
-export type PreparedBloggerArticle = Readonly<{
+export type PreparedArticle = Readonly<{
   html: string;
   text: string;
   headings: readonly ArticleHeading[];
@@ -82,16 +82,16 @@ function slugifyHeading(value: string): string {
     .replace(/^-+|-+$/gu, '');
 }
 
-export function sanitizeBloggerArticleHtml(html: string): string {
-  return sanitizeHtml(html, BLOGGER_ARTICLE_POLICY);
+export function sanitizeArticleHtml(html: string): string {
+  return sanitizeHtml(html, ARTICLE_POLICY);
 }
 
-export function extractBloggerArticleText(html: string): string {
-  return extractTextFromSanitizedHtml(sanitizeBloggerArticleHtml(html));
+export function extractArticleText(html: string): string {
+  return extractTextFromSanitizedHtml(sanitizeArticleHtml(html));
 }
 
-export function prepareBloggerArticleHtml(html: string): PreparedBloggerArticle {
-  const sanitizedHtml = sanitizeBloggerArticleHtml(html);
+export function prepareArticleHtml(html: string): PreparedArticle {
+  const sanitizedHtml = sanitizeArticleHtml(html);
   const headings: ArticleHeading[] = [];
   const seenSlugs = new Map<string, number>();
   let anchoredHtml = sanitizedHtml;

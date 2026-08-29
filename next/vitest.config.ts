@@ -25,26 +25,38 @@ export default defineConfig({
           functions: 100,
           lines: 100
         },
-        'packages/content-renderer/src/**/*.ts': { 100: true },
-        'packages/content-snapshot/src/**/*.ts': {
+        'packages/authoring-core/src/**/*.ts': {
           statements: 95,
           branches: 85,
           functions: 100,
           lines: 100
         },
+        'packages/authoring-github/src/**/*.ts': {
+          statements: 90,
+          branches: 75,
+          functions: 90,
+          lines: 95
+        },
+        'packages/content-catalog/src/**/*.ts': {
+          statements: 95,
+          branches: 85,
+          functions: 100,
+          lines: 100
+        },
+        'packages/content-renderer/src/**/*.ts': { 100: true },
         'packages/search-core/src/**/*.ts': {
           statements: 95,
           branches: 75,
           functions: 100,
           lines: 100
         },
-        'packages/zrp-adapter/src/**/*.ts': { 100: true },
-        'packages/cms-blogger/src/**/*.ts': {
-          statements: 80,
-          branches: 65,
-          functions: 85,
-          lines: 90
+        'packages/site-config/src/**/*.ts': {
+          statements: 95,
+          branches: 80,
+          functions: 95,
+          lines: 100
         },
+        'packages/zrp-adapter/src/**/*.ts': { 100: true },
         'apps/web/adapters/**/*.ts': {
           statements: 95,
           branches: 75,

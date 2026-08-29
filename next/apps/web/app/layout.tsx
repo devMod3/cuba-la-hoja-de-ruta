@@ -5,7 +5,10 @@ import { GlobalHeader } from '../components/global-header';
 import { MobileGestureNavigation } from '../components/mobile-gesture-navigation';
 import { ZrpLoader } from '../components/zrp-loader';
 import './globals.css';
+import './inspector.css';
 import './reader.css';
+import { InspectorRuntime } from '../components/inspector-runtime';
+import { siteUrl } from '../lib/site-address';
 
 const sourceSans = Source_Sans_3({
   subsets: ['latin'],
@@ -24,11 +27,8 @@ const fontFamilies = {
   '--serif': sourceSerif.style.fontFamily
 } as CSSProperties;
 
-const basePath = process.env['ZENBLOG_BASE_PATH'] ?? '';
-const auxiliaryRuntimeSrc = `${basePath}/zen-admin/tools/runtime/bootstrap.js`;
-const auxiliaryRuntimeBootstrap = `if(!/(?:^|\\/)admin\\/?$/.test(location.pathname)){globalThis.addEventListener('load',()=>void import(${JSON.stringify(auxiliaryRuntimeSrc)}),{once:true});}`;
-
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl('/')),
   title: { default: 'La hoja de ruta', template: '%s · La hoja de ruta' },
   description: 'Soberanía · Constitución · Estado'
 };
@@ -40,8 +40,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <GlobalHeader />
         {children}
         <MobileGestureNavigation />
+        <InspectorRuntime />
         <ZrpLoader />
-        <script type="module">{auxiliaryRuntimeBootstrap}</script>
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-import { bloggerSnapshotArticles } from '@zenblog/content-snapshot';
+import { articles } from '@zenblog/content-catalog';
 import Link from 'next/link';
 
 function cleanSummary(value: string): string {
@@ -15,7 +15,7 @@ function excerpt(value: string, max = 260): string {
 }
 
 export default function HomePage() {
-  const featured = bloggerSnapshotArticles[0] ?? null;
+  const featured = articles[0] ?? null;
   const featuredSummary = featured ? excerpt(featured.summary || featured.content || '') : '';
 
   return (

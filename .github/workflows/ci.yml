@@ -1,0 +1,118 @@
+name: Validate Next.js Pages Application
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: next-pages-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Assert durable Pages repository boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t roots < <(find . -mindepth 1 -maxdepth 1 ! -name .git -printf '%f\n' | sort)
+          expected=(.github README.md next)
+          [[ "${roots[*]}" == "${expected[*]}" ]]
+
+          test -f next/package.json
+          test -f next/apps/web/app/sitemap.ts
+          test -f next/packages/site-config/src/index.ts
+          test -f next/packages/content-catalog/src/index.ts
+          test -f next/packages/domain/src/schema.ts
+          test -f next/docs/ADR-006-50-YEAR-PORTABLE-CORE.md
+          test -f .github/workflows/ci.yml
+          test -f .github/workflows/deploy-pages.yml
+          test -f .github/workflows/pages-stale-guard.yml
+
+          test ! -e tools
+          test ! -e src
+          test ! -e config
+          test ! -e docs
+          test ! -e .specify
+          test ! -e .nojekyll
+          test -z "$(find . -maxdepth 1 -name '.pages-refactor-payload*' -print -quit)"
+          test -z "$(find .github/workflows -type f \( -name '*blogger*' -o -name '*export*' -o -name '*fix-r3b*' -o -name '*split-migration*' \) -print -quit)"
+          test -z "$(find next -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.jsx' \) -print -quit)"
+          echo 'PAGES_REPOSITORY_BOUNDARY=PASS'
+
+  quality:
+    needs: repository-boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact quality SHA
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.19.0
+          package-manager-cache: false
+
+      - name: Install exact pnpm
+        run: npm install --global --ignore-scripts pnpm@11.22.0
+
+      - name: Install frozen dependencies
+        working-directory: next
+        run: pnpm install --frozen-lockfile
+
+      - name: Full static, architecture, portability and unit gate
+        working-directory: next
+        run: pnpm check
+
+      - name: Upload unit coverage evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: next-unit-coverage
+          path: next/coverage
+          if-no-files-found: error
+
+      - name: Upload CycloneDX SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: next-sbom-cyclonedx-1.7
+          path: next/security-reports/sbom.cdx.json
+          if-no-files-found: error
+
+      - name: Install Playwright browsers
+        working-directory: next
+        run: pnpm exec playwright install --with-deps chromium firefox webkit
+
+      - name: Cross-browser E2E — full suite across 4 projects
+        working-directory: next
+        run: pnpm test:e2e
+
+      - name: Rehearse provider-neutral static export under a non-production base path
+        working-directory: next
+        env:
+          ZENBLOG_BASE_PATH: /portable-delivery-probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf apps/web/.next apps/web/out
+          pnpm --filter @zenblog/web build
+          test -f apps/web/out/index.html
+          test -d apps/web/out/_next
+          test -f apps/web/out/robots.txt
+          test -f apps/web/out/sitemap.xml
+          grep -R -F -q --include='*.html' '/portable-delivery-probe/_next/' apps/web/out
+          ! grep -R -E -i -q 'blogspot|blogger' apps/web/out

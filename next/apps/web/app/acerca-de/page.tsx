@@ -1,10 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import {
-  readPublishedSiteProfile,
-  resourceTypeLabel,
-  socialPlatformLabel
-} from '../../adapters/site-profile';
+import { resourceTypeLabel, siteProfile, socialPlatformLabel } from '@zenblog/site-config';
 import styles from './about.module.css';
 
 const css = {
@@ -59,8 +55,8 @@ function ExternalLink({ href, className, children }: ExternalLinkProps) {
   );
 }
 
-export default async function AboutPage() {
-  const data = await readPublishedSiteProfile();
+export default function AboutPage() {
+  const data = siteProfile;
   const { profile } = data;
   const social = data.social.filter((item) => item.visible && item.url);
   const resources = data.relatedResources.filter((item) => item.visible && item.title && item.url);
@@ -94,7 +90,6 @@ export default async function AboutPage() {
     profile.website ||
     profile.audioClipUrl ||
     profile.wishlistUrl ||
-    profile.bloggerProfileUrl ||
     profileLists.length > 0 ||
     hasQuestion
   );
@@ -114,9 +109,6 @@ export default async function AboutPage() {
   }
 
   const quickLinks = [
-    profile.bloggerProfileUrl
-      ? { label: 'Blogger ↗', href: profile.bloggerProfileUrl, external: true }
-      : null,
     profile.website ? { label: 'Sitio web ↗', href: profile.website, external: true } : null,
     profile.audioClipUrl
       ? { label: 'Audio Clip ↗', href: profile.audioClipUrl, external: true }

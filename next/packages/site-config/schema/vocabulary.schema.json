@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:zenblog:vocabulary:1.0.0",
+  "title": "Vocabulary 1.0.0",
+  "type": "object",
+  "required": ["version", "pillars", "types", "statuses", "norms", "concepts"],
+  "properties": {
+    "version": { "const": "1.0.0" },
+    "pillars": { "type": "array" },
+    "types": { "type": "array" },
+    "statuses": { "type": "array" },
+    "norms": { "type": "array" },
+    "concepts": { "type": "array" }
+  }
+}

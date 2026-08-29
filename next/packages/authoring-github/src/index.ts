@@ -1,26 +1,25 @@
 import {
   AuthoringError,
-  SHARED_DOCUMENT_KEYS,
   canonicalJson,
   createAuthorizedSession,
+  type AuthoringConnection,
+  type AuthoringConnector,
   type AuthoringIdentity,
-  type AuthorizedAuthoringSession,
   type JsonValidator,
-  type SharedDocumentKey,
+  type DocumentKey,
   type VersionedJsonDocument,
   type VersionedJsonRepository,
   type WriteVersionedJsonInput
 } from '@zenblog/authoring-core';
 
 const DEFAULT_API_BASE_URL = 'https://api.github.com';
-const API_VERSION = '2022-11-28';
 const SAFE_REPOSITORY_PART = /^[A-Za-z0-9_.-]+$/;
 const MAX_SHARED_DOCUMENT_BYTES = 2_000_000;
 
 export interface GitHubAuthoringConfig {
   readonly owner: string;
   readonly repository: string;
-  readonly documents: Readonly<Record<SharedDocumentKey, string>>;
+  readonly documents: Readonly<Record<DocumentKey, string>>;
   readonly apiBaseUrl?: string;
 }
 
@@ -30,11 +29,7 @@ export interface ConnectGitHubAuthoringOptions {
   readonly fetchImpl?: typeof fetch;
 }
 
-export interface GitHubAuthoringConnection {
-  readonly session: AuthorizedAuthoringSession;
-  readonly repository: VersionedJsonRepository;
-  disconnect(): void;
-}
+export type GitHubAuthoringConnection = AuthoringConnection;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
@@ -133,7 +128,7 @@ function responseFailure(status: number, context: string): AuthoringError {
 class GitHubContentsRepository implements VersionedJsonRepository {
   readonly #owner: string;
   readonly #repository: string;
-  readonly #paths: Readonly<Record<SharedDocumentKey, string>>;
+  readonly #paths: Readonly<Record<DocumentKey, string>>;
   readonly #apiBaseUrl: string;
   readonly #fetch: typeof fetch;
   #token: string | null;
@@ -143,14 +138,22 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     this.#owner = requiredRepositoryPart(options.config.owner, 'owner');
     this.#repository = requiredRepositoryPart(options.config.repository, 'repository');
     this.#apiBaseUrl = safeApiBaseUrl(options.config.apiBaseUrl);
-    this.#fetch = options.fetchImpl ?? globalThis.fetch;
+    const fetchImpl = options.fetchImpl;
+    this.#fetch = (input, init) =>
+      fetchImpl ? fetchImpl(input, init) : globalThis.fetch(input, init);
     this.#token = options.token.trim() || null;
     if (!this.#token)
       throw new AuthoringError('unauthorized', 'GitHub authoring credential is required');
 
-    const paths = {} as Record<SharedDocumentKey, string>;
-    for (const key of SHARED_DOCUMENT_KEYS) {
-      paths[key] = requiredDocumentPath(options.config.documents[key]);
+    const entries = Object.entries(options.config.documents);
+    if (entries.length === 0) {
+      throw new AuthoringError('validation', 'At least one shared-document mapping is required');
+    }
+    const paths: Record<DocumentKey, string> = {};
+    for (const [key, documentPath] of entries) {
+      const normalizedKey = key.trim();
+      if (!normalizedKey) throw new AuthoringError('validation', 'Shared-document key is required');
+      paths[normalizedKey] = requiredDocumentPath(documentPath);
     }
     this.#paths = Object.freeze(paths);
   }
@@ -200,10 +203,7 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     });
   }
 
-  async read<T>(
-    key: SharedDocumentKey,
-    validate: JsonValidator<T>
-  ): Promise<VersionedJsonDocument<T>> {
+  async read<T>(key: DocumentKey, validate: JsonValidator<T>): Promise<VersionedJsonDocument<T>> {
     this.#assertAuthorized();
     const response = await this.#request(this.#documentUrl(key));
     if (response.status === 404) {
@@ -293,7 +293,7 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     return `${this.#apiBaseUrl}/repos/${encodeURIComponent(this.#owner)}/${encodeURIComponent(this.#repository)}`;
   }
 
-  #documentUrl(key: SharedDocumentKey): string {
+  #documentUrl(key: DocumentKey): string {
     const path = this.#paths[key];
     if (!path) throw new AuthoringError('validation', 'Unknown shared-document key');
     return `${this.#repositoryUrl()}/contents/${encodePath(path)}`;
@@ -306,7 +306,7 @@ class GitHubContentsRepository implements VersionedJsonRepository {
     const headers = new Headers(init.headers);
     headers.set('Accept', 'application/vnd.github+json');
     headers.set('Authorization', `Bearer ${token}`);
-    headers.set('X-GitHub-Api-Version', API_VERSION);
+    if (typeof init.body === 'string') headers.set('Content-Type', 'application/json');
     try {
       return await this.#fetch(url, { ...init, headers });
     } catch {
@@ -327,5 +327,11 @@ export async function connectGitHubAuthoring(
     disconnect: () => {
       repository.disconnect();
     }
+  });
+}
+
+export function createGitHubAuthoringConnector(config: GitHubAuthoringConfig): AuthoringConnector {
+  return Object.freeze({
+    connect: (credential: string) => connectGitHubAuthoring({ token: credential, config })
   });
 }

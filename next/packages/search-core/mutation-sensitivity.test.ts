@@ -10,7 +10,6 @@ import {
 function article(id: string, title: string, publishedAt: string | null): Article {
   return {
     id,
-    url: `https://example.com/${id}`,
     title,
     publishedAt,
     updatedAt: null,

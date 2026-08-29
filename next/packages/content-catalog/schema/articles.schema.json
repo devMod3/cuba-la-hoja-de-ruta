@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:zenblog:content-catalog:1.0.0",
+  "title": "Content Catalog 1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "articleCount", "articles"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "articleCount": { "type": "integer", "minimum": 0 },
+    "articles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "publishedAt", "updatedAt", "summary", "content", "labels"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "publishedAt": { "type": ["string", "null"] },
+          "updatedAt": { "type": ["string", "null"] },
+          "summary": { "type": "string" },
+          "content": { "type": "string" },
+          "labels": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}
