@@ -1,0 +1,394 @@
+/* Admin About desktop composition.
+   Loaded after containment/accessibility so it can refine the visual layout
+   without changing the underlying authoring or persistence contracts. */
+
+@media (min-width: 1024px) {
+  #zen-admin-shell #zen-about-manager-root .zam-shell {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: 56px 30px minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-header {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-height: 56px;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+    padding: 8px 154px 8px 16px;
+    border-bottom: 1px solid #2d3338;
+    background: #15181b;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-brand {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-brand small {
+    color: #9d9991;
+    font-size: 0.52rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-brand strong {
+    font-size: 0.9rem;
+    line-height: 1.1;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-header-actions {
+    justify-self: end;
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center;
+    gap: 6px;
+    width: auto !important;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-header-actions button {
+    width: auto !important;
+    min-width: 106px;
+    min-height: 36px;
+    padding: 0 13px;
+    white-space: nowrap;
+  }
+
+  /* Reuse the existing authenticated save action, but visually place it in
+     the toolbar instead of consuming an entire row at the bottom. */
+  #zen-admin-shell #zen-about-manager-root .zam-footer {
+    grid-column: 2;
+    grid-row: 1;
+    z-index: 3;
+    align-self: stretch;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 16px 8px 0;
+    border: 0;
+    background: transparent;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-footer span {
+    display: none;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-footer button {
+    min-width: 122px;
+    min-height: 36px;
+    padding: 0 16px;
+    border-color: #d5b46a;
+    background: #d5b46a;
+    color: #111315;
+    font-weight: 800;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-footer button:hover,
+  #zen-admin-shell #zen-about-manager-root .zam-footer button:focus-visible {
+    background: #e2c47e;
+    color: #0d0f10;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-status {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 30px;
+    padding: 0 16px;
+    background: #121416;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-main {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    min-height: 0;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-workspace {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tabs {
+    min-height: 58px;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    padding: 0 24px;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid #292d31;
+    background: #121416;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tabs button {
+    position: relative;
+    width: 100%;
+    min-height: 58px;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 3px;
+    padding: 8px 10px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    text-align: center;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tabs button[aria-selected='true'] {
+    border-color: transparent;
+    border-bottom-color: #d5b46a;
+    background: #171a1d;
+    color: #f1f0eb;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tabs button:hover {
+    background: #16191c;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tab-label {
+    font-size: 0.7rem;
+    line-height: 1.1;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tab-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #9d9991;
+    font-size: 0.54rem;
+    line-height: 1.2;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tabs button[aria-selected='true'] .zam-tab-meta {
+    color: #bbb7ae;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tab-count {
+    min-width: 19px;
+    margin-left: 0;
+    padding: 1px 5px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tab-content {
+    min-height: 0;
+    padding: 18px 24px 34px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    background: #121416;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tab-content > .zam-panel {
+    width: min(980px, 100%);
+    margin: 0 auto;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-panel-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 440px);
+    align-items: start;
+    gap: 28px;
+    margin-bottom: 14px;
+    padding: 2px 2px 14px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-panel-intro h2 {
+    margin-top: 4px;
+    font-size: 1.4rem;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-panel-copy {
+    align-self: center;
+    gap: 4px;
+    max-width: 440px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-panel-copy p {
+    margin: 0;
+    color: #aaa69e;
+    font-size: 0.69rem;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-group,
+  #zen-admin-shell #zen-about-manager-root .zam-details,
+  #zen-admin-shell #zen-about-manager-root .zam-card {
+    margin-bottom: 12px;
+    border-color: #30353a;
+    background: #15181b;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-group-title,
+  #zen-admin-shell #zen-about-manager-root .zam-card-head,
+  #zen-admin-shell #zen-about-manager-root .zam-details > summary {
+    min-height: 36px;
+    padding: 7px 11px;
+    background: #191c1f;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-field {
+    grid-template-columns: 154px minmax(0, 1fr);
+    gap: 16px;
+    padding: 10px 12px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-field > span {
+    padding-top: 0.55rem;
+    color: #a6a299;
+    font-size: 0.66rem;
+  }
+
+  #zen-admin-shell #zen-about-manager-root input,
+  #zen-admin-shell #zen-about-manager-root select,
+  #zen-admin-shell #zen-about-manager-root textarea {
+    min-height: 40px;
+    padding: 8px 10px;
+    border-color: #3b4147;
+    background: #111315;
+  }
+
+  #zen-admin-shell #zen-about-manager-root textarea {
+    min-height: 94px;
+    resize: vertical;
+    line-height: 1.45;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-grid-3 .zam-field,
+  #zen-admin-shell #zen-about-manager-root .zam-favorites-grid .zam-field,
+  #zen-admin-shell #zen-about-manager-root .zam-card-grid .zam-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-grid-3 .zam-field > span,
+  #zen-admin-shell #zen-about-manager-root .zam-favorites-grid .zam-field > span,
+  #zen-admin-shell #zen-about-manager-root .zam-card-grid .zam-field > span {
+    padding-top: 0;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-photo-upload {
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    padding: 14px 16px;
+    background: #14171a;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-photo-preview {
+    width: 88px;
+    height: 88px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-photo-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 4px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-photo-copy small {
+    max-width: 620px;
+    margin-top: 0;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-photo-actions,
+  #zen-admin-shell #zen-about-manager-root .zam-audio-actions {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 7px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-photo-actions button,
+  #zen-admin-shell #zen-about-manager-root .zam-audio-actions button {
+    width: auto !important;
+    min-width: 108px;
+    min-height: 34px;
+    padding: 0 12px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-media-source-field,
+  #zen-admin-shell #zen-about-manager-root .zam-audio-source-field {
+    margin-top: 8px;
+    padding: 8px 0 0;
+    border-top: 1px solid #272b30 !important;
+    grid-template-columns: 1fr !important;
+    gap: 5px !important;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-media-source-field input,
+  #zen-admin-shell #zen-about-manager-root .zam-audio-source-field input {
+    min-height: 36px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.62rem;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-audio-upload {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 14px;
+    padding: 12px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-favorites-grid,
+  #zen-admin-shell #zen-about-manager-root .zam-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-card-actions {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1180px) {
+  #zen-admin-shell #zen-about-manager-root .zam-header {
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 136px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-header-actions button {
+    min-width: 92px;
+    padding-inline: 9px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-footer {
+    padding-right: 12px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-footer button {
+    min-width: 112px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tabs {
+    padding-inline: 12px;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tab-meta {
+    font-size: 0.5rem;
+  }
+
+  #zen-admin-shell #zen-about-manager-root .zam-tab-content {
+    padding-inline: 18px;
+  }
+}
