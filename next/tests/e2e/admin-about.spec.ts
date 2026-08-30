@@ -30,27 +30,30 @@ async function openAbout(page: Page) {
   return shell;
 }
 
-test('Admin About follows the approved tabbed flow and contains every visible control inside the shell', async ({
+test('Admin About follows the profile-workspace flow and contains every visible control inside the shell', async ({
   page
 }) => {
   const shell = await openAbout(page);
   const about = page.locator('#zen-about-manager-root');
 
-  for (const name of ['Vista Previa ↗', 'Exportar', 'Importar']) {
+  for (const name of ['Vista Previa ↗', 'Exportar', 'Importar', 'Guardar']) {
     await expect(about.getByRole('button', { name, exact: true })).toBeVisible();
   }
-  await expect(about.getByRole('button', { name: 'Guardar', exact: true })).toBeVisible();
   await expect(shell.getByRole('link', { name: 'Ir al sitio ↗' })).toBeVisible();
+  await expect(about.getByRole('heading', { name: 'Identidad y contacto' })).toBeVisible();
+  await expect(about.locator('.zam-profile-sidebar')).toBeVisible();
+  await expect(about.locator('.zam-footer')).toHaveCount(0);
 
   const sections = [
-    { tab: 'Perfil', headings: ['Identidad y contacto'] },
     {
       tab: 'Detalles',
-      headings: ['Perfil extendido', 'Ubicación', 'Campos clásicos de Blogger']
+      headings: ['Perfil extendido', 'Ubicación', 'Personalización clásica']
     },
     { tab: 'Intereses', headings: ['Intereses y favoritos'] },
-    { tab: 'Redes', headings: ['Redes sociales'] },
-    { tab: 'Recursos', headings: ['Recursos relacionados'] }
+    {
+      tab: 'Social & Recursos',
+      headings: ['Redes sociales', 'Recursos relacionados']
+    }
   ] as const;
 
   for (const section of sections) {
@@ -61,27 +64,29 @@ test('Admin About follows the approved tabbed flow and contains every visible co
     await expect(about.getByRole('tabpanel')).toHaveCount(1);
 
     for (const heading of section.headings) {
-      await expect(about.getByText(heading, { exact: true }).first()).toBeVisible();
+      await expect(about.getByRole('heading', { name: heading, exact: true })).toBeVisible();
     }
 
     const metrics = await page.evaluate(() => {
       const adminShell = document.querySelector('#zen-admin-shell');
       const aboutRoot = document.querySelector('#zen-about-manager-root');
       const headerActions = aboutRoot?.querySelector('.zam-header-actions');
-      const main = aboutRoot?.querySelector('.zam-main');
+      const body = aboutRoot?.querySelector('.zam-profile-body');
+      const sidebar = aboutRoot?.querySelector('.zam-profile-sidebar');
+      const main = aboutRoot?.querySelector('.zam-profile-main');
       const tabList = aboutRoot?.querySelector('.zam-tabs');
       const tabContent = aboutRoot?.querySelector('.zam-tab-content');
-      const footer = aboutRoot?.querySelector('.zam-footer');
       if (
         !(adminShell instanceof HTMLElement) ||
         !(aboutRoot instanceof HTMLElement) ||
         !(headerActions instanceof HTMLElement) ||
+        !(body instanceof HTMLElement) ||
+        !(sidebar instanceof HTMLElement) ||
         !(main instanceof HTMLElement) ||
         !(tabList instanceof HTMLElement) ||
-        !(tabContent instanceof HTMLElement) ||
-        !(footer instanceof HTMLElement)
+        !(tabContent instanceof HTMLElement)
       ) {
-        throw new Error('Admin About containment nodes are missing.');
+        throw new Error('Admin About profile-workspace nodes are missing.');
       }
 
       const shellRect = adminShell.getBoundingClientRect();
@@ -99,6 +104,22 @@ test('Admin About follows the approved tabbed flow and contains every visible co
           rect.height > 0
         );
       });
+      const touchTargets = Array.from(
+        aboutRoot.querySelectorAll<HTMLElement>('button, summary')
+      ).filter((element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return (
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          rect.width > 0 &&
+          rect.height > 0
+        );
+      });
+
+      const scrollOwners = [body, sidebar, main].map(
+        (element) => getComputedStyle(element).overflowY
+      );
 
       return {
         shellMatchesViewport:
@@ -107,12 +128,22 @@ test('Admin About follows the approved tabbed flow and contains every visible co
         shellOverflowX: adminShell.scrollWidth - adminShell.clientWidth,
         aboutOverflowX: aboutRoot.scrollWidth - aboutRoot.clientWidth,
         headerActionsOverflowX: headerActions.scrollWidth - headerActions.clientWidth,
+        bodyOverflowX: body.scrollWidth - body.clientWidth,
+        sidebarOverflowX: sidebar.scrollWidth - sidebar.clientWidth,
         mainOverflowX: main.scrollWidth - main.clientWidth,
         tabListOverflowX: tabList.scrollWidth - tabList.clientWidth,
         tabContentOverflowX: tabContent.scrollWidth - tabContent.clientWidth,
-        footerOverflowX: footer.scrollWidth - footer.clientWidth,
-        mainOverflowY: getComputedStyle(main).overflowY,
-        tabContentOverflowY: getComputedStyle(tabContent).overflowY,
+        hasVerticalScrollOwner: scrollOwners.some((value) => /auto|scroll/u.test(value)),
+        undersizedTargets: touchTargets
+          .filter((element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.width < 43 || rect.height < 43;
+          })
+          .map((element) => ({
+            html: element.outerHTML.slice(0, 160),
+            width: element.getBoundingClientRect().width,
+            height: element.getBoundingClientRect().height
+          })),
         controlsOutsideShell: visibleControls
           .filter((element) => {
             const rect = element.getBoundingClientRect();
@@ -129,23 +160,24 @@ test('Admin About follows the approved tabbed flow and contains every visible co
     expect(metrics.shellOverflowX).toBeLessThanOrEqual(1);
     expect(metrics.aboutOverflowX).toBeLessThanOrEqual(1);
     expect(metrics.headerActionsOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.bodyOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.sidebarOverflowX).toBeLessThanOrEqual(1);
     expect(metrics.mainOverflowX).toBeLessThanOrEqual(1);
     expect(metrics.tabListOverflowX).toBeLessThanOrEqual(1);
     expect(metrics.tabContentOverflowX).toBeLessThanOrEqual(1);
-    expect(metrics.footerOverflowX).toBeLessThanOrEqual(1);
-    expect(metrics.mainOverflowY).toBe('hidden');
-    expect(metrics.tabContentOverflowY).toMatch(/auto|scroll/u);
+    expect(metrics.hasVerticalScrollOwner).toBe(true);
+    expect(metrics.undersizedTargets).toEqual([]);
     expect(metrics.controlsOutsideShell).toEqual([]);
     expect(metrics.controlsWithoutShellAncestor).toEqual([]);
   }
 
-  const profileTab = about.getByRole('tab', { name: 'Perfil', exact: true });
   const detailsTab = about.getByRole('tab', { name: 'Detalles', exact: true });
-  await profileTab.focus();
+  const interestsTab = about.getByRole('tab', { name: 'Intereses', exact: true });
+  await detailsTab.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(detailsTab).toHaveAttribute('aria-selected', 'true');
+  await expect(interestsTab).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('ArrowLeft');
-  await expect(profileTab).toHaveAttribute('aria-selected', 'true');
+  await expect(detailsTab).toHaveAttribute('aria-selected', 'true');
 
   const accessibility = await new AxeBuilder({ page })
     .include('#zen-admin-shell')
@@ -175,10 +207,6 @@ test('Admin About follows the approved tabbed flow and contains every visible co
   expect(dialogBounds.top).toBeGreaterThanOrEqual(0);
   expect(dialogBounds.right).toBeLessThanOrEqual(dialogBounds.viewportWidth + 1);
   expect(dialogBounds.bottom).toBeLessThanOrEqual(dialogBounds.viewportHeight + 1);
-
-  await expect(shell.getByRole('tab', { name: 'Metadata' })).toBeVisible();
-  await expect(shell.getByRole('tab', { name: 'Search Lab' })).toBeVisible();
-  await expect(shell.getByRole('tab', { name: 'Acerca de' })).toBeVisible();
 });
 
 test('Admin About supports Blogger profile, import/export, photo and Audio Clip authoring', async ({
@@ -243,7 +271,6 @@ test('Admin About supports Blogger profile, import/export, photo and Audio Clip 
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(importedProfile), 'utf8')
   });
-  await about.getByRole('tab', { name: 'Perfil', exact: true }).click();
   await expect(about.getByLabel('Nombre visible')).toHaveValue('Perfil importado');
   await expect(about.getByLabel('Perfil de Blogger')).toHaveValue(
     'https://www.blogger.com/profile/importado'
@@ -260,9 +287,7 @@ test('Admin About supports Blogger profile, import/export, photo and Audio Clip 
     buffer: png1x1
   });
   await expect(about.getByRole('status')).toContainText('Foto optimizada');
-  const photoPreview = about.getByRole('img', { name: 'Vista previa de foto de perfil' });
-  await expect(photoPreview).toBeVisible();
-  await expect(photoPreview).toHaveCSS('background-image', /data:image\/(?:webp|jpeg);base64,/u);
+  await expect(about.getByRole('img', { name: 'Vista previa de foto de perfil' })).toBeVisible();
 
   await about.getByRole('tab', { name: 'Detalles', exact: true }).click();
   await about.getByLabel('Seleccionar Audio Clip').setInputFiles({

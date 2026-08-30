@@ -1,5 +1,30 @@
-/* Admin About accessibility corrections.
-   Keep overrides isolated so the shared containment contract remains unchanged. */
-#zen-admin-shell .zam-tab-meta {
-  color: #8a867f;
+/* Admin About accessibility and interaction-quality overrides.
+   Loaded after the visual layout so these requirements cannot be weakened by
+   responsive composition rules. */
+#zen-admin-shell #zen-about-manager-root .zam-tab-meta {
+  color: #64748b;
+}
+
+#zen-admin-shell #zen-about-manager-root button,
+#zen-admin-shell #zen-about-manager-root summary {
+  min-height: 44px;
+}
+
+#zen-admin-shell #zen-about-manager-root .zam-profile-actions .zam-btn,
+#zen-admin-shell #zen-about-manager-root .zam-avatar-actions .zam-btn,
+#zen-admin-shell #zen-about-manager-root .zam-audio-actions .zam-btn,
+#zen-admin-shell #zen-about-manager-root .zam-advanced-field > summary {
+  min-height: 44px;
+}
+
+#zen-admin-shell #zen-about-manager-root .zam-icon-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+#zen-admin-shell #zen-about-manager-root .zam-toggle-field input:focus-visible + .zam-toggle-track {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
