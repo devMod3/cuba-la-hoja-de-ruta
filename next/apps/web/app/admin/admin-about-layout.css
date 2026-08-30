@@ -834,7 +834,11 @@
   background: color-mix(in srgb, var(--zap-accent) 20%, var(--zap-surface-3));
 }
 
-#zen-admin-shell #zen-about-manager-root .zam-toggle-field input:checked + .zam-toggle-track::after {
+#zen-admin-shell
+  #zen-about-manager-root
+  .zam-toggle-field
+  input:checked
+  + .zam-toggle-track::after {
   background: var(--zap-accent);
   transform: translateX(18px);
 }
