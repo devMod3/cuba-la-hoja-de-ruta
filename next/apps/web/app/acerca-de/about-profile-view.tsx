@@ -1,4 +1,8 @@
-import { resourceTypeLabel, socialPlatformLabel, type PublishedSiteProfile } from '@zenblog/site-config';
+import {
+  resourceTypeLabel,
+  socialPlatformLabel,
+  type PublishedSiteProfile
+} from '@zenblog/site-config';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 import styles from './about.module.css';
