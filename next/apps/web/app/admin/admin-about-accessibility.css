@@ -1,19 +1,12 @@
-/* Admin About accessibility and interaction-quality overrides.
-   Loaded after the visual layout so these requirements cannot be weakened by
-   responsive composition rules. */
-#zen-admin-shell #zen-about-manager-root .zam-tab-meta {
-  color: #64748b;
-}
-
+/* Admin About non-negotiable interaction invariants.
+   Loaded after layout so responsive composition cannot reduce target size or focus visibility. */
 #zen-admin-shell #zen-about-manager-root button,
 #zen-admin-shell #zen-about-manager-root summary {
   min-height: 44px;
 }
 
-#zen-admin-shell #zen-about-manager-root .zam-profile-actions .zam-btn,
 #zen-admin-shell #zen-about-manager-root .zam-avatar-actions .zam-btn,
-#zen-admin-shell #zen-about-manager-root .zam-audio-actions .zam-btn,
-#zen-admin-shell #zen-about-manager-root .zam-advanced-field > summary {
+#zen-admin-shell #zen-about-manager-root .zam-audio-actions .zam-btn {
   min-height: 44px;
 }
 
@@ -24,7 +17,21 @@
   min-height: 44px;
 }
 
+#zen-admin-shell #zen-about-manager-root :focus-visible {
+  outline: 2px solid var(--zas-accent, #c5ae7a);
+  outline-offset: 3px;
+}
+
 #zen-admin-shell #zen-about-manager-root .zam-toggle-field input:focus-visible + .zam-toggle-track {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
+  outline: 2px solid var(--zas-accent, #c5ae7a);
+  outline-offset: 3px;
+}
+
+@media (prefers-contrast: more) {
+  #zen-admin-shell #zen-about-manager-root {
+    --zap-border: #596168;
+    --zap-border-strong: #747d84;
+    --zap-muted: #d0d2d3;
+    --zap-tertiary: #b7bbbe;
+  }
 }
