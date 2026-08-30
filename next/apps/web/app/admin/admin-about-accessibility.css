@@ -1,0 +1,5 @@
+/* Admin About accessibility corrections.
+   Keep overrides isolated so the shared containment contract remains unchanged. */
+#zen-admin-shell .zam-tab-meta {
+  color: #8a867f;
+}
