@@ -10,6 +10,13 @@
   min-height: 44px;
 }
 
+#zen-admin-shell #zen-about-manager-root .zam-profile-actions .zam-btn,
+#zen-admin-shell #zen-about-manager-root .zam-avatar-actions .zam-btn,
+#zen-admin-shell #zen-about-manager-root .zam-audio-actions .zam-btn,
+#zen-admin-shell #zen-about-manager-root .zam-advanced-field > summary {
+  min-height: 44px;
+}
+
 #zen-admin-shell #zen-about-manager-root .zam-icon-btn {
   width: 44px;
   height: 44px;
