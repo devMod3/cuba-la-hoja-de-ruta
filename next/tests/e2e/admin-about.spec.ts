@@ -30,7 +30,7 @@ async function openAbout(page: Page) {
   return shell;
 }
 
-test('Admin About follows the approved flow and contains every visible control inside the shell', async ({
+test('Admin About follows the approved tabbed flow and contains every visible control inside the shell', async ({
   page
 }) => {
   const shell = await openAbout(page);
@@ -42,81 +42,116 @@ test('Admin About follows the approved flow and contains every visible control i
   await expect(about.getByRole('button', { name: 'Guardar', exact: true })).toBeVisible();
   await expect(shell.getByRole('link', { name: 'Ir al sitio ↗' })).toBeVisible();
 
-  for (const heading of [
-    'Identidad y contacto',
-    'Perfil extendido',
-    'Ubicación',
-    'Intereses y favoritos',
-    'Campos clásicos de Blogger',
-    'Redes sociales',
-    'Recursos relacionados'
-  ]) {
-    await expect(about.getByText(heading, { exact: true }).first()).toBeVisible();
-  }
+  const sections = [
+    { tab: 'Perfil', headings: ['Identidad y contacto'] },
+    {
+      tab: 'Detalles',
+      headings: ['Perfil extendido', 'Ubicación', 'Campos clásicos de Blogger']
+    },
+    { tab: 'Intereses', headings: ['Intereses y favoritos'] },
+    { tab: 'Redes', headings: ['Redes sociales'] },
+    { tab: 'Recursos', headings: ['Recursos relacionados'] }
+  ] as const;
 
-  const metrics = await page.evaluate(() => {
-    const adminShell = document.querySelector('#zen-admin-shell');
-    const aboutRoot = document.querySelector('#zen-about-manager-root');
-    const headerActions = aboutRoot?.querySelector('.zam-header-actions');
-    const main = aboutRoot?.querySelector('.zam-main');
-    const footer = aboutRoot?.querySelector('.zam-footer');
-    if (
-      !(adminShell instanceof HTMLElement) ||
-      !(aboutRoot instanceof HTMLElement) ||
-      !(headerActions instanceof HTMLElement) ||
-      !(main instanceof HTMLElement) ||
-      !(footer instanceof HTMLElement)
-    ) {
-      throw new Error('Admin About containment nodes are missing.');
+  for (const section of sections) {
+    const tab = about.getByRole('tab', { name: section.tab, exact: true });
+    await tab.click();
+    await expect(tab).toHaveAttribute('aria-selected', 'true');
+    await expect(about.getByRole('tabpanel')).toBeVisible();
+    await expect(about.getByRole('tabpanel')).toHaveCount(1);
+
+    for (const heading of section.headings) {
+      await expect(about.getByText(heading, { exact: true }).first()).toBeVisible();
     }
 
-    const shellRect = adminShell.getBoundingClientRect();
-    const visibleControls = Array.from(
-      aboutRoot.querySelectorAll<HTMLElement>(
-        'button, a, input, textarea, select, summary, [role="status"], [role="img"]'
-      )
-    ).filter((element) => {
-      const style = getComputedStyle(element);
-      const rect = element.getBoundingClientRect();
-      return (
-        style.display !== 'none' &&
-        style.visibility !== 'hidden' &&
-        rect.width > 0 &&
-        rect.height > 0
-      );
+    const metrics = await page.evaluate(() => {
+      const adminShell = document.querySelector('#zen-admin-shell');
+      const aboutRoot = document.querySelector('#zen-about-manager-root');
+      const headerActions = aboutRoot?.querySelector('.zam-header-actions');
+      const main = aboutRoot?.querySelector('.zam-main');
+      const tabList = aboutRoot?.querySelector('.zam-tabs');
+      const tabContent = aboutRoot?.querySelector('.zam-tab-content');
+      const footer = aboutRoot?.querySelector('.zam-footer');
+      if (
+        !(adminShell instanceof HTMLElement) ||
+        !(aboutRoot instanceof HTMLElement) ||
+        !(headerActions instanceof HTMLElement) ||
+        !(main instanceof HTMLElement) ||
+        !(tabList instanceof HTMLElement) ||
+        !(tabContent instanceof HTMLElement) ||
+        !(footer instanceof HTMLElement)
+      ) {
+        throw new Error('Admin About containment nodes are missing.');
+      }
+
+      const shellRect = adminShell.getBoundingClientRect();
+      const visibleControls = Array.from(
+        aboutRoot.querySelectorAll<HTMLElement>(
+          'button, a, input, textarea, select, summary, [role="status"], [role="img"]'
+        )
+      ).filter((element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return (
+          style.display !== 'none' &&
+          style.visibility !== 'hidden' &&
+          rect.width > 0 &&
+          rect.height > 0
+        );
+      });
+
+      return {
+        shellMatchesViewport:
+          Math.abs(shellRect.width - globalThis.innerWidth) <= 1 &&
+          Math.abs(shellRect.height - globalThis.innerHeight) <= 1,
+        shellOverflowX: adminShell.scrollWidth - adminShell.clientWidth,
+        aboutOverflowX: aboutRoot.scrollWidth - aboutRoot.clientWidth,
+        headerActionsOverflowX: headerActions.scrollWidth - headerActions.clientWidth,
+        mainOverflowX: main.scrollWidth - main.clientWidth,
+        tabListOverflowX: tabList.scrollWidth - tabList.clientWidth,
+        tabContentOverflowX: tabContent.scrollWidth - tabContent.clientWidth,
+        footerOverflowX: footer.scrollWidth - footer.clientWidth,
+        mainOverflowY: getComputedStyle(main).overflowY,
+        tabContentOverflowY: getComputedStyle(tabContent).overflowY,
+        controlsOutsideShell: visibleControls
+          .filter((element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.left < shellRect.left - 1 || rect.right > shellRect.right + 1;
+          })
+          .map((element) => element.outerHTML.slice(0, 180)),
+        controlsWithoutShellAncestor: visibleControls
+          .filter((element) => element.closest('#zen-admin-shell') !== adminShell)
+          .map((element) => element.outerHTML.slice(0, 180))
+      };
     });
 
-    return {
-      shellMatchesViewport:
-        Math.abs(shellRect.width - globalThis.innerWidth) <= 1 &&
-        Math.abs(shellRect.height - globalThis.innerHeight) <= 1,
-      shellOverflowX: adminShell.scrollWidth - adminShell.clientWidth,
-      aboutOverflowX: aboutRoot.scrollWidth - aboutRoot.clientWidth,
-      headerActionsOverflowX: headerActions.scrollWidth - headerActions.clientWidth,
-      mainOverflowX: main.scrollWidth - main.clientWidth,
-      footerOverflowX: footer.scrollWidth - footer.clientWidth,
-      mainOverflowY: getComputedStyle(main).overflowY,
-      controlsOutsideShell: visibleControls
-        .filter((element) => {
-          const rect = element.getBoundingClientRect();
-          return rect.left < shellRect.left - 1 || rect.right > shellRect.right + 1;
-        })
-        .map((element) => element.outerHTML.slice(0, 180)),
-      controlsWithoutShellAncestor: visibleControls
-        .filter((element) => element.closest('#zen-admin-shell') !== adminShell)
-        .map((element) => element.outerHTML.slice(0, 180))
-    };
-  });
+    expect(metrics.shellMatchesViewport).toBe(true);
+    expect(metrics.shellOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.aboutOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.headerActionsOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.mainOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.tabListOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.tabContentOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.footerOverflowX).toBeLessThanOrEqual(1);
+    expect(metrics.mainOverflowY).toBe('hidden');
+    expect(metrics.tabContentOverflowY).toMatch(/auto|scroll/u);
+    expect(metrics.controlsOutsideShell).toEqual([]);
+    expect(metrics.controlsWithoutShellAncestor).toEqual([]);
+  }
 
-  expect(metrics.shellMatchesViewport).toBe(true);
-  expect(metrics.shellOverflowX).toBeLessThanOrEqual(1);
-  expect(metrics.aboutOverflowX).toBeLessThanOrEqual(1);
-  expect(metrics.headerActionsOverflowX).toBeLessThanOrEqual(1);
-  expect(metrics.mainOverflowX).toBeLessThanOrEqual(1);
-  expect(metrics.footerOverflowX).toBeLessThanOrEqual(1);
-  expect(metrics.mainOverflowY).toMatch(/auto|scroll/u);
-  expect(metrics.controlsOutsideShell).toEqual([]);
-  expect(metrics.controlsWithoutShellAncestor).toEqual([]);
+  const profileTab = about.getByRole('tab', { name: 'Perfil', exact: true });
+  const detailsTab = about.getByRole('tab', { name: 'Detalles', exact: true });
+  await profileTab.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(detailsTab).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('ArrowLeft');
+  await expect(profileTab).toHaveAttribute('aria-selected', 'true');
+
+  const accessibility = await new AxeBuilder({ page })
+    .include('#zen-admin-shell')
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(accessibility.violations, JSON.stringify(accessibility.violations, null, 2)).toEqual([]);
 
   await about.getByRole('button', { name: 'Guardar', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Estado compartido' });
@@ -141,12 +176,6 @@ test('Admin About follows the approved flow and contains every visible control i
   expect(dialogBounds.right).toBeLessThanOrEqual(dialogBounds.viewportWidth + 1);
   expect(dialogBounds.bottom).toBeLessThanOrEqual(dialogBounds.viewportHeight + 1);
 
-  const accessibility = await new AxeBuilder({ page })
-    .include('#zen-admin-shell')
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .analyze();
-  expect(accessibility.violations, JSON.stringify(accessibility.violations, null, 2)).toEqual([]);
-
   await expect(shell.getByRole('tab', { name: 'Metadata' })).toBeVisible();
   await expect(shell.getByRole('tab', { name: 'Search Lab' })).toBeVisible();
   await expect(shell.getByRole('tab', { name: 'Acerca de' })).toBeVisible();
@@ -160,8 +189,9 @@ test('Admin About supports Blogger profile, import/export, photo and Audio Clip 
 
   await about.getByLabel('Nombre visible').fill('Perfil editorial');
   await about.getByLabel('Introducción').fill('Descripción mantenida desde el entorno Next.js.');
-  await about.getByLabel('Ciudad').fill('La Habana');
   await about.getByLabel('Perfil de Blogger').fill('https://www.blogger.com/profile/editorial');
+  await about.getByRole('tab', { name: 'Detalles', exact: true }).click();
+  await about.getByLabel('Ciudad').fill('La Habana');
   await expect(shell.getByRole('link', { name: 'Ir al sitio ↗' })).toHaveAttribute('href', '../');
 
   await about.getByRole('button', { name: 'Guardar', exact: true }).click();
@@ -213,6 +243,7 @@ test('Admin About supports Blogger profile, import/export, photo and Audio Clip 
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(importedProfile), 'utf8')
   });
+  await about.getByRole('tab', { name: 'Perfil', exact: true }).click();
   await expect(about.getByLabel('Nombre visible')).toHaveValue('Perfil importado');
   await expect(about.getByLabel('Perfil de Blogger')).toHaveValue(
     'https://www.blogger.com/profile/importado'
@@ -233,6 +264,7 @@ test('Admin About supports Blogger profile, import/export, photo and Audio Clip 
   await expect(photoPreview).toBeVisible();
   await expect(photoPreview).toHaveCSS('background-image', /data:image\/(?:webp|jpeg);base64,/u);
 
+  await about.getByRole('tab', { name: 'Detalles', exact: true }).click();
   await about.getByLabel('Seleccionar Audio Clip').setInputFiles({
     name: 'clip.mp3',
     mimeType: 'audio/mpeg',

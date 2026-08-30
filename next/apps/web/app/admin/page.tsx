@@ -3,6 +3,7 @@ import { AdminShell } from '../../components/admin/admin-shell';
 import './admin.css';
 import './admin-accessibility.css';
 import './admin-containment.css';
+import './admin-about-accessibility.css';
 
 export const metadata: Metadata = {
   title: 'ZenBlog Admin',

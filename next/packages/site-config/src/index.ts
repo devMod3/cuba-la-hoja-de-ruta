@@ -123,6 +123,11 @@ const SAFE_AUDIO_DATA = /^data:audio\/(?:mpeg|mp4|ogg|wav|x-wav|webm);base64,[a-
 const MAX_INLINE_IMAGE_LENGTH = 900_000;
 const MAX_INLINE_AUDIO_LENGTH = 2_100_000;
 
+interface OrderedIdentity {
+  readonly id: string;
+  readonly order: number;
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return value as Record<string, unknown>;
@@ -138,8 +143,8 @@ function textList(value: unknown): string[] {
 }
 
 function order(value: unknown, fallback: number): number {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : fallback;
+  if (value === undefined) return fallback;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : Number.NaN;
 }
 
 function socialPlatform(value: unknown): SocialPlatform {
@@ -150,10 +155,30 @@ function resourceType(value: unknown): ResourceType {
   return text(value) || 'other';
 }
 
+function validateOrderedIdentities(
+  collection: string,
+  items: readonly OrderedIdentity[],
+  errors: string[]
+): void {
+  const ids = new Set<string>();
+  const orders = new Set<number>();
+  items.forEach((item, index) => {
+    const path = `${collection}[${String(index)}]`;
+    if (ids.has(item.id)) errors.push(`${path}.id duplicates ${item.id}`);
+    ids.add(item.id);
+    if (!Number.isInteger(item.order) || item.order < 0) {
+      errors.push(`${path}.order must be a non-negative integer`);
+      return;
+    }
+    if (orders.has(item.order)) errors.push(`${path}.order duplicates ${String(item.order)}`);
+    orders.add(item.order);
+  });
+}
+
 export function isSafeExternalUrl(value: string): boolean {
   if (!value) return true;
   try {
-    const url = new URL(value, 'https://example.invalid/');
+    const url = new URL(value);
     return url.protocol === 'http:' || url.protocol === 'https:';
   } catch {
     return false;
@@ -307,17 +332,20 @@ export function parsePublishedSiteProfile(value: unknown): PublishedSiteProfile 
     if (url && !isSafeExternalUrl(url)) errors.push(`${name} is unsafe`);
   }
 
+  validateOrderedIdentities('social', data.social, errors);
+  validateOrderedIdentities('relatedResources', data.relatedResources, errors);
+
   data.social.forEach((item, index) => {
     const path = `social[${String(index)}].url`;
-    if (!item.url) errors.push(`${path} is required`);
-    else if (!isSafeExternalUrl(item.url)) errors.push(`${path} is unsafe`);
+    if (item.visible && !item.url) errors.push(`${path} is required when visible`);
+    else if (item.url && !isSafeExternalUrl(item.url)) errors.push(`${path} is unsafe`);
   });
 
   data.relatedResources.forEach((item, index) => {
     const path = `relatedResources[${String(index)}]`;
-    if (!item.title) errors.push(`${path}.title is required`);
-    if (!item.url) errors.push(`${path}.url is required`);
-    else if (!isSafeExternalUrl(item.url)) errors.push(`${path}.url is unsafe`);
+    if (item.visible && !item.title) errors.push(`${path}.title is required when visible`);
+    if (item.visible && !item.url) errors.push(`${path}.url is required when visible`);
+    else if (item.url && !isSafeExternalUrl(item.url)) errors.push(`${path}.url is unsafe`);
   });
 
   if (errors.length > 0) {

@@ -2,13 +2,171 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:zenblog:site-profile:1.0.0",
   "title": "Site Profile 1.0.0",
+  "description": "Provider-neutral public profile contract. Collection ids and order values are additionally required to be unique within each collection by the maintained parser.",
   "type": "object",
+  "additionalProperties": false,
   "required": ["schemaVersion", "updatedAt", "profile", "social", "relatedResources"],
   "properties": {
     "schemaVersion": { "const": "1.0.0" },
     "updatedAt": { "type": ["string", "null"] },
-    "profile": { "type": "object" },
-    "social": { "type": "array" },
-    "relatedResources": { "type": "array" }
+    "profile": { "$ref": "#/$defs/profile" },
+    "social": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/socialEntry" }
+    },
+    "relatedResources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resourceEntry" }
+    }
+  },
+  "$defs": {
+    "text": { "type": "string" },
+    "textList": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "httpUrl": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^https?://"
+    },
+    "optionalHttpUrl": {
+      "type": "string",
+      "anyOf": [{ "maxLength": 0 }, { "pattern": "^https?://" }]
+    },
+    "optionalEmail": {
+      "type": "string",
+      "anyOf": [{ "maxLength": 0 }, { "format": "email" }]
+    },
+    "imageSource": {
+      "type": "string",
+      "anyOf": [
+        { "maxLength": 0 },
+        { "pattern": "^https?://" },
+        {
+          "maxLength": 900000,
+          "pattern": "^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=\\s]+$"
+        }
+      ]
+    },
+    "audioSource": {
+      "type": "string",
+      "anyOf": [
+        { "maxLength": 0 },
+        { "pattern": "^https?://" },
+        {
+          "maxLength": 2100000,
+          "pattern": "^data:audio/(mpeg|mp4|ogg|wav|x-wav|webm);base64,[A-Za-z0-9+/=\\s]+$"
+        }
+      ]
+    },
+    "location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["city", "region", "country"],
+      "properties": {
+        "city": { "$ref": "#/$defs/text" },
+        "region": { "$ref": "#/$defs/text" },
+        "country": { "$ref": "#/$defs/text" }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "displayName",
+        "photoUrl",
+        "email",
+        "website",
+        "externalProfileUrl",
+        "audioClipUrl",
+        "wishlistUrl",
+        "randomQuestion",
+        "randomAnswer",
+        "gender",
+        "industry",
+        "occupation",
+        "location",
+        "introduction",
+        "interests",
+        "favoriteMovies",
+        "favoriteMusic",
+        "favoriteBooks"
+      ],
+      "properties": {
+        "displayName": { "$ref": "#/$defs/text" },
+        "photoUrl": { "$ref": "#/$defs/imageSource" },
+        "email": { "$ref": "#/$defs/optionalEmail" },
+        "website": { "$ref": "#/$defs/optionalHttpUrl" },
+        "externalProfileUrl": { "$ref": "#/$defs/optionalHttpUrl" },
+        "audioClipUrl": { "$ref": "#/$defs/audioSource" },
+        "wishlistUrl": { "$ref": "#/$defs/optionalHttpUrl" },
+        "randomQuestion": { "$ref": "#/$defs/text" },
+        "randomAnswer": { "$ref": "#/$defs/text" },
+        "gender": { "$ref": "#/$defs/text" },
+        "industry": { "$ref": "#/$defs/text" },
+        "occupation": { "$ref": "#/$defs/text" },
+        "location": { "$ref": "#/$defs/location" },
+        "introduction": { "$ref": "#/$defs/text" },
+        "interests": { "$ref": "#/$defs/textList" },
+        "favoriteMovies": { "$ref": "#/$defs/textList" },
+        "favoriteMusic": { "$ref": "#/$defs/textList" },
+        "favoriteBooks": { "$ref": "#/$defs/textList" }
+      }
+    },
+    "socialEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "platform", "label", "username", "url", "visible", "order"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "platform": { "type": "string", "minLength": 1 },
+        "label": { "$ref": "#/$defs/text" },
+        "username": { "$ref": "#/$defs/text" },
+        "url": { "$ref": "#/$defs/optionalHttpUrl" },
+        "visible": { "type": "boolean" },
+        "order": { "type": "integer", "minimum": 0 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "visible": { "const": true } },
+            "required": ["visible"]
+          },
+          "then": {
+            "properties": { "url": { "$ref": "#/$defs/httpUrl" } }
+          }
+        }
+      ]
+    },
+    "resourceEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "url", "description", "type", "visible", "order"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "$ref": "#/$defs/text" },
+        "url": { "$ref": "#/$defs/optionalHttpUrl" },
+        "description": { "$ref": "#/$defs/text" },
+        "type": { "type": "string", "minLength": 1 },
+        "visible": { "type": "boolean" },
+        "order": { "type": "integer", "minimum": 0 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "visible": { "const": true } },
+            "required": ["visible"]
+          },
+          "then": {
+            "properties": {
+              "title": { "type": "string", "minLength": 1 },
+              "url": { "$ref": "#/$defs/httpUrl" }
+            }
+          }
+        }
+      ]
+    }
   }
 }

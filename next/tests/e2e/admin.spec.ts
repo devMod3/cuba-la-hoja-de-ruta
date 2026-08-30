@@ -282,6 +282,7 @@ test('Admin About validates profile locally before authenticated publication', a
 
   await page.getByLabel('Nombre visible', { exact: true }).fill('Perfil editorial');
   await page.getByLabel('Introducción').fill('Descripción mantenida desde el entorno Next.js.');
+  await page.getByRole('tab', { name: 'Detalles', exact: true }).click();
   await page.getByLabel('Ciudad').fill('La Habana');
   await page.getByRole('button', { name: 'Guardar', exact: true }).click();
   await expect(shell.locator('.zam-status')).toContainText('Perfil validado.');

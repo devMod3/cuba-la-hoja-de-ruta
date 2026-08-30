@@ -6,13 +6,16 @@
 
 - El shell ocupa `100dvw × 100dvh`.
 - La cabecera global mantiene accesibles `Acerca de` e `Ir al sitio ↗`.
-- En **Acerca de**, las acciones superiores son `Vista Previa ↗`, `Exportar` e `Importar`.
-- La barra de estado queda siempre entre las acciones y el formulario.
-- Sólo `.zam-main` desplaza verticalmente el formulario largo.
-- La acción final es `Guardar`: valida el documento local y abre la publicación pública autenticada.
+- En **Acerca de**, las acciones superiores siguen siendo `Vista Previa ↗`, `Exportar` e `Importar`.
+- La barra de estado queda siempre entre las acciones y el workspace.
+- El workspace de Acerca de se divide en cinco pestañas internas: `Perfil`, `Detalles`, `Intereses`, `Redes` y `Recursos`.
+- En desktop/tablet las pestañas forman un rail lateral contenido; en móvil forman una grilla contenida sin scroll horizontal.
+- Sólo `.zam-tab-content` desplaza verticalmente el panel activo. La navegación interna, el estado y el footer permanecen estables.
+- La acción final sigue siendo `Guardar`: valida el documento local y abre la publicación pública autenticada.
 - El diálogo de publicación continúa siendo descendiente DOM de `#zen-admin-shell` y nunca supera el viewport.
+- El cambio de pestaña no modifica ni publica el borrador. El estado del formulario se conserva entre secciones.
 
-## Flujo aprobado
+## Mapa de información
 
 ```text
 Acerca de / Ir al sitio ↗
@@ -21,89 +24,100 @@ Acerca de / Ir al sitio ↗
  ├─ [Exportar]
  ├─ [Importar]
  ├─ Barra de estado
- ├─ Perfil
+ │
+ ├─ Pestañas internas
  │   │
- │   ├─ Identidad editorial
- │   │   ├─ Todos los campos pertenecen al documento compartido del repositorio.
- │   │   └─ Replica los campos del perfil público de Blogger y sólo publica los que tengan contenido.
+ │   ├─ Perfil
+ │   │   └─ Identidad y contacto — Principal
+ │   │       ├─ Foto de perfil
+ │   │       │   ├─ Se recorta al centro y se optimiza automáticamente.
+ │   │       │   ├─ La vista pública usa marco circular.
+ │   │       │   ├─ [Subir foto] [Eliminar]
+ │   │       │   └─ Foto (URL o data URL)
+ │   │       ├─ Nombre visible
+ │   │       ├─ Introducción
+ │   │       ├─ Correo electrónico
+ │   │       ├─ Sitio web
+ │   │       └─ Perfil de Blogger
  │   │
- │   ├─ Identidad y contacto — Principal
- │   │   ├─ Foto de perfil
- │   │   │   ├─ Se recorta al centro y se optimiza automáticamente.
- │   │   │   ├─ La vista pública usa marco circular.
- │   │   │   ├─ [Subir foto] [Eliminar]
- │   │   │   └─ Foto (URL o data URL)
- │   │   ├─ Nombre visible
- │   │   ├─ Introducción
- │   │   ├─ Correo electrónico
- │   │   ├─ Sitio web
- │   │   └─ Perfil de Blogger
+ │   ├─ Detalles
+ │   │   ├─ Perfil extendido — Acerca de Blogger
+ │   │   │   ├─ Ocupación
+ │   │   │   ├─ Sector / Industria
+ │   │   │   └─ Género
+ │   │   ├─ Ubicación — Opcional
+ │   │   │   ├─ País
+ │   │   │   ├─ Estado / Región
+ │   │   │   └─ Ciudad
+ │   │   └─ Campos clásicos de Blogger — Perfil público
+ │   │       ├─ Audio Clip
+ │   │       │   ├─ [Subir audio] [Eliminar]
+ │   │       │   └─ Audio Clip (URL o data URL)
+ │   │       ├─ Wishlist
+ │   │       ├─ Pregunta aleatoria
+ │   │       └─ Respuesta
  │   │
- │   ├─ Perfil extendido — Acerca de Blogger
- │   │   ├─ Ocupación
- │   │   ├─ Sector / Industria
- │   │   └─ Género
+ │   ├─ Intereses
+ │   │   └─ Intereses y favoritos — Uno por línea
+ │   │       ├─ Intereses
+ │   │       ├─ Películas favoritas
+ │   │       ├─ Música favorita
+ │   │       └─ Libro favorito
  │   │
- │   ├─ Ubicación — Opcional
- │   │   ├─ País
- │   │   ├─ Estado / Región
- │   │   └─ Ciudad
+ │   ├─ Redes
+ │   │   └─ Redes sociales — Enlaces públicos
+ │   │       ├─ [+ Añadir red]
+ │   │       └─ Red N [↑] [↓] [Eliminar]
+ │   │           ├─ Plataforma
+ │   │           │   ├─ X / Twitter
+ │   │           │   ├─ YouTube
+ │   │           │   ├─ GitHub
+ │   │           │   ├─ Facebook
+ │   │           │   ├─ Instagram
+ │   │           │   ├─ LinkedIn
+ │   │           │   ├─ Telegram
+ │   │           │   ├─ Bluesky
+ │   │           │   └─ Mastodon
+ │   │           ├─ Etiqueta personalizada
+ │   │           ├─ Usuario
+ │   │           ├─ URL
+ │   │           └─ Visible
  │   │
- │   ├─ Intereses y favoritos — Uno por línea
- │   │   ├─ Intereses
- │   │   ├─ Películas favoritas
- │   │   ├─ Música favorita
- │   │   └─ Libro favorito
- │   │
- │   ├─ Campos clásicos de Blogger
- │   │   ├─ Audio Clip
- │   │   │   ├─ [Subir audio] [Eliminar]
- │   │   │   └─ Audio Clip (URL o data URL)
- │   │   ├─ Wishlist
- │   │   ├─ Pregunta aleatoria
- │   │   └─ Respuesta
- │   │
- │   ├─ Redes sociales — Enlaces públicos
- │   │   ├─ [+ Añadir red]
- │   │   └─ Red N [Eliminar]
- │   │       ├─ Plataforma
- │   │       │   ├─ X / Twitter
- │   │       │   ├─ YouTube
- │   │       │   ├─ GitHub
- │   │       │   ├─ Facebook
- │   │       │   ├─ Instagram
- │   │       │   ├─ LinkedIn
- │   │       │   ├─ Telegram
- │   │       │   ├─ Bluesky
- │   │       │   └─ Mastodon
- │   │       ├─ Etiqueta personalizada
- │   │       ├─ Usuario
- │   │       ├─ URL
- │   │       └─ Visible
- │   │
- │   └─ Recursos relacionados — Directorio editorial
- │       ├─ [+ Añadir recurso]
- │       └─ Recurso N [Eliminar]
- │           ├─ Título
- │           ├─ URL
- │           ├─ Descripción
- │           ├─ Tipo
- │           │   ├─ Proyecto
- │           │   ├─ Institución
- │           │   ├─ Archivo
- │           │   ├─ Fuente
- │           │   ├─ Publicación
- │           │   └─ Recurso
- │           └─ Visible
+ │   └─ Recursos
+ │       └─ Recursos relacionados — Directorio editorial
+ │           ├─ [+ Añadir recurso]
+ │           └─ Recurso N [↑] [↓] [Eliminar]
+ │               ├─ Título
+ │               ├─ URL
+ │               ├─ Descripción
+ │               ├─ Tipo
+ │               │   ├─ Proyecto
+ │               │   ├─ Institución
+ │               │   ├─ Archivo
+ │               │   ├─ Fuente
+ │               │   ├─ Publicación
+ │               │   └─ Recurso
+ │               └─ Visible
  │
  └─ [Guardar] — Publicación pública autenticada
 ```
+
+## Flujo de navegación interna
+
+Las pestañas usan el patrón ARIA `tablist` / `tab` / `tabpanel`.
+
+- La pestaña activa usa `aria-selected="true"` y es la única con `tabIndex=0`.
+- `ArrowLeft` y `ArrowRight` cambian y enfocan la pestaña anterior/siguiente.
+- `Home` activa la primera pestaña.
+- `End` activa la última pestaña.
+- Sólo un `tabpanel` está visible a la vez.
+- Cambiar de pestaña nunca descarta `draft`, foto, audio, redes ni recursos.
 
 ## Flujo de publicación
 
 ```mermaid
 flowchart TD
-  A[Editar Perfil] --> B[Guardar]
+  A[Editar cualquier pestaña] --> B[Guardar]
   B --> C{Contrato site-profile válido}
   C -->|No| D[Barra de estado: error]
   C -->|Sí| E[Persistir borrador local canónico]
@@ -130,26 +144,22 @@ flowchart TD
 │ Acerca de / Perfil                              Vista Previa ↗ | Exportar | Importar │
 ├────────────────────────────────────────────────────────────────────────────────────┤
 │ Estado: cambios locales pendientes / validado / error                              │
-├────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                    │
-│ Perfil                                                                              │
-│ Identidad editorial                                                                │
-│ Todos los campos pertenecen al documento compartido del repositorio.               │
-│ Replica Blogger y sólo publica campos con contenido.                               │
-│                                                                                    │
-│ ┌ Identidad y contacto ───────────────────────────────────────────── Principal ──┐ │
-│ │ Foto circular   [Subir foto] [Eliminar]                                        │ │
-│ │ Foto (URL o data URL) [____________________________________________________]    │ │
-│ │ Nombre visible        [____________________________________________________]    │ │
-│ │ Introducción          [____________________________________________________]    │ │
-│ │ Correo electrónico    [____________________________________________________]    │ │
-│ │ Sitio web             [____________________________________________________]    │ │
-│ │ Perfil de Blogger     [____________________________________________________]    │ │
-│ └────────────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                    │
-│ Perfil extendido / Ubicación / Favoritos / Blogger / Redes / Recursos             │
-│                                                                  ↕ scroll vertical │
-├────────────────────────────────────────────────────────────────────────────────────┤
+├───────────────────┬────────────────────────────────────────────────────────────────┤
+│ Perfil            │ Perfil                                                          │
+│ Identidad/contacto│ Identidad editorial                                             │
+│                   │ Todos los campos pertenecen al documento compartido.            │
+│ Detalles          │                                                                │
+│ Blogger/ubicación │ ┌ Identidad y contacto ─────────────────────── Principal ──┐    │
+│                   │ │ Foto circular   [Subir foto] [Eliminar]                   │    │
+│ Intereses         │ │ Foto URL/data   [____________________________________]    │    │
+│ Gustos/favoritos  │ │ Nombre visible  [____________________________________]    │    │
+│                   │ │ Introducción    [____________________________________]    │    │
+│ Redes          3  │ │ Correo          [____________________________________]    │    │
+│ Enlaces públicos  │ │ Sitio web       [____________________________________]    │    │
+│                   │ │ Blogger         [____________________________________]    │    │
+│ Recursos       2  │ └───────────────────────────────────────────────────────────┘    │
+│ Directorio        │                                                ↕ panel activo    │
+├───────────────────┴────────────────────────────────────────────────────────────────┤
 │ Publicación pública autenticada                                      [ Guardar ]    │
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -166,8 +176,10 @@ flowchart TD
 ├──────────────────────────────┤
 │ Barra de estado              │
 ├──────────────────────────────┤
-│ Perfil                       │
-│ Identidad editorial          │
+│ Perfil   │ Detalles │Interés │
+│ Redes    │ Recursos │        │
+├──────────────────────────────┤
+│ Panel activo                 │
 │                              │
 │ Identidad y contacto         │
 │ Principal                    │
@@ -179,14 +191,7 @@ flowchart TD
 │ Nombre [_________________]   │
 │ Introducción                 │
 │ [________________________]   │
-│ ...                          │
-│                              │
-│ Audio Clip                   │
-│ [Subir audio]  [Eliminar]    │
-│ URL/data [_______________]   │
-│                              │
-│ Redes / Recursos             │
-│              ↕ scroll interno│
+│                    ↕ interno │
 ├──────────────────────────────┤
 │ Publicación autenticada      │
 │ [          Guardar         ] │
@@ -197,12 +202,16 @@ flowchart TD
 
 ## Criterios de aceptación UX
 
-1. Cero scroll horizontal en `#zen-admin-shell`, Acerca de, acciones, formulario y footer.
-2. `Vista Previa ↗`, `Exportar`, `Importar` y `Guardar` siempre son visibles sin desplazamiento horizontal.
-3. `Guardar` es el único CTA de publicación del formulario y abre el flujo autenticado compartido.
-4. El formulario respeta exactamente el orden de grupos y campos del flujo aprobado.
-5. Foto y Audio Clip admiten carga local, eliminación y fuente URL/data URL según su política de seguridad.
-6. La vista pública omite campos vacíos.
-7. El diálogo de publicación nunca supera el viewport y continúa dentro de `#zen-admin-shell`.
-8. Desktop, tablet y móvil mantienen accesibles las tres herramientas globales.
-9. Axe WCAG 2.2 AA debe permanecer sin violaciones en el shell de Acerca de.
+1. Cero scroll horizontal en `#zen-admin-shell`, Acerca de, acciones, pestañas internas, panel activo y footer.
+2. `Vista Previa ↗`, `Exportar`, `Importar` y `Guardar` permanecen dentro del viewport en desktop, tablet y móvil.
+3. Las cinco pestañas internas permanecen visibles y contenidas; móvil no depende de un carrusel horizontal para encontrarlas.
+4. Sólo un panel se presenta a la vez, reduciendo densidad cognitiva sin eliminar campos ni capacidades.
+5. Todos los campos del flujo anterior siguen disponibles en su pestaña correspondiente.
+6. `Guardar` sigue siendo el único CTA de publicación y abre el flujo autenticado compartido.
+7. Foto y Audio Clip admiten carga local, eliminación y fuente URL/data URL según su política de seguridad.
+8. Redes y recursos conservan alta, eliminación, visibilidad y orden explícito con controles ↑ / ↓.
+9. La vista pública omite campos vacíos.
+10. El diálogo de publicación nunca supera el viewport y continúa dentro de `#zen-admin-shell`.
+11. Desktop, tablet y móvil mantienen accesibles las tres herramientas globales.
+12. El patrón de pestañas es operable con teclado y mantiene foco/selección sincronizados.
+13. Axe WCAG 2.2 AA debe permanecer sin violaciones en el shell de Acerca de.
