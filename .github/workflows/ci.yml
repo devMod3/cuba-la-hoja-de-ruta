@@ -49,6 +49,14 @@ jobs:
         working-directory: next
         run: pnpm install --frozen-lockfile
 
+      - name: Diagnostic — canonicalize changed E2E files
+        working-directory: next
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec prettier --write tests/e2e/admin-about-completion.spec.ts tests/e2e/admin-about.spec.ts
+          git diff -- tests/e2e/admin-about-completion.spec.ts tests/e2e/admin-about.spec.ts
+
       - name: Full static, architecture, portability and unit gate
         working-directory: next
         run: pnpm check
