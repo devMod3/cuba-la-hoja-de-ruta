@@ -49,23 +49,6 @@ jobs:
         working-directory: next
         run: pnpm install --frozen-lockfile
 
-      - name: Diagnostic — canonicalize changed E2E files
-        working-directory: next
-        shell: bash
-        run: |
-          set -euo pipefail
-          pnpm exec prettier --write tests/e2e/admin-about-completion.spec.ts tests/e2e/admin-about.spec.ts
-          git diff -- tests/e2e/admin-about-completion.spec.ts tests/e2e/admin-about.spec.ts
-
-      - name: Upload canonical E2E formatting
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: prettier-admin-about-e2e
-          path: |
-            next/tests/e2e/admin-about-completion.spec.ts
-            next/tests/e2e/admin-about.spec.ts
-          if-no-files-found: error
-
       - name: Full static, architecture, portability and unit gate
         working-directory: next
         run: pnpm check
