@@ -44,7 +44,9 @@ test('Admin About keeps explicit, unique order when social links and resources a
 
   await about.getByRole('button', { name: '+ Añadir red', exact: true }).click();
   await about.getByRole('button', { name: '+ Añadir red', exact: true }).click();
-  const socialCards = about.locator('section[aria-labelledby="about-social-heading"] article.zam-card');
+  const socialCards = about.locator(
+    'section[aria-labelledby="about-social-heading"] article.zam-card'
+  );
   await expect(socialCards).toHaveCount(3);
   await socialCards.nth(0).getByLabel('Etiqueta personalizada').fill('Primera');
   await socialCards.nth(1).getByLabel('Etiqueta personalizada').fill('Segunda');
