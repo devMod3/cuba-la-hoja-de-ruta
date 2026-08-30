@@ -24,33 +24,7 @@ jobs:
           persist-credentials: false
 
       - name: Assert durable Pages repository boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t roots < <(find . -mindepth 1 -maxdepth 1 ! -name .git -printf '%f\n' | sort)
-          expected=(.github README.md next)
-          [[ "${roots[*]}" == "${expected[*]}" ]]
-
-          test -f next/package.json
-          test -f next/apps/web/app/sitemap.ts
-          test -f next/packages/site-config/src/index.ts
-          test -f next/packages/content-catalog/src/index.ts
-          test -f next/packages/domain/src/schema.ts
-          test -f next/docs/ADR-006-50-YEAR-PORTABLE-CORE.md
-          test -f .github/workflows/ci.yml
-          test -f .github/workflows/deploy-pages.yml
-          test -f .github/workflows/pages-stale-guard.yml
-
-          test ! -e tools
-          test ! -e src
-          test ! -e config
-          test ! -e docs
-          test ! -e .specify
-          test ! -e .nojekyll
-          test -z "$(find . -maxdepth 1 -name '.pages-refactor-payload*' -print -quit)"
-          test -z "$(find .github/workflows -type f \( -name '*blogger*' -o -name '*export*' -o -name '*fix-r3b*' -o -name '*split-migration*' \) -print -quit)"
-          test -z "$(find next -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.jsx' \) -print -quit)"
-          echo 'PAGES_REPOSITORY_BOUNDARY=PASS'
+        run: .github/scripts/assert-repository-boundary.sh
 
   quality:
     needs: repository-boundary
