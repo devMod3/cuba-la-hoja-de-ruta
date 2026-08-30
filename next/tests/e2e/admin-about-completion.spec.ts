@@ -10,32 +10,32 @@ async function openAbout(page: Page) {
   return about;
 }
 
-test(
-  'Admin About previews the current local draft without changing the canonical public page',
-  async ({ context, page }) => {
-    const about = await openAbout(page);
-    const draftName = 'Borrador local no publicado';
-    const draftIntro = 'Vista previa generada sin escribir el repositorio.';
+test('Admin About previews the current local draft without changing the canonical public page', async ({
+  context,
+  page
+}) => {
+  const about = await openAbout(page);
+  const draftName = 'Borrador local no publicado';
+  const draftIntro = 'Vista previa generada sin escribir el repositorio.';
 
-    await about.getByLabel('Nombre visible').fill(draftName);
-    await about.getByLabel('Introducción').fill(draftIntro);
+  await about.getByLabel('Nombre visible').fill(draftName);
+  await about.getByLabel('Introducción').fill(draftIntro);
 
-    const previewOpened = context.waitForEvent('page');
-    await about.getByRole('button', { name: 'Vista Previa ↗', exact: true }).click();
-    const preview = await previewOpened;
-    await preview.waitForLoadState('domcontentloaded');
+  const previewOpened = context.waitForEvent('page');
+  await about.getByRole('button', { name: 'Vista Previa ↗', exact: true }).click();
+  const preview = await previewOpened;
+  await preview.waitForLoadState('domcontentloaded');
 
-    await expect(preview.getByRole('status')).toContainText('todavía no están publicados');
-    await expect(preview.getByRole('heading', { level: 1, name: draftName })).toBeVisible();
-    await expect(preview.getByText(draftIntro, { exact: true })).toBeVisible();
+  await expect(preview.getByRole('status')).toContainText('todavía no están publicados');
+  await expect(preview.getByRole('heading', { level: 1, name: draftName })).toBeVisible();
+  await expect(preview.getByText(draftIntro, { exact: true })).toBeVisible();
 
-    const stored = await page.evaluate(() => globalThis.localStorage.getItem('zenSiteProfile.v1'));
-    expect(stored).toContain(draftName);
+  const stored = await page.evaluate(() => globalThis.localStorage.getItem('zenSiteProfile.v1'));
+  expect(stored).toContain(draftName);
 
-    await page.goto('/acerca-de/');
-    await expect(page.getByRole('heading', { level: 1, name: draftName })).toHaveCount(0);
-  }
-);
+  await page.goto('/acerca-de/');
+  await expect(page.getByRole('heading', { level: 1, name: draftName })).toHaveCount(0);
+});
 
 test('Admin About keeps explicit, unique order when social links and resources are moved', async ({
   page
