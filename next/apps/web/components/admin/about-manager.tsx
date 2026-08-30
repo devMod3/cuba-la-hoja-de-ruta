@@ -8,7 +8,7 @@ import {
   socialPlatformLabel,
   type PublishedSiteProfile
 } from '@zenblog/site-config';
-import { useRef, useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { readProfileAudio } from './profile-audio';
 import { normalizeProfilePhoto } from './profile-photo';
 
@@ -41,6 +41,15 @@ type ListField = 'interests' | 'favoriteMovies' | 'favoriteMusic' | 'favoriteBoo
 
 const MAX_PROFILE_IMPORT_BYTES = 2_000_000;
 const SOCIAL_PLATFORM_OPTIONS = KNOWN_SOCIAL_PLATFORMS.filter((platform) => platform !== 'other');
+const ABOUT_TABS = [
+  { id: 'profile', label: 'Perfil', description: 'Identidad y contacto' },
+  { id: 'details', label: 'Detalles', description: 'Blogger y ubicación' },
+  { id: 'favorites', label: 'Intereses', description: 'Gustos y favoritos' },
+  { id: 'social', label: 'Redes', description: 'Enlaces públicos' },
+  { id: 'resources', label: 'Recursos', description: 'Directorio editorial' }
+] as const;
+
+type AboutTabId = (typeof ABOUT_TABS)[number]['id'];
 
 function lines(value: string): readonly string[] {
   return [
@@ -82,6 +91,7 @@ export function AboutManager({
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PublishedSiteProfile | null>(null);
   const [status, setStatus] = useState('Perfil listo para editar');
+  const [activeTab, setActiveTab] = useState<AboutTabId>('profile');
   const profile = draft ?? initialProfile;
 
   function setProfile(
@@ -166,6 +176,33 @@ export function AboutManager({
         relatedResources: items.map((entry, order) => ({ ...entry, order }))
       };
     });
+  }
+
+  function selectTab(tab: AboutTabId): void {
+    setActiveTab(tab);
+  }
+
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const tabList = event.currentTarget.closest('[role="tablist"]');
+    const tabs = tabList
+      ? Array.from(tabList.querySelectorAll<HTMLButtonElement>('[role="tab"]'))
+      : [];
+    if (tabs.length === 0) return;
+    const currentIndex = tabs.indexOf(event.currentTarget);
+    if (currentIndex < 0) return;
+
+    let nextIndex = currentIndex;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = tabs.length - 1;
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+
+    const target = tabs[nextIndex];
+    if (!target) return;
+    event.preventDefault();
+    target.focus();
+    target.click();
   }
 
   function saveForPublication(): void {
@@ -305,604 +342,738 @@ export function AboutManager({
         </div>
 
         <main className="zam-main">
-          <div className="zam-panel">
-            <div className="zam-panel-intro">
-              <div>
-                <small>Perfil</small>
-                <h2>Identidad editorial</h2>
-              </div>
-              <div className="zam-panel-copy">
-                <p>Todos los campos pertenecen al documento compartido del repositorio.</p>
-                <p>
-                  Replica los campos del perfil público de Blogger y sólo publica los que tengan
-                  contenido.
-                </p>
-              </div>
+          <div className="zam-workspace">
+            <div className="zam-tabs" role="tablist" aria-label="Secciones de Acerca de">
+              {ABOUT_TABS.map((tab) => {
+                const selected = activeTab === tab.id;
+                const count =
+                  tab.id === 'social'
+                    ? profile.social.length
+                    : tab.id === 'resources'
+                      ? profile.relatedResources.length
+                      : null;
+                return (
+                  <button
+                    key={tab.id}
+                    id={`about-tab-${tab.id}`}
+                    type="button"
+                    role="tab"
+                    aria-label={tab.label}
+                    aria-selected={selected}
+                    aria-controls={`about-panel-${tab.id}`}
+                    tabIndex={selected ? 0 : -1}
+                    onClick={() => {
+                      selectTab(tab.id);
+                    }}
+                    onKeyDown={handleTabKeyDown}
+                  >
+                    <span className="zam-tab-label">{tab.label}</span>
+                    <small className="zam-tab-meta">
+                      {tab.description}
+                      {count === null ? null : (
+                        <span className="zam-tab-count">{String(count)}</span>
+                      )}
+                    </small>
+                  </button>
+                );
+              })}
             </div>
 
-            <section className="zam-group" aria-labelledby="about-identity-heading">
-              <div className="zam-group-title">
-                <span id="about-identity-heading">Identidad y contacto</span>
-                <span>Principal</span>
-              </div>
-
-              <div className="zam-photo-upload">
-                <div className="zam-photo-preview">
-                  {p.photoUrl ? (
-                    <span
-                      className="zam-photo-preview-image"
-                      role="img"
-                      aria-label="Vista previa de foto de perfil"
-                      style={{ backgroundImage: `url(${JSON.stringify(p.photoUrl)})` }}
-                    />
-                  ) : (
-                    <span aria-hidden="true">Foto</span>
-                  )}
-                </div>
-                <div className="zam-photo-copy">
-                  <strong>Foto de perfil</strong>
-                  <small>
-                    Se recorta al centro y se optimiza automáticamente. La vista pública usa marco
-                    circular.
-                  </small>
-                  <div className="zam-photo-actions">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        photoInputRef.current?.click();
-                      }}
-                    >
-                      Subir foto
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        updateText('photoUrl', '');
-                        setStatus('Foto eliminada; hay cambios pendientes de publicación.');
-                      }}
-                    >
-                      Eliminar
-                    </button>
+            <div className="zam-tab-content">
+              <section
+                id="about-panel-profile"
+                className="zam-panel"
+                role="tabpanel"
+                aria-labelledby="about-tab-profile"
+                hidden={activeTab !== 'profile'}
+              >
+                <div className="zam-panel-intro">
+                  <div>
+                    <small>Perfil</small>
+                    <h2>Identidad editorial</h2>
                   </div>
-                  <label className="zam-field zam-media-source-field">
-                    <span>Foto (URL o data URL)</span>
+                  <div className="zam-panel-copy">
+                    <p>Todos los campos pertenecen al documento compartido del repositorio.</p>
+                    <p>
+                      Replica los campos del perfil público de Blogger y sólo publica los que tengan
+                      contenido.
+                    </p>
+                  </div>
+                </div>
+
+                <section className="zam-group" aria-labelledby="about-identity-heading">
+                  <div className="zam-group-title">
+                    <span id="about-identity-heading">Identidad y contacto</span>
+                    <span>Principal</span>
+                  </div>
+
+                  <div className="zam-photo-upload">
+                    <div className="zam-photo-preview">
+                      {p.photoUrl ? (
+                        <span
+                          className="zam-photo-preview-image"
+                          role="img"
+                          aria-label="Vista previa de foto de perfil"
+                          style={{ backgroundImage: `url(${JSON.stringify(p.photoUrl)})` }}
+                        />
+                      ) : (
+                        <span aria-hidden="true">Foto</span>
+                      )}
+                    </div>
+                    <div className="zam-photo-copy">
+                      <strong>Foto de perfil</strong>
+                      <small>
+                        Se recorta al centro y se optimiza automáticamente. La vista pública usa
+                        marco circular.
+                      </small>
+                      <div className="zam-photo-actions">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            photoInputRef.current?.click();
+                          }}
+                        >
+                          Subir foto
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateText('photoUrl', '');
+                            setStatus('Foto eliminada; hay cambios pendientes de publicación.');
+                          }}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                      <label className="zam-field zam-media-source-field">
+                        <span>Foto (URL o data URL)</span>
+                        <input
+                          value={p.photoUrl}
+                          onChange={(event) => {
+                            updateText('photoUrl', event.target.value);
+                          }}
+                        />
+                      </label>
+                    </div>
                     <input
-                      value={p.photoUrl}
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      hidden
+                      aria-label="Seleccionar foto de perfil"
                       onChange={(event) => {
-                        updateText('photoUrl', event.target.value);
+                        const input = event.currentTarget;
+                        void importPhoto(input.files?.[0] ?? null).finally(() => {
+                          input.value = '';
+                        });
+                      }}
+                    />
+                  </div>
+
+                  <label className="zam-field">
+                    <span>Nombre visible</span>
+                    <input
+                      value={p.displayName}
+                      onChange={(event) => {
+                        updateText('displayName', event.target.value);
                       }}
                     />
                   </label>
+                  <label className="zam-field">
+                    <span>Introducción</span>
+                    <textarea
+                      value={p.introduction}
+                      onChange={(event) => {
+                        updateText('introduction', event.target.value);
+                      }}
+                    />
+                  </label>
+                  <label className="zam-field">
+                    <span>Correo electrónico</span>
+                    <input
+                      type="email"
+                      value={p.email}
+                      onChange={(event) => {
+                        updateText('email', event.target.value);
+                      }}
+                    />
+                  </label>
+                  <label className="zam-field">
+                    <span>Sitio web</span>
+                    <input
+                      type="url"
+                      value={p.website}
+                      onChange={(event) => {
+                        updateText('website', event.target.value);
+                      }}
+                    />
+                  </label>
+                  <label className="zam-field">
+                    <span>Perfil de Blogger</span>
+                    <input
+                      type="url"
+                      value={p.externalProfileUrl}
+                      onChange={(event) => {
+                        updateText('externalProfileUrl', event.target.value);
+                      }}
+                    />
+                  </label>
+                </section>
+              </section>
+
+              <section
+                id="about-panel-details"
+                className="zam-panel"
+                role="tabpanel"
+                aria-labelledby="about-tab-details"
+                hidden={activeTab !== 'details'}
+              >
+                <div className="zam-panel-intro zam-panel-intro-compact">
+                  <div>
+                    <small>Detalles</small>
+                    <h2>Perfil público</h2>
+                  </div>
+                  <div className="zam-panel-copy">
+                    <p>
+                      Información complementaria, ubicación y campos clásicos heredados de Blogger.
+                    </p>
+                  </div>
                 </div>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  hidden
-                  aria-label="Seleccionar foto de perfil"
-                  onChange={(event) => {
-                    const input = event.currentTarget;
-                    void importPhoto(input.files?.[0] ?? null).finally(() => {
-                      input.value = '';
-                    });
-                  }}
-                />
-              </div>
 
-              <label className="zam-field">
-                <span>Nombre visible</span>
-                <input
-                  value={p.displayName}
-                  onChange={(event) => {
-                    updateText('displayName', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Introducción</span>
-                <textarea
-                  value={p.introduction}
-                  onChange={(event) => {
-                    updateText('introduction', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Correo electrónico</span>
-                <input
-                  type="email"
-                  value={p.email}
-                  onChange={(event) => {
-                    updateText('email', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Sitio web</span>
-                <input
-                  type="url"
-                  value={p.website}
-                  onChange={(event) => {
-                    updateText('website', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Perfil de Blogger</span>
-                <input
-                  type="url"
-                  value={p.externalProfileUrl}
-                  onChange={(event) => {
-                    updateText('externalProfileUrl', event.target.value);
-                  }}
-                />
-              </label>
-            </section>
+                <section className="zam-group" aria-labelledby="about-extended-heading">
+                  <div className="zam-group-title">
+                    <span id="about-extended-heading">Perfil extendido</span>
+                    <span>Acerca de Blogger</span>
+                  </div>
+                  <div className="zam-grid-3">
+                    <label className="zam-field">
+                      <span>Ocupación</span>
+                      <input
+                        value={p.occupation}
+                        onChange={(event) => {
+                          updateText('occupation', event.target.value);
+                        }}
+                      />
+                    </label>
+                    <label className="zam-field">
+                      <span>Sector / Industria</span>
+                      <input
+                        value={p.industry}
+                        onChange={(event) => {
+                          updateText('industry', event.target.value);
+                        }}
+                      />
+                    </label>
+                    <label className="zam-field">
+                      <span>Género</span>
+                      <input
+                        value={p.gender}
+                        onChange={(event) => {
+                          updateText('gender', event.target.value);
+                        }}
+                      />
+                    </label>
+                  </div>
+                </section>
 
-            <section className="zam-group" aria-labelledby="about-extended-heading">
-              <div className="zam-group-title">
-                <span id="about-extended-heading">Perfil extendido</span>
-                <span>Acerca de Blogger</span>
-              </div>
-              <label className="zam-field">
-                <span>Ocupación</span>
-                <input
-                  value={p.occupation}
-                  onChange={(event) => {
-                    updateText('occupation', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Sector / Industria</span>
-                <input
-                  value={p.industry}
-                  onChange={(event) => {
-                    updateText('industry', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Género</span>
-                <input
-                  value={p.gender}
-                  onChange={(event) => {
-                    updateText('gender', event.target.value);
-                  }}
-                />
-              </label>
-            </section>
+                <section className="zam-group" aria-labelledby="about-location-heading">
+                  <div className="zam-group-title">
+                    <span id="about-location-heading">Ubicación</span>
+                    <span>Opcional</span>
+                  </div>
+                  <div className="zam-grid-3">
+                    <label className="zam-field">
+                      <span>País</span>
+                      <input
+                        value={p.location.country}
+                        onChange={(event) => {
+                          updateLocation('country', event.target.value);
+                        }}
+                      />
+                    </label>
+                    <label className="zam-field">
+                      <span>Estado / Región</span>
+                      <input
+                        value={p.location.region}
+                        onChange={(event) => {
+                          updateLocation('region', event.target.value);
+                        }}
+                      />
+                    </label>
+                    <label className="zam-field">
+                      <span>Ciudad</span>
+                      <input
+                        value={p.location.city}
+                        onChange={(event) => {
+                          updateLocation('city', event.target.value);
+                        }}
+                      />
+                    </label>
+                  </div>
+                </section>
 
-            <section className="zam-group" aria-labelledby="about-location-heading">
-              <div className="zam-group-title">
-                <span id="about-location-heading">Ubicación</span>
-                <span>Opcional</span>
-              </div>
-              <label className="zam-field">
-                <span>País</span>
-                <input
-                  value={p.location.country}
-                  onChange={(event) => {
-                    updateLocation('country', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Estado / Región</span>
-                <input
-                  value={p.location.region}
-                  onChange={(event) => {
-                    updateLocation('region', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Ciudad</span>
-                <input
-                  value={p.location.city}
-                  onChange={(event) => {
-                    updateLocation('city', event.target.value);
-                  }}
-                />
-              </label>
-            </section>
+                <section className="zam-group" aria-labelledby="about-classic-heading">
+                  <div className="zam-group-title">
+                    <span id="about-classic-heading">Campos clásicos de Blogger</span>
+                    <span>Perfil público</span>
+                  </div>
 
-            <section className="zam-group" aria-labelledby="about-favorites-heading">
-              <div className="zam-group-title">
-                <span id="about-favorites-heading">Intereses y favoritos</span>
-                <span>Uno por línea</span>
-              </div>
-              <label className="zam-field">
-                <span>Intereses</span>
-                <textarea
-                  value={p.interests.join('\n')}
-                  onChange={(event) => {
-                    updateList('interests', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Películas favoritas</span>
-                <textarea
-                  value={p.favoriteMovies.join('\n')}
-                  onChange={(event) => {
-                    updateList('favoriteMovies', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Música favorita</span>
-                <textarea
-                  value={p.favoriteMusic.join('\n')}
-                  onChange={(event) => {
-                    updateList('favoriteMusic', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Libro favorito</span>
-                <textarea
-                  value={p.favoriteBooks.join('\n')}
-                  onChange={(event) => {
-                    updateList('favoriteBooks', event.target.value);
-                  }}
-                />
-              </label>
-            </section>
-
-            <section className="zam-group" aria-labelledby="about-classic-heading">
-              <div className="zam-group-title">
-                <span id="about-classic-heading">Campos clásicos de Blogger</span>
-                <span>Perfil público</span>
-              </div>
-
-              <div className="zam-audio-upload">
-                <div className="zam-audio-copy">
-                  <strong>Audio Clip</strong>
-                  <small>Usa un archivo breve o una URL pública.</small>
-                </div>
-                <div className="zam-audio-actions">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      audioInputRef.current?.click();
-                    }}
-                  >
-                    Subir audio
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      updateText('audioClipUrl', '');
-                      setStatus('Audio Clip eliminado; hay cambios pendientes de publicación.');
-                    }}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-                <label className="zam-field zam-audio-source-field">
-                  <span>Audio Clip (URL o data URL)</span>
-                  <input
-                    value={p.audioClipUrl}
-                    onChange={(event) => {
-                      updateText('audioClipUrl', event.target.value);
-                    }}
-                  />
-                </label>
-                <input
-                  ref={audioInputRef}
-                  type="file"
-                  accept="audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/x-wav,audio/webm"
-                  hidden
-                  aria-label="Seleccionar Audio Clip"
-                  onChange={(event) => {
-                    const input = event.currentTarget;
-                    void importAudio(input.files?.[0] ?? null).finally(() => {
-                      input.value = '';
-                    });
-                  }}
-                />
-              </div>
-
-              <label className="zam-field">
-                <span>Wishlist</span>
-                <input
-                  type="url"
-                  value={p.wishlistUrl}
-                  onChange={(event) => {
-                    updateText('wishlistUrl', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Pregunta aleatoria</span>
-                <input
-                  value={p.randomQuestion}
-                  onChange={(event) => {
-                    updateText('randomQuestion', event.target.value);
-                  }}
-                />
-              </label>
-              <label className="zam-field">
-                <span>Respuesta</span>
-                <textarea
-                  value={p.randomAnswer}
-                  onChange={(event) => {
-                    updateText('randomAnswer', event.target.value);
-                  }}
-                />
-              </label>
-            </section>
-
-            <section className="zam-group" aria-labelledby="about-social-heading">
-              <div className="zam-group-title zam-group-title-with-action">
-                <div>
-                  <span id="about-social-heading">Redes sociales</span>
-                  <small>Enlaces públicos</small>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfile((current) => ({
-                      ...current,
-                      social: [
-                        ...current.social,
-                        {
-                          id: uid('social'),
-                          platform: 'x',
-                          label: '',
-                          username: '',
-                          url: '',
-                          visible: true,
-                          order: nextOrder(current.social)
-                        }
-                      ]
-                    }));
-                  }}
-                >
-                  + Añadir red
-                </button>
-              </div>
-
-              <div className="zam-repeater zam-repeater-contained">
-                {profile.social.length === 0 ? (
-                  <p className="zam-empty">No hay redes sociales añadidas.</p>
-                ) : null}
-                {profile.social.map((item, index) => (
-                  <article className="zam-card" key={item.id}>
-                    <div className="zam-card-head">
-                      <strong>Red {String(index + 1)}</strong>
+                  <div className="zam-audio-upload">
+                    <div className="zam-audio-copy">
+                      <strong>Audio Clip</strong>
+                      <small>Usa un archivo breve o una URL pública.</small>
+                    </div>
+                    <div className="zam-audio-actions">
                       <button
                         type="button"
-                        aria-label={`Subir red ${String(index + 1)}`}
-                        disabled={index === 0}
                         onClick={() => {
-                          moveSocial(item.id, -1);
+                          audioInputRef.current?.click();
                         }}
                       >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Bajar red ${String(index + 1)}`}
-                        disabled={index === profile.social.length - 1}
-                        onClick={() => {
-                          moveSocial(item.id, 1);
-                        }}
-                      >
-                        ↓
+                        Subir audio
                       </button>
                       <button
                         type="button"
                         onClick={() => {
-                          setProfile((current) => ({
-                            ...current,
-                            social: current.social
-                              .filter((entry) => entry.id !== item.id)
-                              .map((entry, order) => ({ ...entry, order }))
-                          }));
+                          updateText('audioClipUrl', '');
+                          setStatus('Audio Clip eliminado; hay cambios pendientes de publicación.');
                         }}
                       >
                         Eliminar
                       </button>
                     </div>
-                    <label className="zam-field">
-                      <span>Plataforma</span>
-                      <select
-                        value={item.platform}
-                        onChange={(event) => {
-                          updateSocial(item.id, { platform: event.target.value });
-                        }}
-                      >
-                        {(!SOCIAL_PLATFORM_OPTIONS.includes(
-                          item.platform as (typeof SOCIAL_PLATFORM_OPTIONS)[number]
-                        )
-                          ? [item.platform, ...SOCIAL_PLATFORM_OPTIONS]
-                          : SOCIAL_PLATFORM_OPTIONS
-                        ).map((platform) => (
-                          <option key={platform} value={platform}>
-                            {socialPlatformLabel(platform)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="zam-field">
-                      <span>Etiqueta personalizada</span>
+                    <label className="zam-field zam-audio-source-field">
+                      <span>Audio Clip (URL o data URL)</span>
                       <input
-                        value={item.label}
+                        value={p.audioClipUrl}
                         onChange={(event) => {
-                          updateSocial(item.id, { label: event.target.value });
+                          updateText('audioClipUrl', event.target.value);
                         }}
                       />
                     </label>
-                    <label className="zam-field">
-                      <span>Usuario</span>
-                      <input
-                        value={item.username}
-                        onChange={(event) => {
-                          updateSocial(item.id, { username: event.target.value });
-                        }}
-                      />
-                    </label>
-                    <label className="zam-field">
-                      <span>URL</span>
-                      <input
-                        type="url"
-                        value={item.url}
-                        onChange={(event) => {
-                          updateSocial(item.id, { url: event.target.value });
-                        }}
-                      />
-                    </label>
-                    <label className="zam-check">
-                      <input
-                        type="checkbox"
-                        checked={item.visible}
-                        onChange={(event) => {
-                          updateSocial(item.id, { visible: event.target.checked });
-                        }}
-                      />
-                      Visible
-                    </label>
-                  </article>
-                ))}
-              </div>
-            </section>
+                    <input
+                      ref={audioInputRef}
+                      type="file"
+                      accept="audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/x-wav,audio/webm"
+                      hidden
+                      aria-label="Seleccionar Audio Clip"
+                      onChange={(event) => {
+                        const input = event.currentTarget;
+                        void importAudio(input.files?.[0] ?? null).finally(() => {
+                          input.value = '';
+                        });
+                      }}
+                    />
+                  </div>
 
-            <section className="zam-group" aria-labelledby="about-resources-heading">
-              <div className="zam-group-title zam-group-title-with-action">
-                <div>
-                  <span id="about-resources-heading">Recursos relacionados</span>
-                  <small>Directorio editorial</small>
+                  <label className="zam-field">
+                    <span>Wishlist</span>
+                    <input
+                      type="url"
+                      value={p.wishlistUrl}
+                      onChange={(event) => {
+                        updateText('wishlistUrl', event.target.value);
+                      }}
+                    />
+                  </label>
+                  <label className="zam-field">
+                    <span>Pregunta aleatoria</span>
+                    <input
+                      value={p.randomQuestion}
+                      onChange={(event) => {
+                        updateText('randomQuestion', event.target.value);
+                      }}
+                    />
+                  </label>
+                  <label className="zam-field">
+                    <span>Respuesta</span>
+                    <textarea
+                      value={p.randomAnswer}
+                      onChange={(event) => {
+                        updateText('randomAnswer', event.target.value);
+                      }}
+                    />
+                  </label>
+                </section>
+              </section>
+
+              <section
+                id="about-panel-favorites"
+                className="zam-panel"
+                role="tabpanel"
+                aria-labelledby="about-tab-favorites"
+                hidden={activeTab !== 'favorites'}
+              >
+                <div className="zam-panel-intro zam-panel-intro-compact">
+                  <div>
+                    <small>Intereses</small>
+                    <h2>Gustos y favoritos</h2>
+                  </div>
+                  <div className="zam-panel-copy">
+                    <p>Cada línea se convierte en una entrada independiente del perfil público.</p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setProfile((current) => ({
-                      ...current,
-                      relatedResources: [
-                        ...current.relatedResources,
-                        {
-                          id: uid('resource'),
-                          title: '',
-                          url: '',
-                          description: '',
-                          type: 'project',
-                          visible: true,
-                          order: nextOrder(current.relatedResources)
-                        }
-                      ]
-                    }));
-                  }}
-                >
-                  + Añadir recurso
-                </button>
-              </div>
 
-              <div className="zam-repeater zam-repeater-contained">
-                {profile.relatedResources.length === 0 ? (
-                  <p className="zam-empty">No hay recursos relacionados añadidos.</p>
-                ) : null}
-                {profile.relatedResources.map((item, index) => (
-                  <article className="zam-card" key={item.id}>
-                    <div className="zam-card-head">
-                      <strong>Recurso {String(index + 1)}</strong>
-                      <button
-                        type="button"
-                        aria-label={`Subir recurso ${String(index + 1)}`}
-                        disabled={index === 0}
-                        onClick={() => {
-                          moveResource(item.id, -1);
-                        }}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Bajar recurso ${String(index + 1)}`}
-                        disabled={index === profile.relatedResources.length - 1}
-                        onClick={() => {
-                          moveResource(item.id, 1);
-                        }}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setProfile((current) => ({
-                            ...current,
-                            relatedResources: current.relatedResources
-                              .filter((entry) => entry.id !== item.id)
-                              .map((entry, order) => ({ ...entry, order }))
-                          }));
-                        }}
-                      >
-                        Eliminar
-                      </button>
-                    </div>
+                <section className="zam-group" aria-labelledby="about-favorites-heading">
+                  <div className="zam-group-title">
+                    <span id="about-favorites-heading">Intereses y favoritos</span>
+                    <span>Uno por línea</span>
+                  </div>
+                  <div className="zam-favorites-grid">
                     <label className="zam-field">
-                      <span>Título</span>
-                      <input
-                        value={item.title}
-                        onChange={(event) => {
-                          updateResource(item.id, { title: event.target.value });
-                        }}
-                      />
-                    </label>
-                    <label className="zam-field">
-                      <span>URL</span>
-                      <input
-                        type="url"
-                        value={item.url}
-                        onChange={(event) => {
-                          updateResource(item.id, { url: event.target.value });
-                        }}
-                      />
-                    </label>
-                    <label className="zam-field">
-                      <span>Descripción</span>
+                      <span>Intereses</span>
                       <textarea
-                        value={item.description}
+                        value={p.interests.join('\n')}
                         onChange={(event) => {
-                          updateResource(item.id, { description: event.target.value });
+                          updateList('interests', event.target.value);
                         }}
                       />
                     </label>
                     <label className="zam-field">
-                      <span>Tipo</span>
-                      <select
-                        value={item.type}
+                      <span>Películas favoritas</span>
+                      <textarea
+                        value={p.favoriteMovies.join('\n')}
                         onChange={(event) => {
-                          updateResource(item.id, { type: event.target.value });
-                        }}
-                      >
-                        {(!KNOWN_RESOURCE_TYPES.includes(
-                          item.type as (typeof KNOWN_RESOURCE_TYPES)[number]
-                        )
-                          ? [item.type, ...KNOWN_RESOURCE_TYPES]
-                          : KNOWN_RESOURCE_TYPES
-                        ).map((type) => (
-                          <option key={type} value={type}>
-                            {resourceTypeLabel(type)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="zam-check">
-                      <input
-                        type="checkbox"
-                        checked={item.visible}
-                        onChange={(event) => {
-                          updateResource(item.id, { visible: event.target.checked });
+                          updateList('favoriteMovies', event.target.value);
                         }}
                       />
-                      Visible
                     </label>
-                  </article>
-                ))}
-              </div>
-            </section>
+                    <label className="zam-field">
+                      <span>Música favorita</span>
+                      <textarea
+                        value={p.favoriteMusic.join('\n')}
+                        onChange={(event) => {
+                          updateList('favoriteMusic', event.target.value);
+                        }}
+                      />
+                    </label>
+                    <label className="zam-field">
+                      <span>Libro favorito</span>
+                      <textarea
+                        value={p.favoriteBooks.join('\n')}
+                        onChange={(event) => {
+                          updateList('favoriteBooks', event.target.value);
+                        }}
+                      />
+                    </label>
+                  </div>
+                </section>
+              </section>
+
+              <section
+                id="about-panel-social"
+                className="zam-panel"
+                role="tabpanel"
+                aria-labelledby="about-tab-social"
+                hidden={activeTab !== 'social'}
+              >
+                <div className="zam-panel-intro zam-panel-intro-compact">
+                  <div>
+                    <small>Redes</small>
+                    <h2>Enlaces públicos</h2>
+                  </div>
+                  <div className="zam-panel-copy">
+                    <p>Ordena los enlaces como deben aparecer y controla su visibilidad.</p>
+                  </div>
+                </div>
+
+                <section className="zam-group" aria-labelledby="about-social-heading">
+                  <div className="zam-group-title zam-group-title-with-action">
+                    <div>
+                      <span id="about-social-heading">Redes sociales</span>
+                      <small>Enlaces públicos</small>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfile((current) => ({
+                          ...current,
+                          social: [
+                            ...current.social,
+                            {
+                              id: uid('social'),
+                              platform: 'x',
+                              label: '',
+                              username: '',
+                              url: '',
+                              visible: true,
+                              order: nextOrder(current.social)
+                            }
+                          ]
+                        }));
+                      }}
+                    >
+                      + Añadir red
+                    </button>
+                  </div>
+
+                  <div className="zam-repeater zam-repeater-contained">
+                    {profile.social.length === 0 ? (
+                      <p className="zam-empty">No hay redes sociales añadidas.</p>
+                    ) : null}
+                    {profile.social.map((item, index) => (
+                      <article className="zam-card" key={item.id}>
+                        <div className="zam-card-head">
+                          <strong>Red {String(index + 1)}</strong>
+                          <div className="zam-card-actions">
+                            <button
+                              type="button"
+                              aria-label={`Subir red ${String(index + 1)}`}
+                              disabled={index === 0}
+                              onClick={() => {
+                                moveSocial(item.id, -1);
+                              }}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Bajar red ${String(index + 1)}`}
+                              disabled={index === profile.social.length - 1}
+                              onClick={() => {
+                                moveSocial(item.id, 1);
+                              }}
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProfile((current) => ({
+                                  ...current,
+                                  social: current.social
+                                    .filter((entry) => entry.id !== item.id)
+                                    .map((entry, order) => ({ ...entry, order }))
+                                }));
+                              }}
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                        <div className="zam-card-grid">
+                          <label className="zam-field">
+                            <span>Plataforma</span>
+                            <select
+                              value={item.platform}
+                              onChange={(event) => {
+                                updateSocial(item.id, { platform: event.target.value });
+                              }}
+                            >
+                              {(!SOCIAL_PLATFORM_OPTIONS.includes(
+                                item.platform as (typeof SOCIAL_PLATFORM_OPTIONS)[number]
+                              )
+                                ? [item.platform, ...SOCIAL_PLATFORM_OPTIONS]
+                                : SOCIAL_PLATFORM_OPTIONS
+                              ).map((platform) => (
+                                <option key={platform} value={platform}>
+                                  {socialPlatformLabel(platform)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="zam-field">
+                            <span>Etiqueta personalizada</span>
+                            <input
+                              value={item.label}
+                              onChange={(event) => {
+                                updateSocial(item.id, { label: event.target.value });
+                              }}
+                            />
+                          </label>
+                          <label className="zam-field">
+                            <span>Usuario</span>
+                            <input
+                              value={item.username}
+                              onChange={(event) => {
+                                updateSocial(item.id, { username: event.target.value });
+                              }}
+                            />
+                          </label>
+                          <label className="zam-field">
+                            <span>URL</span>
+                            <input
+                              type="url"
+                              value={item.url}
+                              onChange={(event) => {
+                                updateSocial(item.id, { url: event.target.value });
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <label className="zam-check">
+                          <input
+                            type="checkbox"
+                            checked={item.visible}
+                            onChange={(event) => {
+                              updateSocial(item.id, { visible: event.target.checked });
+                            }}
+                          />
+                          Visible
+                        </label>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              </section>
+
+              <section
+                id="about-panel-resources"
+                className="zam-panel"
+                role="tabpanel"
+                aria-labelledby="about-tab-resources"
+                hidden={activeTab !== 'resources'}
+              >
+                <div className="zam-panel-intro zam-panel-intro-compact">
+                  <div>
+                    <small>Recursos</small>
+                    <h2>Directorio editorial</h2>
+                  </div>
+                  <div className="zam-panel-copy">
+                    <p>Administra referencias relacionadas sin mezclar su edición con el perfil.</p>
+                  </div>
+                </div>
+
+                <section className="zam-group" aria-labelledby="about-resources-heading">
+                  <div className="zam-group-title zam-group-title-with-action">
+                    <div>
+                      <span id="about-resources-heading">Recursos relacionados</span>
+                      <small>Directorio editorial</small>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfile((current) => ({
+                          ...current,
+                          relatedResources: [
+                            ...current.relatedResources,
+                            {
+                              id: uid('resource'),
+                              title: '',
+                              url: '',
+                              description: '',
+                              type: 'project',
+                              visible: true,
+                              order: nextOrder(current.relatedResources)
+                            }
+                          ]
+                        }));
+                      }}
+                    >
+                      + Añadir recurso
+                    </button>
+                  </div>
+
+                  <div className="zam-repeater zam-repeater-contained">
+                    {profile.relatedResources.length === 0 ? (
+                      <p className="zam-empty">No hay recursos relacionados añadidos.</p>
+                    ) : null}
+                    {profile.relatedResources.map((item, index) => (
+                      <article className="zam-card" key={item.id}>
+                        <div className="zam-card-head">
+                          <strong>Recurso {String(index + 1)}</strong>
+                          <div className="zam-card-actions">
+                            <button
+                              type="button"
+                              aria-label={`Subir recurso ${String(index + 1)}`}
+                              disabled={index === 0}
+                              onClick={() => {
+                                moveResource(item.id, -1);
+                              }}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Bajar recurso ${String(index + 1)}`}
+                              disabled={index === profile.relatedResources.length - 1}
+                              onClick={() => {
+                                moveResource(item.id, 1);
+                              }}
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProfile((current) => ({
+                                  ...current,
+                                  relatedResources: current.relatedResources
+                                    .filter((entry) => entry.id !== item.id)
+                                    .map((entry, order) => ({ ...entry, order }))
+                                }));
+                              }}
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                        <div className="zam-card-grid">
+                          <label className="zam-field">
+                            <span>Título</span>
+                            <input
+                              value={item.title}
+                              onChange={(event) => {
+                                updateResource(item.id, { title: event.target.value });
+                              }}
+                            />
+                          </label>
+                          <label className="zam-field">
+                            <span>URL</span>
+                            <input
+                              type="url"
+                              value={item.url}
+                              onChange={(event) => {
+                                updateResource(item.id, { url: event.target.value });
+                              }}
+                            />
+                          </label>
+                          <label className="zam-field zam-card-field-wide">
+                            <span>Descripción</span>
+                            <textarea
+                              value={item.description}
+                              onChange={(event) => {
+                                updateResource(item.id, { description: event.target.value });
+                              }}
+                            />
+                          </label>
+                          <label className="zam-field zam-card-field-wide">
+                            <span>Tipo</span>
+                            <select
+                              value={item.type}
+                              onChange={(event) => {
+                                updateResource(item.id, { type: event.target.value });
+                              }}
+                            >
+                              {(!KNOWN_RESOURCE_TYPES.includes(
+                                item.type as (typeof KNOWN_RESOURCE_TYPES)[number]
+                              )
+                                ? [item.type, ...KNOWN_RESOURCE_TYPES]
+                                : KNOWN_RESOURCE_TYPES
+                              ).map((type) => (
+                                <option key={type} value={type}>
+                                  {resourceTypeLabel(type)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                        <label className="zam-check">
+                          <input
+                            type="checkbox"
+                            checked={item.visible}
+                            onChange={(event) => {
+                              updateResource(item.id, { visible: event.target.checked });
+                            }}
+                          />
+                          Visible
+                        </label>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              </section>
+            </div>
           </div>
         </main>
 
