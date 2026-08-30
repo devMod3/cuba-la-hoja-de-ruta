@@ -79,7 +79,9 @@ describe('site config', () => {
     expect([...siteProfileSchema.required].sort()).toEqual(
       ['schemaVersion', 'updatedAt', 'profile', 'social', 'relatedResources'].sort()
     );
-    expect([...siteProfileSchema.$defs.profile.required].sort()).toEqual(Object.keys(parsed.profile).sort());
+    expect([...siteProfileSchema.$defs.profile.required].sort()).toEqual(
+      Object.keys(parsed.profile).sort()
+    );
     expect([...siteProfileSchema.$defs.location.required].sort()).toEqual(
       Object.keys(parsed.profile.location).sort()
     );
