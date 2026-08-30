@@ -16,7 +16,7 @@ Aplicación estática Next.js de **La hoja de ruta**, publicada exclusivamente e
 
 ## Desarrollo
 
-Requiere Node 24.19.x y pnpm 11.22.x.
+Requiere Node `>=24.19.0 <25` y pnpm `>=11.22.0 <12`; CI fija Node `24.19.0` y pnpm `11.22.0` para builds reproducibles.
 
 ```bash
 pnpm install --frozen-lockfile
