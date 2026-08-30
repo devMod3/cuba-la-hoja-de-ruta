@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import siteProfileSchema from './schema/site-profile.schema.json';
 import {
   isSafeAudioSource,
   isSafeExternalUrl,
@@ -59,7 +60,7 @@ function validProfile() {
         visible: true,
         order: 2
       },
-      { title: 'Otro', url: 'https://example.com/other', type: 'unknown', order: 'not-a-number' }
+      { title: 'Otro', url: 'https://example.com/other', type: 'unknown', order: 3 }
     ]
   };
 }
@@ -70,13 +71,51 @@ describe('site config', () => {
     expect(sharedMetadataRegistry.schemaVersion).toBe('1.0.0');
   });
 
+  it('keeps the durable JSON Schema aligned with the canonical persisted profile', () => {
+    const parsed = parsePublishedSiteProfile(validProfile());
+    expect(siteProfileSchema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
+    expect(siteProfileSchema.$id).toBe('urn:zenblog:site-profile:1.0.0');
+    expect(siteProfileSchema.additionalProperties).toBe(false);
+    expect([...siteProfileSchema.required].sort()).toEqual(
+      ['schemaVersion', 'updatedAt', 'profile', 'social', 'relatedResources'].sort()
+    );
+    expect([...siteProfileSchema.$defs.profile.required].sort()).toEqual(
+      Object.keys(parsed.profile).sort()
+    );
+    expect([...siteProfileSchema.$defs.location.required].sort()).toEqual(
+      Object.keys(parsed.profile.location).sort()
+    );
+    expect([...siteProfileSchema.$defs.socialEntry.required].sort()).toEqual(
+      Object.keys(parsed.social[0] ?? {
+        id: '',
+        platform: '',
+        label: '',
+        username: '',
+        url: '',
+        visible: true,
+        order: 0
+      }).sort()
+    );
+    expect([...siteProfileSchema.$defs.resourceEntry.required].sort()).toEqual(
+      Object.keys(parsed.relatedResources[0] ?? {
+        id: '',
+        title: '',
+        url: '',
+        description: '',
+        type: '',
+        visible: true,
+        order: 0
+      }).sort()
+    );
+  });
+
   it('canonicalizes profile collections and enum values', () => {
     const profile = parsePublishedSiteProfile(validProfile());
     expect(profile.profile.displayName).toBe('La resistencia');
     expect(profile.profile.externalProfileUrl).toBe('https://www.blogger.com/profile/example');
     expect(profile.profile.interests).toEqual(['Constitucionalismo', 'Tecnologías']);
     expect(profile.social.map((item) => item.platform)).toEqual(['unknown', 'x']);
-    expect(profile.relatedResources.map((item) => item.type)).toEqual(['unknown', 'archive']);
+    expect(profile.relatedResources.map((item) => item.type)).toEqual(['archive', 'unknown']);
   });
 
   it('rejects malformed public profile values', () => {
@@ -93,6 +132,103 @@ describe('site config', () => {
     const invalidEmail = validProfile();
     invalidEmail.profile.email = 'not-an-email';
     expect(() => parsePublishedSiteProfile(invalidEmail)).toThrow(/email/u);
+  });
+
+  it('enforces stable collection identity and ordering invariants', () => {
+    expect(() =>
+      parsePublishedSiteProfile({
+        ...validProfile(),
+        social: [
+          {
+            id: 'same',
+            platform: 'x',
+            label: '',
+            username: '',
+            url: 'https://example.com/one',
+            visible: true,
+            order: 0
+          },
+          {
+            id: 'same',
+            platform: 'github',
+            label: '',
+            username: '',
+            url: 'https://example.com/two',
+            visible: true,
+            order: 1
+          }
+        ]
+      })
+    ).toThrow(/id duplicates/u);
+
+    expect(() =>
+      parsePublishedSiteProfile({
+        ...validProfile(),
+        relatedResources: [
+          {
+            id: 'one',
+            title: 'One',
+            url: 'https://example.com/one',
+            description: '',
+            type: 'project',
+            visible: true,
+            order: 0
+          },
+          {
+            id: 'two',
+            title: 'Two',
+            url: 'https://example.com/two',
+            description: '',
+            type: 'project',
+            visible: true,
+            order: 0
+          }
+        ]
+      })
+    ).toThrow(/order duplicates/u);
+
+    expect(() =>
+      parsePublishedSiteProfile({
+        ...validProfile(),
+        social: [
+          {
+            id: 'bad-order',
+            platform: 'x',
+            label: '',
+            username: '',
+            url: 'https://example.com/social',
+            visible: true,
+            order: -1
+          }
+        ]
+      })
+    ).toThrow(/order must be a non-negative integer/u);
+  });
+
+  it('allows incomplete hidden collection entries while validating any supplied URL', () => {
+    const hidden = parsePublishedSiteProfile({
+      schemaVersion: '1.0.0',
+      updatedAt: null,
+      profile: {},
+      social: [{ id: 'hidden-social', visible: false, url: '', order: 0 }],
+      relatedResources: [
+        { id: 'hidden-resource', title: '', visible: false, url: '', order: 0 }
+      ]
+    });
+    expect(hidden.social[0]).toMatchObject({ id: 'hidden-social', visible: false, url: '' });
+    expect(hidden.relatedResources[0]).toMatchObject({
+      id: 'hidden-resource',
+      visible: false,
+      title: '',
+      url: ''
+    });
+
+    expect(() =>
+      parsePublishedSiteProfile({
+        ...hidden,
+        social: [{ ...hidden.social[0], url: 'javascript:hidden' }]
+      })
+    ).toThrow(/social\[0\].url is unsafe/u);
   });
 
   it('validates shared metadata through the domain contract', () => {

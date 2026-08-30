@@ -57,6 +57,10 @@ function uid(prefix: string): string {
   return `${prefix}-${globalThis.crypto.randomUUID()}`;
 }
 
+function nextOrder(items: readonly { readonly order: number }[]): number {
+  return items.reduce((maximum, item) => Math.max(maximum, item.order), -1) + 1;
+}
+
 function downloadTextFile(filename: string, content: string, type: string): void {
   const url = URL.createObjectURL(new Blob([content], { type }));
   const anchor = document.createElement('a');
@@ -130,6 +134,40 @@ export function AboutManager({
     }));
   }
 
+  function moveSocial(id: string, direction: -1 | 1): void {
+    setProfile((current) => {
+      const items = [...current.social].sort((left, right) => left.order - right.order);
+      const index = items.findIndex((item) => item.id === id);
+      const target = index + direction;
+      const item = items[index];
+      const targetItem = items[target];
+      if (index < 0 || target < 0 || target >= items.length || !item || !targetItem) return current;
+      items[index] = targetItem;
+      items[target] = item;
+      return {
+        ...current,
+        social: items.map((entry, order) => ({ ...entry, order }))
+      };
+    });
+  }
+
+  function moveResource(id: string, direction: -1 | 1): void {
+    setProfile((current) => {
+      const items = [...current.relatedResources].sort((left, right) => left.order - right.order);
+      const index = items.findIndex((item) => item.id === id);
+      const target = index + direction;
+      const item = items[index];
+      const targetItem = items[target];
+      if (index < 0 || target < 0 || target >= items.length || !item || !targetItem) return current;
+      items[index] = targetItem;
+      items[target] = item;
+      return {
+        ...current,
+        relatedResources: items.map((entry, order) => ({ ...entry, order }))
+      };
+    });
+  }
+
   function saveForPublication(): void {
     try {
       const canonical = parsePublishedSiteProfile({
@@ -148,7 +186,18 @@ export function AboutManager({
   }
 
   function openPublicPreview(): void {
-    globalThis.open('../acerca-de/', '_blank', 'noopener,noreferrer');
+    try {
+      const canonical = parsePublishedSiteProfile(profile);
+      onChange(canonical);
+      setStatus('Borrador local validado para vista previa; todavía no está publicado.');
+      globalThis.open('./acerca-de-preview/', '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? `No se abrió la vista previa: ${error.message}`
+          : 'No se abrió la vista previa.'
+      );
+    }
   }
 
   function exportProfile(): void {
@@ -605,7 +654,7 @@ export function AboutManager({
                           username: '',
                           url: '',
                           visible: true,
-                          order: current.social.length
+                          order: nextOrder(current.social)
                         }
                       ]
                     }));
@@ -625,10 +674,32 @@ export function AboutManager({
                       <strong>Red {String(index + 1)}</strong>
                       <button
                         type="button"
+                        aria-label={`Subir red ${String(index + 1)}`}
+                        disabled={index === 0}
+                        onClick={() => {
+                          moveSocial(item.id, -1);
+                        }}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Bajar red ${String(index + 1)}`}
+                        disabled={index === profile.social.length - 1}
+                        onClick={() => {
+                          moveSocial(item.id, 1);
+                        }}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => {
                           setProfile((current) => ({
                             ...current,
-                            social: current.social.filter((entry) => entry.id !== item.id)
+                            social: current.social
+                              .filter((entry) => entry.id !== item.id)
+                              .map((entry, order) => ({ ...entry, order }))
                           }));
                         }}
                       >
@@ -718,7 +789,7 @@ export function AboutManager({
                           description: '',
                           type: 'project',
                           visible: true,
-                          order: current.relatedResources.length
+                          order: nextOrder(current.relatedResources)
                         }
                       ]
                     }));
@@ -738,12 +809,32 @@ export function AboutManager({
                       <strong>Recurso {String(index + 1)}</strong>
                       <button
                         type="button"
+                        aria-label={`Subir recurso ${String(index + 1)}`}
+                        disabled={index === 0}
+                        onClick={() => {
+                          moveResource(item.id, -1);
+                        }}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Bajar recurso ${String(index + 1)}`}
+                        disabled={index === profile.relatedResources.length - 1}
+                        onClick={() => {
+                          moveResource(item.id, 1);
+                        }}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => {
                           setProfile((current) => ({
                             ...current,
-                            relatedResources: current.relatedResources.filter(
-                              (entry) => entry.id !== item.id
-                            )
+                            relatedResources: current.relatedResources
+                              .filter((entry) => entry.id !== item.id)
+                              .map((entry, order) => ({ ...entry, order }))
                           }));
                         }}
                       >
