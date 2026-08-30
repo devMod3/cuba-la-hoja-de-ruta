@@ -42,11 +42,9 @@ type ListField = 'interests' | 'favoriteMovies' | 'favoriteMusic' | 'favoriteBoo
 const MAX_PROFILE_IMPORT_BYTES = 2_000_000;
 const SOCIAL_PLATFORM_OPTIONS = KNOWN_SOCIAL_PLATFORMS.filter((platform) => platform !== 'other');
 const ABOUT_TABS = [
-  { id: 'profile', label: 'Perfil', description: 'Identidad y contacto' },
-  { id: 'details', label: 'Detalles', description: 'Blogger y ubicación' },
+  { id: 'personal', label: 'Detalles', description: 'Perfil extendido' },
   { id: 'favorites', label: 'Intereses', description: 'Gustos y favoritos' },
-  { id: 'social', label: 'Redes', description: 'Enlaces públicos' },
-  { id: 'resources', label: 'Recursos', description: 'Directorio editorial' }
+  { id: 'connections', label: 'Social & Recursos', description: 'Enlaces y directorio' }
 ] as const;
 
 type AboutTabId = (typeof ABOUT_TABS)[number]['id'];
@@ -91,7 +89,7 @@ export function AboutManager({
   const audioInputRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<PublishedSiteProfile | null>(null);
   const [status, setStatus] = useState('Perfil listo para editar');
-  const [activeTab, setActiveTab] = useState<AboutTabId>('profile');
+  const [activeTab, setActiveTab] = useState<AboutTabId>('personal');
   const profile = draft ?? initialProfile;
 
   function setProfile(
@@ -176,10 +174,6 @@ export function AboutManager({
         relatedResources: items.map((entry, order) => ({ ...entry, order }))
       };
     });
-  }
-
-  function selectTab(tab: AboutTabId): void {
-    setActiveTab(tab);
   }
 
   function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>): void {
@@ -296,27 +290,42 @@ export function AboutManager({
   return (
     <div id="zen-about-manager-root">
       <div className="zam-shell">
-        <header className="zam-header">
-          <div className="zam-brand">
+        <header className="zam-header zam-profile-header">
+          <div className="zam-profile-heading">
             <small>Acerca de</small>
-            <strong>Perfil</strong>
+            <h1>Configuración de perfil</h1>
+            <p>Gestiona tu identidad pública sin mezclar borrador, publicación y delivery.</p>
           </div>
-          <div className="zam-header-actions">
-            <button type="button" onClick={openPublicPreview}>
+
+          <div className="zam-header-actions zam-profile-actions">
+            <div
+              className="zam-status"
+              role="status"
+              aria-live="polite"
+              data-kind={/^(No |El Audio|La foto|La imagen|Primero)/u.test(status) ? 'error' : 'ok'}
+            >
+              {status}
+            </div>
+            <button type="button" className="zam-btn zam-btn-ghost" onClick={openPublicPreview}>
               Vista Previa ↗
             </button>
-            <button type="button" onClick={exportProfile}>
+            <button type="button" className="zam-btn zam-btn-ghost" onClick={exportProfile}>
               Exportar
             </button>
             <button
               type="button"
+              className="zam-btn zam-btn-ghost"
               onClick={() => {
                 importInputRef.current?.click();
               }}
             >
               Importar
             </button>
+            <button type="button" className="zam-btn zam-btn-primary" onClick={saveForPublication}>
+              Guardar
+            </button>
           </div>
+
           <input
             ref={importInputRef}
             type="file"
@@ -332,26 +341,143 @@ export function AboutManager({
           />
         </header>
 
-        <div
-          className="zam-status"
-          role="status"
-          aria-live="polite"
-          data-kind={/^(No |El Audio|La foto|La imagen|Primero)/u.test(status) ? 'error' : 'ok'}
-        >
-          {status}
-        </div>
+        <div className="zam-profile-body">
+          <aside className="zam-profile-sidebar" aria-label="Identidad y contacto">
+            <section className="zam-avatar-section" aria-labelledby="about-identity-heading">
+              <div className="zam-avatar">
+                {p.photoUrl ? (
+                  <span
+                    className="zam-photo-preview-image"
+                    role="img"
+                    aria-label="Vista previa de foto de perfil"
+                    style={{ backgroundImage: `url(${JSON.stringify(p.photoUrl)})` }}
+                  />
+                ) : (
+                  <span className="zam-avatar-placeholder" aria-hidden="true">
+                    Foto
+                  </span>
+                )}
+              </div>
 
-        <main className="zam-main">
-          <div className="zam-workspace">
-            <div className="zam-tabs" role="tablist" aria-label="Secciones de Acerca de">
+              <div className="zam-avatar-actions">
+                <button
+                  type="button"
+                  className="zam-btn zam-btn-ghost"
+                  onClick={() => {
+                    photoInputRef.current?.click();
+                  }}
+                >
+                  Subir foto
+                </button>
+                <button
+                  type="button"
+                  className="zam-btn zam-btn-ghost zam-btn-danger"
+                  onClick={() => {
+                    updateText('photoUrl', '');
+                    setStatus('Foto eliminada; hay cambios pendientes de publicación.');
+                  }}
+                >
+                  Eliminar
+                </button>
+              </div>
+              <p className="zam-avatar-hint">Se recorta al centro y se optimiza automáticamente.</p>
+
+              <details className="zam-advanced-field">
+                <summary>URL avanzada de la foto</summary>
+                <label className="zam-field">
+                  <span>Foto (URL o data URL)</span>
+                  <input
+                    value={p.photoUrl}
+                    onChange={(event) => {
+                      updateText('photoUrl', event.target.value);
+                    }}
+                  />
+                </label>
+              </details>
+
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                hidden
+                aria-label="Seleccionar foto de perfil"
+                onChange={(event) => {
+                  const input = event.currentTarget;
+                  void importPhoto(input.files?.[0] ?? null).finally(() => {
+                    input.value = '';
+                  });
+                }}
+              />
+            </section>
+
+            <section className="zam-sidebar-fields">
+              <h2 id="about-identity-heading">Identidad y contacto</h2>
+
+              <label className="zam-field">
+                <span>Nombre visible</span>
+                <input
+                  value={p.displayName}
+                  placeholder="Tu nombre público"
+                  onChange={(event) => {
+                    updateText('displayName', event.target.value);
+                  }}
+                />
+              </label>
+
+              <label className="zam-field">
+                <span>Introducción</span>
+                <textarea
+                  rows={3}
+                  value={p.introduction}
+                  placeholder="Cuéntanos algo sobre ti…"
+                  onChange={(event) => {
+                    updateText('introduction', event.target.value);
+                  }}
+                />
+              </label>
+
+              <label className="zam-field">
+                <span>Correo electrónico</span>
+                <input
+                  type="email"
+                  value={p.email}
+                  placeholder="correo@dominio.com"
+                  onChange={(event) => {
+                    updateText('email', event.target.value);
+                  }}
+                />
+              </label>
+
+              <label className="zam-field">
+                <span>Sitio web</span>
+                <input
+                  type="url"
+                  value={p.website}
+                  placeholder="https://..."
+                  onChange={(event) => {
+                    updateText('website', event.target.value);
+                  }}
+                />
+              </label>
+
+              <label className="zam-field">
+                <span>Perfil de Blogger</span>
+                <input
+                  type="url"
+                  value={p.externalProfileUrl}
+                  placeholder="https://www.blogger.com/profile/..."
+                  onChange={(event) => {
+                    updateText('externalProfileUrl', event.target.value);
+                  }}
+                />
+              </label>
+            </section>
+          </aside>
+
+          <main className="zam-main zam-profile-main">
+            <div className="zam-tabs" role="tablist" aria-label="Secciones del perfil">
               {ABOUT_TABS.map((tab) => {
                 const selected = activeTab === tab.id;
-                const count =
-                  tab.id === 'social'
-                    ? profile.social.length
-                    : tab.id === 'resources'
-                      ? profile.relatedResources.length
-                      : null;
                 return (
                   <button
                     key={tab.id}
@@ -363,17 +489,12 @@ export function AboutManager({
                     aria-controls={`about-panel-${tab.id}`}
                     tabIndex={selected ? 0 : -1}
                     onClick={() => {
-                      selectTab(tab.id);
+                      setActiveTab(tab.id);
                     }}
                     onKeyDown={handleTabKeyDown}
                   >
                     <span className="zam-tab-label">{tab.label}</span>
-                    <small className="zam-tab-meta">
-                      {tab.description}
-                      {count === null ? null : (
-                        <span className="zam-tab-count">{String(count)}</span>
-                      )}
-                    </small>
+                    <small className="zam-tab-meta">{tab.description}</small>
                   </button>
                 );
               })}
@@ -381,171 +502,21 @@ export function AboutManager({
 
             <div className="zam-tab-content">
               <section
-                id="about-panel-profile"
+                id="about-panel-personal"
                 className="zam-panel"
                 role="tabpanel"
-                aria-labelledby="about-tab-profile"
-                hidden={activeTab !== 'profile'}
+                aria-labelledby="about-tab-personal"
+                hidden={activeTab !== 'personal'}
               >
-                <div className="zam-panel-intro">
-                  <div>
-                    <small>Perfil</small>
-                    <h2>Identidad editorial</h2>
-                  </div>
-                  <div className="zam-panel-copy">
-                    <p>Todos los campos pertenecen al documento compartido del repositorio.</p>
+                <section className="zam-section" aria-labelledby="about-extended-heading">
+                  <div className="zam-section-heading">
+                    <h2 id="about-extended-heading">Perfil extendido</h2>
                     <p>
-                      Replica los campos del perfil público de Blogger y sólo publica los que tengan
+                      Información profesional y de contexto que sólo se publica cuando tiene
                       contenido.
                     </p>
                   </div>
-                </div>
-
-                <section className="zam-group" aria-labelledby="about-identity-heading">
-                  <div className="zam-group-title">
-                    <span id="about-identity-heading">Identidad y contacto</span>
-                    <span>Principal</span>
-                  </div>
-
-                  <div className="zam-photo-upload">
-                    <div className="zam-photo-preview">
-                      {p.photoUrl ? (
-                        <span
-                          className="zam-photo-preview-image"
-                          role="img"
-                          aria-label="Vista previa de foto de perfil"
-                          style={{ backgroundImage: `url(${JSON.stringify(p.photoUrl)})` }}
-                        />
-                      ) : (
-                        <span aria-hidden="true">Foto</span>
-                      )}
-                    </div>
-                    <div className="zam-photo-copy">
-                      <strong>Foto de perfil</strong>
-                      <small>
-                        Se recorta al centro y se optimiza automáticamente. La vista pública usa
-                        marco circular.
-                      </small>
-                      <div className="zam-photo-actions">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            photoInputRef.current?.click();
-                          }}
-                        >
-                          Subir foto
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            updateText('photoUrl', '');
-                            setStatus('Foto eliminada; hay cambios pendientes de publicación.');
-                          }}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                      <label className="zam-field zam-media-source-field">
-                        <span>Foto (URL o data URL)</span>
-                        <input
-                          value={p.photoUrl}
-                          onChange={(event) => {
-                            updateText('photoUrl', event.target.value);
-                          }}
-                        />
-                      </label>
-                    </div>
-                    <input
-                      ref={photoInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      hidden
-                      aria-label="Seleccionar foto de perfil"
-                      onChange={(event) => {
-                        const input = event.currentTarget;
-                        void importPhoto(input.files?.[0] ?? null).finally(() => {
-                          input.value = '';
-                        });
-                      }}
-                    />
-                  </div>
-
-                  <label className="zam-field">
-                    <span>Nombre visible</span>
-                    <input
-                      value={p.displayName}
-                      onChange={(event) => {
-                        updateText('displayName', event.target.value);
-                      }}
-                    />
-                  </label>
-                  <label className="zam-field">
-                    <span>Introducción</span>
-                    <textarea
-                      value={p.introduction}
-                      onChange={(event) => {
-                        updateText('introduction', event.target.value);
-                      }}
-                    />
-                  </label>
-                  <label className="zam-field">
-                    <span>Correo electrónico</span>
-                    <input
-                      type="email"
-                      value={p.email}
-                      onChange={(event) => {
-                        updateText('email', event.target.value);
-                      }}
-                    />
-                  </label>
-                  <label className="zam-field">
-                    <span>Sitio web</span>
-                    <input
-                      type="url"
-                      value={p.website}
-                      onChange={(event) => {
-                        updateText('website', event.target.value);
-                      }}
-                    />
-                  </label>
-                  <label className="zam-field">
-                    <span>Perfil de Blogger</span>
-                    <input
-                      type="url"
-                      value={p.externalProfileUrl}
-                      onChange={(event) => {
-                        updateText('externalProfileUrl', event.target.value);
-                      }}
-                    />
-                  </label>
-                </section>
-              </section>
-
-              <section
-                id="about-panel-details"
-                className="zam-panel"
-                role="tabpanel"
-                aria-labelledby="about-tab-details"
-                hidden={activeTab !== 'details'}
-              >
-                <div className="zam-panel-intro zam-panel-intro-compact">
-                  <div>
-                    <small>Detalles</small>
-                    <h2>Perfil público</h2>
-                  </div>
-                  <div className="zam-panel-copy">
-                    <p>
-                      Información complementaria, ubicación y campos clásicos heredados de Blogger.
-                    </p>
-                  </div>
-                </div>
-
-                <section className="zam-group" aria-labelledby="about-extended-heading">
-                  <div className="zam-group-title">
-                    <span id="about-extended-heading">Perfil extendido</span>
-                    <span>Acerca de Blogger</span>
-                  </div>
-                  <div className="zam-grid-3">
+                  <div className="zam-form-grid zam-form-grid-3">
                     <label className="zam-field">
                       <span>Ocupación</span>
                       <input
@@ -576,12 +547,12 @@ export function AboutManager({
                   </div>
                 </section>
 
-                <section className="zam-group" aria-labelledby="about-location-heading">
-                  <div className="zam-group-title">
-                    <span id="about-location-heading">Ubicación</span>
-                    <span>Opcional</span>
+                <section className="zam-section" aria-labelledby="about-location-heading">
+                  <div className="zam-section-heading zam-section-heading-inline">
+                    <h2 id="about-location-heading">Ubicación</h2>
+                    <span className="zam-badge">Opcional</span>
                   </div>
-                  <div className="zam-grid-3">
+                  <div className="zam-form-grid zam-form-grid-3">
                     <label className="zam-field">
                       <span>País</span>
                       <input
@@ -612,13 +583,16 @@ export function AboutManager({
                   </div>
                 </section>
 
-                <section className="zam-group" aria-labelledby="about-classic-heading">
-                  <div className="zam-group-title">
-                    <span id="about-classic-heading">Campos clásicos de Blogger</span>
-                    <span>Perfil público</span>
+                <section className="zam-section" aria-labelledby="about-classic-heading">
+                  <div className="zam-section-heading">
+                    <h2 id="about-classic-heading">Personalización clásica</h2>
+                    <p>
+                      Campos compatibles con el perfil histórico sin contaminar el dominio con el
+                      proveedor.
+                    </p>
                   </div>
 
-                  <div className="zam-audio-upload">
+                  <div className="zam-audio-box">
                     <div className="zam-audio-copy">
                       <strong>Audio Clip</strong>
                       <small>Usa un archivo breve o una URL pública.</small>
@@ -626,6 +600,7 @@ export function AboutManager({
                     <div className="zam-audio-actions">
                       <button
                         type="button"
+                        className="zam-btn zam-btn-ghost"
                         onClick={() => {
                           audioInputRef.current?.click();
                         }}
@@ -634,6 +609,7 @@ export function AboutManager({
                       </button>
                       <button
                         type="button"
+                        className="zam-btn zam-btn-ghost zam-btn-danger"
                         onClick={() => {
                           updateText('audioClipUrl', '');
                           setStatus('Audio Clip eliminado; hay cambios pendientes de publicación.');
@@ -642,15 +618,21 @@ export function AboutManager({
                         Eliminar
                       </button>
                     </div>
-                    <label className="zam-field zam-audio-source-field">
-                      <span>Audio Clip (URL o data URL)</span>
-                      <input
-                        value={p.audioClipUrl}
-                        onChange={(event) => {
-                          updateText('audioClipUrl', event.target.value);
-                        }}
-                      />
-                    </label>
+                    <div className="zam-audio-url" title={p.audioClipUrl || 'Sin audio'}>
+                      {p.audioClipUrl || 'Sin audio cargado'}
+                    </div>
+                    <details className="zam-advanced-field zam-audio-advanced">
+                      <summary>Editar URL avanzada</summary>
+                      <label className="zam-field">
+                        <span>Audio Clip (URL o data URL)</span>
+                        <input
+                          value={p.audioClipUrl}
+                          onChange={(event) => {
+                            updateText('audioClipUrl', event.target.value);
+                          }}
+                        />
+                      </label>
+                    </details>
                     <input
                       ref={audioInputRef}
                       type="file"
@@ -666,34 +648,38 @@ export function AboutManager({
                     />
                   </div>
 
-                  <label className="zam-field">
-                    <span>Wishlist</span>
-                    <input
-                      type="url"
-                      value={p.wishlistUrl}
-                      onChange={(event) => {
-                        updateText('wishlistUrl', event.target.value);
-                      }}
-                    />
-                  </label>
-                  <label className="zam-field">
-                    <span>Pregunta aleatoria</span>
-                    <input
-                      value={p.randomQuestion}
-                      onChange={(event) => {
-                        updateText('randomQuestion', event.target.value);
-                      }}
-                    />
-                  </label>
-                  <label className="zam-field">
-                    <span>Respuesta</span>
-                    <textarea
-                      value={p.randomAnswer}
-                      onChange={(event) => {
-                        updateText('randomAnswer', event.target.value);
-                      }}
-                    />
-                  </label>
+                  <div className="zam-form-grid">
+                    <label className="zam-field">
+                      <span>Wishlist</span>
+                      <input
+                        type="url"
+                        value={p.wishlistUrl}
+                        placeholder="https://..."
+                        onChange={(event) => {
+                          updateText('wishlistUrl', event.target.value);
+                        }}
+                      />
+                    </label>
+                    <label className="zam-field">
+                      <span>Pregunta aleatoria</span>
+                      <input
+                        value={p.randomQuestion}
+                        onChange={(event) => {
+                          updateText('randomQuestion', event.target.value);
+                        }}
+                      />
+                    </label>
+                    <label className="zam-field zam-field-wide">
+                      <span>Respuesta</span>
+                      <textarea
+                        rows={3}
+                        value={p.randomAnswer}
+                        onChange={(event) => {
+                          updateText('randomAnswer', event.target.value);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </section>
               </section>
 
@@ -704,25 +690,21 @@ export function AboutManager({
                 aria-labelledby="about-tab-favorites"
                 hidden={activeTab !== 'favorites'}
               >
-                <div className="zam-panel-intro zam-panel-intro-compact">
-                  <div>
-                    <small>Intereses</small>
-                    <h2>Gustos y favoritos</h2>
+                <section className="zam-section" aria-labelledby="about-favorites-heading">
+                  <div className="zam-section-heading zam-section-heading-inline">
+                    <div>
+                      <h2 id="about-favorites-heading">Intereses y favoritos</h2>
+                      <p>
+                        Cada línea se convierte en una entrada independiente del perfil público.
+                      </p>
+                    </div>
+                    <span className="zam-badge">Uno por línea</span>
                   </div>
-                  <div className="zam-panel-copy">
-                    <p>Cada línea se convierte en una entrada independiente del perfil público.</p>
-                  </div>
-                </div>
-
-                <section className="zam-group" aria-labelledby="about-favorites-heading">
-                  <div className="zam-group-title">
-                    <span id="about-favorites-heading">Intereses y favoritos</span>
-                    <span>Uno por línea</span>
-                  </div>
-                  <div className="zam-favorites-grid">
+                  <div className="zam-form-grid">
                     <label className="zam-field">
                       <span>Intereses</span>
                       <textarea
+                        rows={4}
                         value={p.interests.join('\n')}
                         onChange={(event) => {
                           updateList('interests', event.target.value);
@@ -732,6 +714,7 @@ export function AboutManager({
                     <label className="zam-field">
                       <span>Películas favoritas</span>
                       <textarea
+                        rows={4}
                         value={p.favoriteMovies.join('\n')}
                         onChange={(event) => {
                           updateList('favoriteMovies', event.target.value);
@@ -741,6 +724,7 @@ export function AboutManager({
                     <label className="zam-field">
                       <span>Música favorita</span>
                       <textarea
+                        rows={4}
                         value={p.favoriteMusic.join('\n')}
                         onChange={(event) => {
                           updateList('favoriteMusic', event.target.value);
@@ -748,8 +732,9 @@ export function AboutManager({
                       />
                     </label>
                     <label className="zam-field">
-                      <span>Libro favorito</span>
+                      <span>Libros favoritos</span>
                       <textarea
+                        rows={4}
                         value={p.favoriteBooks.join('\n')}
                         onChange={(event) => {
                           updateList('favoriteBooks', event.target.value);
@@ -761,30 +746,21 @@ export function AboutManager({
               </section>
 
               <section
-                id="about-panel-social"
+                id="about-panel-connections"
                 className="zam-panel"
                 role="tabpanel"
-                aria-labelledby="about-tab-social"
-                hidden={activeTab !== 'social'}
+                aria-labelledby="about-tab-connections"
+                hidden={activeTab !== 'connections'}
               >
-                <div className="zam-panel-intro zam-panel-intro-compact">
-                  <div>
-                    <small>Redes</small>
-                    <h2>Enlaces públicos</h2>
-                  </div>
-                  <div className="zam-panel-copy">
-                    <p>Ordena los enlaces como deben aparecer y controla su visibilidad.</p>
-                  </div>
-                </div>
-
-                <section className="zam-group" aria-labelledby="about-social-heading">
-                  <div className="zam-group-title zam-group-title-with-action">
-                    <div>
-                      <span id="about-social-heading">Redes sociales</span>
-                      <small>Enlaces públicos</small>
+                <section className="zam-section" aria-labelledby="about-social-heading">
+                  <div className="zam-add-bar">
+                    <div className="zam-section-heading">
+                      <h2 id="about-social-heading">Redes sociales</h2>
+                      <p>Ordena los enlaces como deben aparecer y controla su visibilidad.</p>
                     </div>
                     <button
                       type="button"
+                      className="zam-btn zam-btn-add"
                       onClick={() => {
                         setProfile((current) => ({
                           ...current,
@@ -807,10 +783,11 @@ export function AboutManager({
                     </button>
                   </div>
 
-                  <div className="zam-repeater zam-repeater-contained">
+                  <div className="zam-repeater">
                     {profile.social.length === 0 ? (
                       <p className="zam-empty">No hay redes sociales añadidas.</p>
                     ) : null}
+
                     {profile.social.map((item, index) => (
                       <article className="zam-card" key={item.id}>
                         <div className="zam-card-head">
@@ -818,6 +795,7 @@ export function AboutManager({
                           <div className="zam-card-actions">
                             <button
                               type="button"
+                              className="zam-icon-btn"
                               aria-label={`Subir red ${String(index + 1)}`}
                               disabled={index === 0}
                               onClick={() => {
@@ -828,6 +806,7 @@ export function AboutManager({
                             </button>
                             <button
                               type="button"
+                              className="zam-icon-btn"
                               aria-label={`Bajar red ${String(index + 1)}`}
                               disabled={index === profile.social.length - 1}
                               onClick={() => {
@@ -838,6 +817,8 @@ export function AboutManager({
                             </button>
                             <button
                               type="button"
+                              className="zam-icon-btn zam-icon-btn-danger"
+                              aria-label={`Eliminar red ${String(index + 1)}`}
                               onClick={() => {
                                 setProfile((current) => ({
                                   ...current,
@@ -847,11 +828,12 @@ export function AboutManager({
                                 }));
                               }}
                             >
-                              Eliminar
+                              ×
                             </button>
                           </div>
                         </div>
-                        <div className="zam-card-grid">
+
+                        <div className="zam-form-grid">
                           <label className="zam-field">
                             <span>Plataforma</span>
                             <select
@@ -900,48 +882,35 @@ export function AboutManager({
                               }}
                             />
                           </label>
+                          <label className="zam-toggle-field zam-field-wide">
+                            <input
+                              type="checkbox"
+                              checked={item.visible}
+                              onChange={(event) => {
+                                updateSocial(item.id, { visible: event.target.checked });
+                              }}
+                            />
+                            <span className="zam-toggle-track" aria-hidden="true" />
+                            <span>Visibilidad pública</span>
+                          </label>
                         </div>
-                        <label className="zam-check">
-                          <input
-                            type="checkbox"
-                            checked={item.visible}
-                            onChange={(event) => {
-                              updateSocial(item.id, { visible: event.target.checked });
-                            }}
-                          />
-                          Visible
-                        </label>
                       </article>
                     ))}
                   </div>
                 </section>
-              </section>
 
-              <section
-                id="about-panel-resources"
-                className="zam-panel"
-                role="tabpanel"
-                aria-labelledby="about-tab-resources"
-                hidden={activeTab !== 'resources'}
-              >
-                <div className="zam-panel-intro zam-panel-intro-compact">
-                  <div>
-                    <small>Recursos</small>
-                    <h2>Directorio editorial</h2>
-                  </div>
-                  <div className="zam-panel-copy">
-                    <p>Administra referencias relacionadas sin mezclar su edición con el perfil.</p>
-                  </div>
-                </div>
-
-                <section className="zam-group" aria-labelledby="about-resources-heading">
-                  <div className="zam-group-title zam-group-title-with-action">
-                    <div>
-                      <span id="about-resources-heading">Recursos relacionados</span>
-                      <small>Directorio editorial</small>
+                <section className="zam-section" aria-labelledby="about-resources-heading">
+                  <div className="zam-add-bar">
+                    <div className="zam-section-heading">
+                      <h2 id="about-resources-heading">Recursos relacionados</h2>
+                      <p>
+                        Referencias editoriales que acompañan el perfil sin mezclarse con su
+                        identidad.
+                      </p>
                     </div>
                     <button
                       type="button"
+                      className="zam-btn zam-btn-add"
                       onClick={() => {
                         setProfile((current) => ({
                           ...current,
@@ -964,10 +933,11 @@ export function AboutManager({
                     </button>
                   </div>
 
-                  <div className="zam-repeater zam-repeater-contained">
+                  <div className="zam-repeater">
                     {profile.relatedResources.length === 0 ? (
                       <p className="zam-empty">No hay recursos relacionados añadidos.</p>
                     ) : null}
+
                     {profile.relatedResources.map((item, index) => (
                       <article className="zam-card" key={item.id}>
                         <div className="zam-card-head">
@@ -975,6 +945,7 @@ export function AboutManager({
                           <div className="zam-card-actions">
                             <button
                               type="button"
+                              className="zam-icon-btn"
                               aria-label={`Subir recurso ${String(index + 1)}`}
                               disabled={index === 0}
                               onClick={() => {
@@ -985,6 +956,7 @@ export function AboutManager({
                             </button>
                             <button
                               type="button"
+                              className="zam-icon-btn"
                               aria-label={`Bajar recurso ${String(index + 1)}`}
                               disabled={index === profile.relatedResources.length - 1}
                               onClick={() => {
@@ -995,6 +967,8 @@ export function AboutManager({
                             </button>
                             <button
                               type="button"
+                              className="zam-icon-btn zam-icon-btn-danger"
+                              aria-label={`Eliminar recurso ${String(index + 1)}`}
                               onClick={() => {
                                 setProfile((current) => ({
                                   ...current,
@@ -1004,11 +978,12 @@ export function AboutManager({
                                 }));
                               }}
                             >
-                              Eliminar
+                              ×
                             </button>
                           </div>
                         </div>
-                        <div className="zam-card-grid">
+
+                        <div className="zam-form-grid">
                           <label className="zam-field">
                             <span>Título</span>
                             <input
@@ -1028,16 +1003,17 @@ export function AboutManager({
                               }}
                             />
                           </label>
-                          <label className="zam-field zam-card-field-wide">
+                          <label className="zam-field zam-field-wide">
                             <span>Descripción</span>
                             <textarea
+                              rows={3}
                               value={item.description}
                               onChange={(event) => {
                                 updateResource(item.id, { description: event.target.value });
                               }}
                             />
                           </label>
-                          <label className="zam-field zam-card-field-wide">
+                          <label className="zam-field">
                             <span>Tipo</span>
                             <select
                               value={item.type}
@@ -1057,32 +1033,26 @@ export function AboutManager({
                               ))}
                             </select>
                           </label>
+                          <label className="zam-toggle-field">
+                            <input
+                              type="checkbox"
+                              checked={item.visible}
+                              onChange={(event) => {
+                                updateResource(item.id, { visible: event.target.checked });
+                              }}
+                            />
+                            <span className="zam-toggle-track" aria-hidden="true" />
+                            <span>Visibilidad pública</span>
+                          </label>
                         </div>
-                        <label className="zam-check">
-                          <input
-                            type="checkbox"
-                            checked={item.visible}
-                            onChange={(event) => {
-                              updateResource(item.id, { visible: event.target.checked });
-                            }}
-                          />
-                          Visible
-                        </label>
                       </article>
                     ))}
                   </div>
                 </section>
               </section>
             </div>
-          </div>
-        </main>
-
-        <footer className="zam-footer">
-          <span>Publicación pública autenticada</span>
-          <button type="button" className="primary" onClick={saveForPublication}>
-            Guardar
-          </button>
-        </footer>
+          </main>
+        </div>
       </div>
     </div>
   );
