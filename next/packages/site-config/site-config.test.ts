@@ -79,33 +79,35 @@ describe('site config', () => {
     expect([...siteProfileSchema.required].sort()).toEqual(
       ['schemaVersion', 'updatedAt', 'profile', 'social', 'relatedResources'].sort()
     );
-    expect([...siteProfileSchema.$defs.profile.required].sort()).toEqual(
-      Object.keys(parsed.profile).sort()
-    );
+    expect([...siteProfileSchema.$defs.profile.required].sort()).toEqual(Object.keys(parsed.profile).sort());
     expect([...siteProfileSchema.$defs.location.required].sort()).toEqual(
       Object.keys(parsed.profile.location).sort()
     );
     expect([...siteProfileSchema.$defs.socialEntry.required].sort()).toEqual(
-      Object.keys(parsed.social[0] ?? {
-        id: '',
-        platform: '',
-        label: '',
-        username: '',
-        url: '',
-        visible: true,
-        order: 0
-      }).sort()
+      Object.keys(
+        parsed.social[0] ?? {
+          id: '',
+          platform: '',
+          label: '',
+          username: '',
+          url: '',
+          visible: true,
+          order: 0
+        }
+      ).sort()
     );
     expect([...siteProfileSchema.$defs.resourceEntry.required].sort()).toEqual(
-      Object.keys(parsed.relatedResources[0] ?? {
-        id: '',
-        title: '',
-        url: '',
-        description: '',
-        type: '',
-        visible: true,
-        order: 0
-      }).sort()
+      Object.keys(
+        parsed.relatedResources[0] ?? {
+          id: '',
+          title: '',
+          url: '',
+          description: '',
+          type: '',
+          visible: true,
+          order: 0
+        }
+      ).sort()
     );
   });
 
@@ -211,9 +213,7 @@ describe('site config', () => {
       updatedAt: null,
       profile: {},
       social: [{ id: 'hidden-social', visible: false, url: '', order: 0 }],
-      relatedResources: [
-        { id: 'hidden-resource', title: '', visible: false, url: '', order: 0 }
-      ]
+      relatedResources: [{ id: 'hidden-resource', title: '', visible: false, url: '', order: 0 }]
     });
     expect(hidden.social[0]).toMatchObject({ id: 'hidden-social', visible: false, url: '' });
     expect(hidden.relatedResources[0]).toMatchObject({
@@ -264,6 +264,7 @@ describe('site config', () => {
 
   it('keeps URL/media policy and presentation labels stable', () => {
     expect(isSafeExternalUrl('https://example.com/path')).toBe(true);
+    expect(isSafeExternalUrl('/relative')).toBe(false);
     expect(isSafeExternalUrl('javascript:alert(1)')).toBe(false);
     expect(isSafeExternalUrl('http://[')).toBe(false);
     expect(isSafeImageSource('data:image/png;base64,QUJDRA==')).toBe(true);
