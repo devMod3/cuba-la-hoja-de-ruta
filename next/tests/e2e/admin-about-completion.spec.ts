@@ -42,6 +42,7 @@ test('Admin About keeps explicit, unique order when social links and resources a
 }) => {
   const about = await openAbout(page);
 
+  await about.getByRole('tab', { name: 'Redes', exact: true }).click();
   await about.getByRole('button', { name: '+ Añadir red', exact: true }).click();
   await about.getByRole('button', { name: '+ Añadir red', exact: true }).click();
   const socialCards = about.locator(
@@ -58,6 +59,7 @@ test('Admin About keeps explicit, unique order when social links and resources a
   await expect(socialCards.nth(1).getByLabel('Etiqueta personalizada')).toHaveValue('Tercera');
   await expect(socialCards.nth(2).getByLabel('Etiqueta personalizada')).toHaveValue('Segunda');
 
+  await about.getByRole('tab', { name: 'Recursos', exact: true }).click();
   await about.getByRole('button', { name: '+ Añadir recurso', exact: true }).click();
   await about.getByRole('button', { name: '+ Añadir recurso', exact: true }).click();
   const resourceCards = about.locator(
