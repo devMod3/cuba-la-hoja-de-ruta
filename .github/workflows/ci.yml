@@ -49,6 +49,17 @@ jobs:
         working-directory: next
         run: pnpm install --frozen-lockfile
 
+      - name: Diagnostic — canonicalize Admin About stylesheet
+        working-directory: next
+        run: pnpm exec prettier --write apps/web/app/admin/admin-about-layout.css
+
+      - name: Upload canonical Admin About stylesheet
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: prettier-admin-about-layout
+          path: next/apps/web/app/admin/admin-about-layout.css
+          if-no-files-found: error
+
       - name: Full static, architecture, portability and unit gate
         working-directory: next
         run: pnpm check
