@@ -6,11 +6,7 @@ import { createSiteProfileDraftStore } from './admin-model';
 
 export function AboutDraftPreview() {
   const store = useMemo(() => createSiteProfileDraftStore(), []);
-  const profile = useSyncExternalStore(
-    store.subscribe,
-    store.getSnapshot,
-    store.getServerSnapshot
-  );
+  const profile = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
 
   return (
     <div data-component="AboutDraftPreview">
