@@ -1,0 +1,85 @@
+name: Harness CI (Validadores Automáticos)
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ chore/*, feature/* ]
+
+jobs:
+  harness:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '11.22.0'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      # --- VALIDADORES DEL HARNESS (ERRORES CONOCIDOS) ---
+      - name: Validar E-001 (Tipado DOM en inspector)
+        run: |
+          if ! grep -q "let sibling: Element | null" next/apps/web/components/inspector-diagnostics.ts; then
+            echo "❌ ERROR E-001: El tipo explícito falta en inspector-diagnostics.ts"
+            exit 1
+          fi
+          echo "✅ E-001 PASS"
+      
+      - name: Validar E-002 (Sin aserción innecesaria en SBOM)
+        run: |
+          if grep -q "as CycloneDxBom" scripts/generate-sbom.ts; then
+            echo "❌ ERROR E-002: Aserción innecesaria en generate-sbom.ts"
+            exit 1
+          fi
+          echo "✅ E-002 PASS"
+      
+      - name: Validar E-004 (Sin node_modules en el árbol)
+        run: |
+          if find . -type d -name "node_modules" -prune | grep -q .; then
+            echo "❌ ERROR E-004: Hay node_modules en el árbol. Limpiar."
+            exit 1
+          fi
+          echo "✅ E-004 PASS"
+      
+      # --- CHECKS COMPLETOS ---
+      - name: Formateo
+        run: pnpm format --check
+      
+      - name: Lint estricto
+        run: pnpm lint
+      
+      - name: TypeScript
+        run: pnpm typecheck
+      
+      - name: Build
+        run: pnpm build
+        env:
+          ZENBLOG_BASE_PATH: /cuba-la-hoja-de-ruta
+      
+      - name: Playwright E2E
+        run: pnpm test:e2e
+      
+      # --- GENERAR REPORTE DE CONTINUIDAD ---
+      - name: Generar reporte de continuidad
+        run: |
+          cat > CONTINUIDAD_REPORTE.md <<EOF
+          # Reporte del Harness CI
+          **Ejecutado en:** $(date -Iseconds)
+          **Commit SHA:** ${{ github.sha }}
+          **Estado:** ✅ TODOS LOS VALIDADORES PASARON
+          EOF
+      
+      - name: Subir reporte como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: continuity-report
+          path: CONTINUIDAD_REPORTE.md
