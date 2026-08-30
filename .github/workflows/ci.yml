@@ -49,6 +49,20 @@ jobs:
         working-directory: next
         run: pnpm install --frozen-lockfile
 
+      - name: Emit canonical formatting diff
+        working-directory: next
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm exec prettier --write \
+            packages/site-config/schema/site-profile.schema.json \
+            packages/site-config/site-config.test.ts \
+            tests/e2e/admin-about-completion.spec.ts
+          git diff -- \
+            packages/site-config/schema/site-profile.schema.json \
+            packages/site-config/site-config.test.ts \
+            tests/e2e/admin-about-completion.spec.ts
+
       - name: Full static, architecture, portability and unit gate
         working-directory: next
         run: pnpm check
