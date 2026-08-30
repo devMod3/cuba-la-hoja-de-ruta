@@ -33,17 +33,11 @@
     },
     "optionalHttpUrl": {
       "type": "string",
-      "anyOf": [
-        { "maxLength": 0 },
-        { "pattern": "^https?://" }
-      ]
+      "anyOf": [{ "maxLength": 0 }, { "pattern": "^https?://" }]
     },
     "optionalEmail": {
       "type": "string",
-      "anyOf": [
-        { "maxLength": 0 },
-        { "format": "email" }
-      ]
+      "anyOf": [{ "maxLength": 0 }, { "format": "email" }]
     },
     "imageSource": {
       "type": "string",
