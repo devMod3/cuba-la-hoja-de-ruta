@@ -1,6 +1,55 @@
 {
+  "records": {
+    "1102067444728853158": {
+      "classification": {
+        "primaryPillar": "soberania",
+        "relatedPillars": [],
+        "type": "analisis"
+      },
+      "editorial": {
+        "status": null
+      },
+      "indexing": {
+        "aliases": [],
+        "concepts": [
+          "pueblo",
+          "soberania-popular",
+          "poder-constituyente",
+          "continuidad-juridica",
+          "legitimidad"
+        ],
+        "keywords": [],
+        "norms": []
+      },
+      "temporal": {
+        "documentYear": null
+      }
+    },
+    "7981496041809796805": {
+      "classification": {
+        "primaryPillar": "soberania",
+        "relatedPillars": [],
+        "type": "analisis"
+      },
+      "editorial": {
+        "status": null
+      },
+      "indexing": {
+        "aliases": [],
+        "concepts": [
+          "legitimidad",
+          "pueblo",
+          "soberania-popular"
+        ],
+        "keywords": [],
+        "norms": []
+      },
+      "temporal": {
+        "documentYear": null
+      }
+    }
+  },
   "schemaVersion": "1.0.0",
-  "vocabularyVersion": "1.0.0",
-  "updatedAt": null,
-  "records": {}
+  "updatedAt": "2026-08-28T23:26:36.339Z",
+  "vocabularyVersion": "1.0.0"
 }
